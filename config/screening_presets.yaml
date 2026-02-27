@@ -84,6 +84,14 @@ presets:
       min_gross_margin: 0.20              # 粗利率 >= 20%
       max_market_cap: 100000000000        # 時価総額 <= 1000億円（JPY基準、他地域は自動調整）
 
+  contrarian:
+    description: "逆張り候補（テクニカル売られすぎ × ファンダ堅調）"
+    mode: "contrarian"
+    criteria:
+      max_per: 15
+      max_pbr: 1.5
+      min_roe: 0.03
+
   long-term:
     description: "長期投資適性（高ROE・EPS成長・高配当・安定企業）"
     criteria:

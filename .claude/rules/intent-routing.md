@@ -44,6 +44,9 @@
 「AI関連の割安株」        → /screen-stocks us --theme ai --preset value
 「半導体の成長株」        → /screen-stocks us --theme ai --preset high-growth
 「防衛関連株を探して」    → /screen-stocks us --theme defense --preset alpha
+「売られすぎの株」        → /screen-stocks japan contrarian
+「逆張りで拾えそうな株」   → /screen-stocks japan contrarian
+「過剰に売られてる銘柄」   → /screen-stocks japan contrarian
 ```
 
 **KIK-452 GraphRAG コンテキスト**: スクリーニング結果の末尾に、Neo4j ナレッジグラフから取得したセクタートレンド・投資メモ・テーマ情報が自動表示される（Neo4j 接続時のみ）。Grok API 接続時は AI 統合サマリーも付加。Neo4j 未接続の場合はこのセクションは非表示となり、スクリーニング本体の動作には影響しない。
@@ -68,6 +71,7 @@
 | 安定して還元、継続的に高還元、還元が続いてる | shareholder-return（✅/📈 銘柄を推奨） |
 | 爆発的成長、ハイグロース、利益不問の成長株、赤字成長株、PSR重視、売上急成長 | high-growth |
 | 小型成長株、マイクロキャップ、10倍株、小型グロース、テンバガー候補、小型急成長 | small-cap-growth |
+| 逆張り、売られすぎ、過剰反応、底打ち、リバウンド狙い、反発狙い | contrarian |
 | 指定なし | alpha |
 
 **KIK-439 関連（テーマスクリーニング）**:
@@ -311,7 +315,7 @@
 
 🔍 銘柄を探す
   「いい日本株ある？」「米国の高配当株を探して」「Xで話題の株」
-  → 10の戦略 × 60地域からスクリーニング
+  → 14の戦略 × 60地域からスクリーニング
 
 📊 銘柄を分析する
   「トヨタってどう？」「AAPLの還元率は？」

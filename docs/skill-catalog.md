@@ -8,7 +8,7 @@
 
 | Skill | Description | Core Dependencies |
 |:---|:---|:---|
-| screen-stocks | 割安株スクリーニング (60地域, 11プリセット) | screening/*.py, yahoo_client |
+| screen-stocks | 割安株スクリーニング (60地域, 14プリセット) | screening/*.py, yahoo_client |
 | stock-report | 個別銘柄バリュエーションレポート | indicators.py, value_trap.py, yahoo_client |
 | market-research | 深掘りリサーチ (銘柄/業界/市場/ビジネスモデル) | researcher.py, grok_client |
 | watchlist | ウォッチリスト管理 (add/remove/list) | (直接 JSON) |
@@ -27,7 +27,7 @@
 
 **Options**:
 - `--region`: 対象地域 (japan, us, asean, sg, hk, kr, tw, cn, etc.)
-- `--preset`: 戦略プリセット (alpha, value, high-dividend, growth, growth-value, deep-value, quality, pullback, trending, long-term, shareholder-return)
+- `--preset`: 戦略プリセット (alpha, value, high-dividend, growth, growth-value, deep-value, quality, pullback, trending, long-term, shareholder-return, contrarian)
 - `--sector`: セクター絞り込み (e.g. Technology)
 - `--top N`: 上位N件表示
 - `--with-pullback`: 押し目分析を付加
@@ -41,7 +41,7 @@ python3 run_screen.py --region japan --preset growth --top 10
 python3 run_screen.py --region japan --preset long-term --top 10
 ```
 
-**Output**: Markdown テーブル (銘柄/名前/スコア/PER/PBR/配当利回り/ROE)。直近売却済み銘柄は自動除外(KIK-418)、懸念/学びメモがある銘柄にはマーカー表示(KIK-419)。
+**Output**: Markdown テーブル (銘柄/名前/スコア/PER/PBR/配当利回り/ROE)。contrarian プリセットは3軸スコア（テクニカル/バリュエーション/ファンダ乖離）付き。直近売却済み銘柄は自動除外(KIK-418)、懸念/学びメモがある銘柄にはマーカー表示(KIK-419)。
 
 **Annotation Markers** (KIK-418/419):
 - ⚠️ = 懸念メモあり (concern)
@@ -49,7 +49,7 @@ python3 run_screen.py --region japan --preset long-term --top 10
 - 👀 = 様子見 (observation に「見送り」「待ち」等キーワード)
 - 直近90日以内の売却銘柄は結果から自動除外
 
-**Core Dependencies**: `src/core/screening/screener.py`, `indicators.py`, `filters.py`, `query_builder.py`, `alpha.py`, `technicals.py`, `src/data/screen_annotator.py`
+**Core Dependencies**: `src/core/screening/screener.py`, `indicators.py`, `filters.py`, `query_builder.py`, `alpha.py`, `technicals.py`, `contrarian.py`, `contrarian_screener.py`, `src/data/screen_annotator.py`
 
 ---
 
@@ -67,9 +67,9 @@ python3 generate_report.py 7203.T
 python3 generate_report.py AAPL
 ```
 
-**Output**: Markdown レポート (基本情報/バリュエーション/割安度判定/株主還元率/3年還元推移/バリュートラップ判定)
+**Output**: Markdown レポート (基本情報/バリュエーション/割安度判定/逆張りシグナル/株主還元率/3年還元推移/バリュートラップ判定)
 
-**Core Dependencies**: `src/core/screening/indicators.py`, `src/core/value_trap.py`, `src/data/yahoo_client.py`
+**Core Dependencies**: `src/core/screening/indicators.py`, `src/core/value_trap.py`, `src/core/screening/contrarian.py`, `src/data/yahoo_client.py`
 
 ---
 
@@ -258,10 +258,10 @@ python3 run_query.py "最近の市況は？"
 ## Skill → Core Module Dependency Map
 
 ```
-screen-stocks ──→ screening/{screener,indicators,filters,query_builder,alpha,technicals}
+screen-stocks ──→ screening/{screener,indicators,filters,query_builder,alpha,technicals,contrarian,contrarian_screener}
                    yahoo_client, grok_client (trending only)
 
-stock-report ───→ screening/indicators, value_trap
+stock-report ───→ screening/{indicators,contrarian}, value_trap
                    yahoo_client
 
 market-research → research/researcher

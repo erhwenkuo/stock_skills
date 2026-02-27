@@ -28,6 +28,9 @@ if HAS_HISTORY:
 HAS_VALUE_TRAP, _vt = try_import("src.core.health_check", "_detect_value_trap")
 if HAS_VALUE_TRAP: _detect_value_trap = _vt["_detect_value_trap"]
 
+HAS_CONTRARIAN, _ct = try_import("src.core.screening.contrarian", "compute_contrarian_score")
+if HAS_CONTRARIAN: compute_contrarian_score = _ct["compute_contrarian_score"]
+
 HAS_GRAPH_QUERY = _HAS_GQ
 if HAS_GRAPH_QUERY:
     from src.data.graph_query import get_prior_report
@@ -218,6 +221,35 @@ def main():
             print("## ⚠️ バリュートラップ注意")
             for reason in vt["reasons"]:
                 print(f"- {reason}")
+
+    # KIK-504: Contrarian signal section
+    if HAS_CONTRARIAN:
+        try:
+            from src.data import yahoo_client as _yc
+            _hist = _yc.get_price_history(symbol, period="1y")
+        except Exception:
+            _hist = None
+        ct_result = compute_contrarian_score(_hist, data)
+        if ct_result["contrarian_score"] > 0:
+            print()
+            print("## 逆張りシグナル")
+            _ct_grade = ct_result["grade"]
+            print(f"- **逆張りスコア**: {ct_result['contrarian_score']:.0f} / 100 (グレード{_ct_grade})")
+            _tech = ct_result["technical"]
+            _val = ct_result["valuation"]
+            _fund = ct_result["fundamental"]
+            _rsi_str = f"RSI={fmt(_tech.get('rsi'))}" if _tech.get("rsi") is not None else "RSI=-"
+            _sma_dev = _tech.get("sma200_deviation")
+            _sma_str = f"SMA200乖離={fmt(_sma_dev, pct=True)}" if _sma_dev is not None else "SMA200乖離=-"
+            print(f"- テクニカル: {_tech['score']:.0f}/40 ({_rsi_str}, {_sma_str})")
+            print(f"- バリュエーション: {_val['score']:.0f}/30")
+            print(f"- ファンダ乖離: {_fund['score']:.0f}/30")
+            if _ct_grade == "A":
+                print("- **判定**: 強い逆張りシグナル（エントリー検討）")
+            elif _ct_grade == "B":
+                print("- **判定**: 逆張りシグナルあり（要検証）")
+            elif _ct_grade == "C":
+                print("- **判定**: 弱い逆張りシグナル（様子見）")
 
     # KIK-375: Shareholder return section
     if HAS_SHAREHOLDER_RETURN:

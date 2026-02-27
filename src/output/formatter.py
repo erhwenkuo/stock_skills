@@ -336,6 +336,50 @@ def format_trending_markdown(results: list[dict], market_context: str = "") -> s
     return "\n".join(lines)
 
 
+def format_contrarian_markdown(results: list[dict]) -> str:
+    """Format contrarian screening results as a Markdown table (KIK-504).
+
+    Shows 3-axis scoring: Technical (40pt) + Valuation (30pt) + Fundamental (30pt) = 100pt.
+    """
+    if not results:
+        return "逆張り条件に合致する銘柄が見つかりませんでした。"
+
+    lines = [
+        "| 順位 | 銘柄 | 株価 | PER | PBR | RSI | SMA200乖離 | テク | バリュ | ファンダ | 総合 | 判定 |",
+        "|---:|:-----|-----:|----:|----:|----:|---------:|----:|-----:|------:|----:|:----:|",
+    ]
+
+    _GRADE_ICON = {"A": "\U0001f7e2", "B": "\U0001f7e1", "C": "\u26aa", "D": "\U0001f534"}
+
+    for rank, row in enumerate(results, start=1):
+        label = _build_label(row)
+
+        price = _fmt_float(row.get("price"), decimals=0) if row.get("price") is not None else "-"
+        per = _fmt_float(row.get("per"))
+        pbr = _fmt_float(row.get("pbr"))
+        rsi = _fmt_float(row.get("rsi"), decimals=1)
+        sma_dev = _fmt_pct(row.get("sma200_deviation"))
+        tech = _fmt_float(row.get("tech_score"), decimals=0)
+        val = _fmt_float(row.get("val_score"), decimals=0)
+        fund = _fmt_float(row.get("fund_score"), decimals=0)
+        total = _fmt_float(row.get("contrarian_score"), decimals=0)
+        grade = row.get("contrarian_grade", "-")
+        icon = _GRADE_ICON.get(grade, "")
+        grade_str = f"{icon}{grade}"
+
+        lines.append(
+            f"| {rank} | {label} | {price} | {per} | {pbr} "
+            f"| {rsi} | {sma_dev} | {tech} | {val} | {fund} | {total} | {grade_str} |"
+        )
+
+    lines.append("")
+    lines.append("**凡例**: テク=テクニカル逆張り(40pt) / バリュ=バリュエーション逆張り(30pt) / ファンダ=ファンダ乖離(30pt)")
+    lines.append("**判定**: \U0001f7e2A(70+)=強い逆張り / \U0001f7e1B(50+)=逆張りあり / \u26aaC(30+)=弱い / \U0001f534D(<30)=なし")
+
+    _append_annotation_footer(lines, results)
+    return "\n".join(lines)
+
+
 def format_auto_theme_header(themes: list[dict], skipped: list[dict] | None = None) -> str:
     """Format Grok trending themes header (KIK-440).
 

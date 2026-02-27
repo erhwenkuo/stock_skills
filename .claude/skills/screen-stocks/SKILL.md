@@ -116,6 +116,7 @@ python3 .../run_screen.py --preset value --auto-theme
 - `shareholder-return` : 株主還元重視（配当利回り+自社株買い利回りの総還元率でランキング。安定度評価付き: ✅安定/📈増加/⚠️一時的/📉低下）
 - `high-growth` : 高成長株（利益不問・売上成長率≧20%・直近四半期売上成長≧10%・PSR≦20・粗利率≧20%。赤字成長企業も対象。PERは使わずPSRでバブル防止）（KIK-432）
 - `small-cap-growth` : 小型急成長株（時価総額1000億以下・売上成長率≧20%・PSR≦15・粗利率≧20%。機関投資家未発見の10倍株候補。地域別時価総額自動調整付き。リスク★★★★）（KIK-437）
+- `contrarian` : 逆張り候補（テクニカル売られすぎ × バリュエーション割安 × ファンダ堅調。3軸100点スコアリング。バリュートラップの対極で「市場の過剰反応」を検出）（KIK-504）
 
 ## 出力
 
@@ -138,6 +139,9 @@ python3 .../run_screen.py --preset value --auto-theme
 
 ### Trending モードの出力列
 順位 / 銘柄 / 話題の理由 / 株価 / PER / PBR / 配当利回り / ROE / スコア / 判定
+
+### Contrarian モードの出力列
+順位 / 銘柄 / 株価 / PER / PBR / RSI / SMA200乖離 / テク / バリュ / ファンダ / 総合 / 判定
 
 ### Shareholder Return モードの出力列
 順位 / 銘柄 / 株価 / 配当利回り / 自社株買い利回り / 総還元率 / 安定度 / ROE / PER
@@ -231,6 +235,15 @@ python3 .../run_screen.py --region us --preset small-cap-growth
 
 # AI関連の小型成長株
 python3 .../run_screen.py --region us --preset small-cap-growth --theme ai
+
+# 日本の逆張り候補（売られすぎ × ファンダ堅調）
+python3 .../run_screen.py --region japan --preset contrarian
+
+# 米国の逆張り候補
+python3 .../run_screen.py --region us --preset contrarian
+
+# テクノロジーセクターの逆張り候補
+python3 .../run_screen.py --region japan --preset contrarian --sector Technology
 ```
 
 ## アノテーション機能 (KIK-418/419)

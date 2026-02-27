@@ -6,6 +6,7 @@ This module re-exports all classes so that existing import paths
 """
 
 from src.core.screening.alpha_screener import AlphaScreener
+from src.core.screening.contrarian_screener import ContrarianScreener
 from src.core.screening.growth_screener import GrowthScreener
 from src.core.screening.pullback_screener import PullbackScreener
 from src.core.screening.query_screener import QueryScreener
@@ -19,4 +20,5 @@ __all__ = [
     "AlphaScreener",
     "GrowthScreener",
     "TrendingScreener",
+    "ContrarianScreener",
 ]
