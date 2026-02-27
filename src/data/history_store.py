@@ -1,11 +1,14 @@
 """History store -- save and load screening/report/trade/health/research JSON files."""
 
 import json
+import logging
 import os
 import re as _re
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 import numpy as np
 
@@ -116,6 +119,12 @@ def _build_embedding(category: str, **kwargs) -> tuple[str, list[float] | None]:
     try:
         text = builder()
         emb = embedding_client.get_embedding(text) if text else None
+        if text and emb is None:
+            logger.warning(
+                "TEI unavailable: node saved without embedding (category=%s). "
+                "Run 'python3 scripts/backfill_embeddings.py' later to backfill.",
+                category,
+            )
         return (text, emb)
     except Exception:
         return ("", None)

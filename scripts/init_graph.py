@@ -550,6 +550,10 @@ def main():
         "--rebuild", action="store_true",
         help="Delete all nodes and reimport everything",
     )
+    parser.add_argument(
+        "--backfill-embeddings", action="store_true",
+        help="Backfill missing embeddings only (KIK-492)",
+    )
     args = parser.parse_args()
 
     print("Checking Neo4j connection...")
@@ -565,6 +569,25 @@ def main():
         print("TEI embedding service: available (embeddings will be generated)")
     else:
         print("TEI embedding service: not available (skipping embeddings)")
+
+    # KIK-492: Backfill missing embeddings only
+    if args.backfill_embeddings:
+        if not tei_ok:
+            print("ERROR: TEI is required for embedding backfill.")
+            sys.exit(1)
+        from scripts.backfill_embeddings import backfill
+        print("Backfilling missing embeddings...\n")
+        try:
+            stats = backfill(dry_run=False)
+        except Exception as e:
+            print(f"ERROR during backfill: {e}")
+            sys.exit(1)
+        total = sum(stats.values())
+        if total == 0:
+            print("\nAll nodes already have embeddings. Nothing to do.")
+        else:
+            print(f"\nUpdated {total} nodes across {len(stats)} types.")
+        return
 
     if args.rebuild:
         print("Rebuilding: deleting all nodes...")
