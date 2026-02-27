@@ -1,4 +1,4 @@
-"""Tests for src/core/screening/contrarian_screener.py (KIK-504, KIK-519)."""
+"""Tests for src/core/screening/contrarian_screener.py (KIK-504, KIK-533)."""
 
 import pandas as pd
 import numpy as np
@@ -253,11 +253,11 @@ class TestContrarianScreener:
 
 
 # ---------------------------------------------------------------------------
-# max_results performance tests (KIK-519)
+# max_results performance tests
 # ---------------------------------------------------------------------------
 
 class TestMaxResultsReduction:
-    """Verify max_results is reduced for performance (KIK-519)."""
+    """Verify max_results is reduced for performance."""
 
     def test_max_results_default_top_n(self):
         """top_n=10 → max_results=max(30, 30)=30."""

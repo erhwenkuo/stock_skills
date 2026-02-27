@@ -44,7 +44,7 @@ def _render_stock_table(lines: list[str], positions: list[dict]) -> None:
         rs = pos.get("return_stability", {})
         rs_label = rs.get("label", "-") if rs else "-"
 
-        # Contrarian indicator (KIK-519)
+        # Contrarian indicator (KIK-504)
         ct = pos.get("contrarian")
         if ct and ct.get("contrarian_score", 0) > 0:
             ct_grade = ct.get("grade", "-")
@@ -295,7 +295,7 @@ def format_health_check(health_data: dict) -> str:
                         f"（{rs.get('reason', '')}）"
                     )
 
-            # Contrarian signal for alerted stocks (KIK-519)
+            # Contrarian signal for alerted stocks (KIK-504, KIK-533)
             ct = pos.get("contrarian")
             if ct and ct.get("contrarian_score", 0) > 0:
                 ct_score = ct["contrarian_score"]
@@ -303,21 +303,14 @@ def format_health_check(health_data: dict) -> str:
                 ct_tech = ct.get("technical", {}).get("score", 0)
                 ct_val = ct.get("valuation", {}).get("score", 0)
                 ct_fund = ct.get("fundamental", {}).get("score", 0)
-                ct_sent = ct.get("sentiment", {}).get("score", 0) if ct.get("sentiment") else 0
-                if ct_sent > 0:
-                    lines.append(
-                        f"- 逆張りスコア: {ct_score:.0f}/100 (グレード{ct_grade}) "
-                        f"[テク{ct_tech:.0f} バリュ{ct_val:.0f} ファンダ{ct_fund:.0f} センチ{ct_sent:.0f}]"
-                    )
-                else:
-                    lines.append(
-                        f"- 逆張りスコア: {ct_score:.0f}/100 (グレード{ct_grade}) "
-                        f"[テク{ct_tech:.0f} バリュ{ct_val:.0f} ファンダ{ct_fund:.0f}]"
-                    )
+                lines.append(
+                    f"- 逆張りスコア: {ct_score:.0f}/100 (グレード{ct_grade}) "
+                    f"[テク{ct_tech:.0f} バリュ{ct_val:.0f} ファンダ{ct_fund:.0f}]"
+                )
                 if ct_grade in ("A", "B"):
                     lines.append(
                         "  → **逆張り買い候補**: "
-                        "ファンダは健全だがセンチメント悪化の可能性"
+                        "割安かつテクニカル的に売られすぎの可能性"
                     )
                 elif ct_grade == "C":
                     lines.append(

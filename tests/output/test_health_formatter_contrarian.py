@@ -1,4 +1,4 @@
-"""Tests for KIK-519: Contrarian display in health formatter."""
+"""Tests for KIK-504/533: Contrarian display in health formatter."""
 
 import pytest
 from src.output.health_formatter import format_health_check
@@ -121,7 +121,7 @@ class TestContrarianInAlertDetail:
         output = format_health_check(data)
         assert "逆張りスコア: 65/100" in output
         assert "グレードB" in output
-        # No denominators — axis raw scores only (KIK-519 arch review fix)
+        # No denominators — axis raw scores only
         assert "テク22" in output
         assert "バリュ18" in output
         assert "ファンダ25" in output
@@ -179,18 +179,8 @@ class TestContrarianInAlertDetail:
         assert "逆張りスコア: 72/100" in output
         assert "逆張り買い候補" in output
 
-    def test_4axis_shows_sentiment(self):
-        """4-axis mode should show sentiment in breakdown."""
-        ct = _make_contrarian(score=75, grade="A")
-        ct["sentiment"] = {"score": 15.0, "sentiment_score": -0.6}
-        pos = _make_stock_pos("7203.T", alert_level="caution", contrarian=ct)
-        data = _make_health_data([pos])
-        output = format_health_check(data)
-        assert "センチ15" in output
-        assert "テク22" in output
-
     def test_3axis_no_sentiment_in_breakdown(self):
-        """3-axis mode (no sentiment) should not show 'センチ' in score breakdown."""
+        """3-axis mode should not show 'センチ' in score breakdown."""
         ct = _make_contrarian(score=65, grade="B")
         pos = _make_stock_pos("7203.T", alert_level="caution", contrarian=ct)
         data = _make_health_data([pos])

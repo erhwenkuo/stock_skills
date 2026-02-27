@@ -1318,11 +1318,11 @@ class TestSmallCapAlertEscalation:
 
 
 # ===================================================================
-# KIK-519: Contrarian data in health check
+# KIK-504: Contrarian data in health check
 # ===================================================================
 
 class TestHealthCheckContrarian:
-    """Test contrarian score attachment logic for alerted stocks (KIK-519)."""
+    """Test contrarian score attachment logic for alerted stocks (KIK-504)."""
 
     def test_alerted_stock_gets_contrarian(self):
         """Alerted non-ETF stock should have contrarian data (not None)."""
