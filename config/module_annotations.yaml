@@ -20,6 +20,7 @@ src/core/screening/trending_screener.py: "KIK-440: Grokトレンドテーマ検�
 src/core/screening/pullback_screener.py: "KIK-332"
 src/core/screening/growth_screener.py: "KIK-446"
 src/core/screening/alpha_screener.py: "KIK-357"
+src/core/screening/screener_registry.py: "KIK-514: Strategy/Factory + RegionConfig"
 
 # portfolio/
 src/core/portfolio/adjustment_advisor.py: "KIK-496: 17ルール調整アドバイザー"

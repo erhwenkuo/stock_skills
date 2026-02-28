@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Entry point for the screen-stocks skill.
+"""Entry point for the screen-stocks skill (KIK-514: Registry pattern).
 
 Supports two modes:
   --mode query  (default): Uses yfinance EquityQuery -- no symbol list needed.
@@ -15,8 +15,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..
 
 from scripts.common import try_import, HAS_HISTORY_STORE, HAS_GRAPH_QUERY as _HAS_GQ, print_context, print_suggestions
 from src.data import yahoo_client
-from src.core.screening.screener import ValueScreener, QueryScreener, PullbackScreener, AlphaScreener, TrendingScreener, GrowthScreener, ContrarianScreener, MomentumScreener
-from src.output.formatter import format_markdown, format_query_markdown, format_pullback_markdown, format_alpha_markdown, format_trending_markdown, format_growth_markdown, format_contrarian_markdown, format_momentum_markdown, format_auto_theme_header
+from src.core.screening.screener import ValueScreener
+from src.core.screening.screener_registry import (
+    build_default_registry, RegionConfig, run_screener_with_spec,
+)
+from src.output.formatter import format_markdown, format_auto_theme_header
 from src.markets.japan import JapanMarket
 from src.markets.us import USMarket
 from src.markets.asean import ASEANMarket
@@ -25,9 +28,6 @@ from src.markets.asean import ASEANMarket
 HAS_HISTORY = HAS_HISTORY_STORE
 if HAS_HISTORY:
     from src.data.history_store import save_screening
-
-HAS_SR_FORMAT, _sf = try_import("src.output.formatter", "format_shareholder_return_markdown")
-if HAS_SR_FORMAT: format_shareholder_return_markdown = _sf["format_shareholder_return_markdown"]
 
 HAS_GRAPH_QUERY = _HAS_GQ
 if HAS_GRAPH_QUERY:
@@ -49,69 +49,15 @@ if HAS_SCREENING_SUMMARY:
     format_screening_summary = _ssum["format_screening_summary"]
 
 
-# Legacy market classes
+# --- Registry & RegionConfig (KIK-514) ---
+_registry = build_default_registry()
+_region_config = RegionConfig()
+
+# Legacy market classes (only used by run_legacy_mode)
 MARKETS = {
     "japan": JapanMarket,
     "us": USMarket,
     "asean": ASEANMarket,
-}
-
-# Mapping from user-facing region names to yfinance region codes.
-# Single-region entries map to one code; multi-region entries expand to a list.
-REGION_EXPAND = {
-    "japan": ["jp"],
-    "jp": ["jp"],
-    "us": ["us"],
-    "asean": ["sg", "th", "my", "id", "ph"],
-    "sg": ["sg"],
-    "singapore": ["sg"],
-    "th": ["th"],
-    "thailand": ["th"],
-    "my": ["my"],
-    "malaysia": ["my"],
-    "id": ["id"],
-    "indonesia": ["id"],
-    "ph": ["ph"],
-    "philippines": ["ph"],
-    "hk": ["hk"],
-    "hongkong": ["hk"],
-    "kr": ["kr"],
-    "korea": ["kr"],
-    "tw": ["tw"],
-    "taiwan": ["tw"],
-    "cn": ["cn"],
-    "china": ["cn"],
-    "all": ["jp", "us", "sg", "th", "my", "id", "ph"],
-}
-
-REGION_NAMES = {
-    "jp": "日本株",
-    "us": "米国株",
-    "sg": "シンガポール株",
-    "th": "タイ株",
-    "my": "マレーシア株",
-    "id": "インドネシア株",
-    "ph": "フィリピン株",
-    "hk": "香港株",
-    "kr": "韓国株",
-    "tw": "台湾株",
-    "cn": "中国株",
-}
-
-# Region-specific small-cap market cap thresholds (KIK-437)
-# intradaymarketcap is in local currency; these are approximate "small-cap" ceilings.
-_SMALL_CAP_MARKET_CAP = {
-    "jp": 100_000_000_000,       # 1000億円
-    "us": 1_000_000_000,         # $1B
-    "sg": 2_000_000_000,         # SGD 2B
-    "th": 30_000_000_000,        # THB 30B
-    "my": 5_000_000_000,         # MYR 5B
-    "id": 15_000_000_000_000,    # IDR 15T
-    "ph": 50_000_000_000,        # PHP 50B
-    "hk": 10_000_000_000,        # HKD 10B
-    "kr": 1_000_000_000_000,     # KRW 1T
-    "tw": 30_000_000_000,        # TWD 30B
-    "cn": 10_000_000_000,        # CNY 10B
 }
 
 VALID_SECTORS = [
@@ -180,8 +126,70 @@ def _print_graphrag_context(results):
         pass
 
 
+def _save_history(preset, region_code, results, sector=None, theme=None):
+    """Save screening history (KIK-406)."""
+    if HAS_HISTORY and results:
+        try:
+            save_screening(preset=preset, region=region_code, results=results, sector=sector, theme=theme)
+        except Exception as e:
+            print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
+
+
+def _run_single_region(spec, region_code, args):
+    """Run screening for a single region using ScreenerSpec (KIK-514).
+
+    Handles: header printing, screener execution, annotation, formatting,
+    recurring picks, GraphRAG context, and history saving.
+    """
+    region_name = _region_config.display_name(region_code)
+    sector_label = f" [{args.sector}]" if args.sector else ""
+    theme_label = f" [{args.theme}]" if args.theme else ""
+
+    # Momentum has special display name with submode
+    if spec.preset == "momentum":
+        submode = getattr(args, "submode", None) or "surge"
+        submode_labels = {"stable": "安定上昇", "surge": "急騰ブレイクアウト"}
+        label = submode_labels.get(submode, submode)
+        display = f"モメンタム（{label}）"
+    else:
+        display = spec.display_name
+
+    print(f"\n## {region_name} - {display}{sector_label}{theme_label} スクリーニング結果\n")
+
+    # Step messages
+    step1, step2_tmpl = spec.step_messages
+    if step1:
+        print(step1)
+
+    # Execute screening via registry
+    results = run_screener_with_spec(
+        spec, yahoo_client, region_code, _region_config,
+        top_n=args.top, sector=args.sector, theme=args.theme,
+        args=args,
+    )
+    results, excluded = _annotate(results)
+
+    if step2_tmpl:
+        print(f"{step2_tmpl.format(n=len(results))}\n")
+    if excluded:
+        print(f"※ 直近売却済み {excluded}銘柄を除外\n")
+
+    # Extra warnings (e.g. small-cap liquidity)
+    for warning in spec.extra_warnings:
+        print(f"{warning}\n")
+
+    # Format and print results
+    print(spec.formatter(results))
+    _print_recurring_picks(results)
+    _print_graphrag_context(results)
+    _save_history(spec.preset, region_code, results, sector=args.sector, theme=args.theme)
+    print()
+
+
 def run_trending_mode(args):
     """Run trending stock screening using Grok X search."""
+    from src.output.formatter import format_trending_markdown
+
     try:
         from src.data import grok_client as gc
         if not gc.is_available():
@@ -193,13 +201,14 @@ def run_trending_mode(args):
         sys.exit(1)
 
     region_key = args.region.lower()
-    first_region = REGION_EXPAND.get(region_key, [region_key])[0]
-    region_name = REGION_NAMES.get(first_region, region_key.upper())
+    first_region = _region_config.expand(region_key)[0]
+    region_name = _region_config.display_name(first_region)
     theme_label = f" [{args.theme}]" if args.theme else ""
 
     print(f"\n## {region_name} - Xトレンド銘柄{theme_label} スクリーニング結果\n")
     print("Step 1: X (Twitter) でトレンド銘柄を検索中...")
 
+    from src.core.screening.screener import TrendingScreener
     screener = TrendingScreener(yahoo_client, gc)
     results, market_context = screener.screen(
         region=region_key, theme=args.theme, top_n=args.top,
@@ -213,12 +222,7 @@ def run_trending_mode(args):
 
     _print_recurring_picks(results)
     _print_graphrag_context(results)
-
-    if HAS_HISTORY and results:
-        try:
-            save_screening(preset="trending", region=region_key, results=results, theme=args.theme)
-        except Exception as e:
-            print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
+    _save_history("trending", region_key, results, theme=args.theme)
     print()
 
 
@@ -235,9 +239,9 @@ def run_auto_theme_mode(args):
         sys.exit(1)
 
     region_key = args.region.lower()
-    regions = REGION_EXPAND.get(region_key, [region_key])
+    regions = _region_config.expand(region_key)
     first_region = regions[0]
-    region_name = REGION_NAMES.get(first_region, region_key.upper())
+    region_name = _region_config.display_name(first_region)
 
     print(f"\n## {region_name} - トレンドテーマ自動検出 + スクリーニング\n")
     print("Step 1: Grok でトレンドテーマを検出中...")
@@ -269,72 +273,31 @@ def run_auto_theme_mode(args):
         print("有効なテーマが見つかりませんでした（すべて未対応テーマ）。")
         return
 
-    # Screen each theme
-    _GROWTH_PRESETS = {"growth", "high-growth", "small-cap-growth"}
+    # Screen each theme using registry (KIK-514)
+    spec = _registry.get(args.preset)
 
     for theme_info in active_themes:
         theme_key = theme_info["theme"]
         print(f"\n### テーマ: {theme_key}\n")
 
         for region_code in regions:
-            rname = REGION_NAMES.get(region_code, region_code.upper())
+            rname = _region_config.display_name(region_code)
 
-            if args.preset in _GROWTH_PRESETS:
-                if args.preset == "growth":
-                    screener = GrowthScreener(yahoo_client)
-                elif args.preset == "high-growth":
-                    screener = GrowthScreener(
-                        yahoo_client, preset="high-growth",
-                        sort_by="revenue_growth", require_positive_eps=False,
-                    )
-                else:  # small-cap-growth
-                    screener = GrowthScreener(
-                        yahoo_client, preset="small-cap-growth",
-                        sort_by="revenue_growth", require_positive_eps=False,
-                    )
-
-                overrides = None
-                if args.preset == "small-cap-growth" and region_code in _SMALL_CAP_MARKET_CAP:
-                    overrides = {"max_market_cap": _SMALL_CAP_MARKET_CAP[region_code]}
-
-                results = screener.screen(
-                    region=region_code, top_n=args.top,
-                    sector=args.sector, theme=theme_key,
-                    criteria_overrides=overrides,
-                )
-                results, excluded = _annotate(results)
-                print(f"{rname}: {len(results)}銘柄")
-                if excluded:
-                    print(f"※ 直近売却済み {excluded}銘柄を除外")
-                if results:
-                    print(format_growth_markdown(results))
-            else:
-                screener = QueryScreener(yahoo_client)
-                results = screener.screen(
-                    region=region_code,
-                    preset=args.preset,
-                    sector=args.sector,
-                    theme=theme_key,
-                    top_n=args.top,
-                )
-                results, excluded = _annotate(results)
-                print(f"{rname}: {len(results)}銘柄")
-                if excluded:
-                    print(f"※ 直近売却済み {excluded}銘柄を除外")
-                if results:
-                    if args.preset == "shareholder-return" and HAS_SR_FORMAT:
-                        print(format_shareholder_return_markdown(results))
-                    else:
-                        print(format_query_markdown(results))
+            results = run_screener_with_spec(
+                spec, yahoo_client, region_code, _region_config,
+                top_n=args.top, sector=args.sector, theme=theme_key,
+                args=args,
+            )
+            results, excluded = _annotate(results)
+            print(f"{rname}: {len(results)}銘柄")
+            if excluded:
+                print(f"※ 直近売却済み {excluded}銘柄を除外")
+            if results:
+                print(spec.formatter(results))
 
             _print_recurring_picks(results)
             _print_graphrag_context(results)
-
-            if HAS_HISTORY and results:
-                try:
-                    save_screening(preset=args.preset, region=region_code, results=results, sector=args.sector, theme=theme_key)
-                except Exception as e:
-                    print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
+            _save_history(args.preset, region_code, results, sector=args.sector, theme=theme_key)
 
     print()
 
@@ -347,192 +310,25 @@ def run_query_mode(args):
         return
 
     region_key = args.region.lower()
-    regions = REGION_EXPAND.get(region_key)
-    if regions is None:
-        # Treat as raw 2-letter region code
-        regions = [region_key]
+    regions = _region_config.expand(region_key)
 
-    # trending preset uses TrendingScreener (Grok-based)
-    if args.preset == "trending":
+    spec = _registry.get(args.preset)
+
+    # trending preset uses TrendingScreener (Grok-based) — special flow
+    if spec.category == "special":
         run_trending_mode(args)
         return
 
-    # pullback preset uses PullbackScreener
-    if args.preset == "pullback":
-        screener = PullbackScreener(yahoo_client)
-        for region_code in regions:
-            region_name = REGION_NAMES.get(region_code, region_code.upper())
-            print(f"\n## {region_name} - 押し目買い スクリーニング結果\n")
-            print("Step 1: ファンダメンタルズ条件で絞り込み中...")
-            results = screener.screen(region=region_code, top_n=args.top)
-            results, excluded = _annotate(results)
-            print(f"Step 2-3 完了: {len(results)}銘柄が条件に合致\n")
-            if excluded:
-                print(f"※ 直近売却済み {excluded}銘柄を除外\n")
-            print(format_pullback_markdown(results))
-            _print_recurring_picks(results)
-            _print_graphrag_context(results)
-            if HAS_HISTORY and results:
-                try:
-                    save_screening(preset="pullback", region=region_code, results=results)
-                except Exception as e:
-                    print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
-            print()
-        return
+    # with-pullback is a special mode for QueryScreener presets
+    if args.with_pullback and spec.category == "query":
+        from src.output.formatter import format_pullback_markdown
+        from src.core.screening.screener import QueryScreener
 
-    # growth / high-growth / small-cap-growth use GrowthScreener
-    if args.preset in ("growth", "high-growth", "small-cap-growth"):
-        if args.preset == "growth":
-            screener = GrowthScreener(yahoo_client)
-            preset_label = "純成長株"
-            step1_msg = "Step 1: 成長条件で絞り込み中 (EquityQuery)..."
-            step2_tmpl = "Step 2: {n}銘柄のEPS成長率を取得・ソート完了"
-        elif args.preset == "high-growth":
-            screener = GrowthScreener(
-                yahoo_client, preset="high-growth",
-                sort_by="revenue_growth", require_positive_eps=False,
-            )
-            preset_label = "高成長株"
-            step1_msg = "Step 1: 高成長条件で絞り込み中 (EquityQuery, 利益不問)..."
-            step2_tmpl = "Step 2: {n}銘柄の売上成長率を取得・ソート完了"
-        else:  # small-cap-growth
-            screener = GrowthScreener(
-                yahoo_client, preset="small-cap-growth",
-                sort_by="revenue_growth", require_positive_eps=False,
-            )
-            preset_label = "小型急成長株"
-            step1_msg = "Step 1: 小型急成長条件で絞り込み中 (EquityQuery, 利益不問)..."
-            step2_tmpl = "Step 2: {n}銘柄の売上成長率を取得・ソート完了"
-
+        screener = QueryScreener(yahoo_client)
         for region_code in regions:
-            region_name = REGION_NAMES.get(region_code, region_code.upper())
+            region_name = _region_config.display_name(region_code)
             sector_label = f" [{args.sector}]" if args.sector else ""
             theme_label = f" [{args.theme}]" if args.theme else ""
-            print(f"\n## {region_name} - {preset_label}{sector_label}{theme_label} スクリーニング結果\n")
-            print(step1_msg)
-
-            # Region-aware market cap override for small-cap-growth (KIK-437)
-            overrides = None
-            if args.preset == "small-cap-growth":
-                if region_code in _SMALL_CAP_MARKET_CAP:
-                    overrides = {"max_market_cap": _SMALL_CAP_MARKET_CAP[region_code]}
-                else:
-                    print(f"Warning: {region_code} の小型株時価総額閾値が未定義です。YAMLデフォルト値を使用します。", file=sys.stderr)
-
-            results = screener.screen(
-                region=region_code, top_n=args.top,
-                sector=args.sector, theme=args.theme,
-                criteria_overrides=overrides,
-            )
-            results, excluded = _annotate(results)
-            print(f"{step2_tmpl.format(n=len(results))}\n")
-            if excluded:
-                print(f"※ 直近売却済み {excluded}銘柄を除外\n")
-            if args.preset == "small-cap-growth":
-                print("⚠️ 小型株は流動性リスクが高く、スプレッドが広い場合があります。売買時は板の厚さを確認してください。\n")
-            print(format_growth_markdown(results))
-            _print_recurring_picks(results)
-            _print_graphrag_context(results)
-            if HAS_HISTORY and results:
-                try:
-                    save_screening(preset=args.preset, region=region_code, results=results, sector=args.sector, theme=args.theme)
-                except Exception as e:
-                    print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
-            print()
-        return
-
-    # alpha preset uses AlphaScreener
-    if args.preset == "alpha":
-        screener = AlphaScreener(yahoo_client)
-        for region_code in regions:
-            region_name = REGION_NAMES.get(region_code, region_code.upper())
-            print(f"\n## {region_name} - アルファシグナル スクリーニング結果\n")
-            print("Step 1: 割安足切り (EquityQuery)...")
-            results = screener.screen(region=region_code, top_n=args.top)
-            results, excluded = _annotate(results)
-            print(f"Step 2-4 完了: {len(results)}銘柄がアルファ条件に合致\n")
-            if excluded:
-                print(f"※ 直近売却済み {excluded}銘柄を除外\n")
-            print(format_alpha_markdown(results))
-            _print_recurring_picks(results)
-            _print_graphrag_context(results)
-            if HAS_HISTORY and results:
-                try:
-                    save_screening(preset="alpha", region=region_code, results=results)
-                except Exception as e:
-                    print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
-            print()
-        return
-
-    # contrarian preset uses ContrarianScreener (KIK-504)
-    if args.preset == "contrarian":
-        screener = ContrarianScreener(yahoo_client)
-        for region_code in regions:
-            region_name = REGION_NAMES.get(region_code, region_code.upper())
-            sector_label = f" [{args.sector}]" if args.sector else ""
-            theme_label = f" [{args.theme}]" if args.theme else ""
-            print(f"\n## {region_name} - 逆張り候補{sector_label}{theme_label} スクリーニング結果\n")
-            print("Step 1: バリュー条件で絞り込み中...")
-            results = screener.screen(
-                region=region_code, top_n=args.top,
-                sector=args.sector, theme=args.theme,
-            )
-            results, excluded = _annotate(results)
-            print(f"Step 2-3 完了: {len(results)}銘柄が逆張り条件に合致\n")
-            if excluded:
-                print(f"※ 直近売却済み {excluded}銘柄を除外\n")
-            print(format_contrarian_markdown(results))
-            _print_recurring_picks(results)
-            _print_graphrag_context(results)
-            if HAS_HISTORY and results:
-                try:
-                    save_screening(preset="contrarian", region=region_code, results=results, sector=args.sector, theme=args.theme)
-                except Exception as e:
-                    print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
-            print()
-        return
-
-    # momentum preset uses MomentumScreener (KIK-506)
-    if args.preset == "momentum":
-        submode = getattr(args, "submode", None) or "surge"
-        screener = MomentumScreener(yahoo_client)
-        submode_labels = {"stable": "安定上昇", "surge": "急騰ブレイクアウト"}
-        for region_code in regions:
-            region_name = REGION_NAMES.get(region_code, region_code.upper())
-            sector_label = f" [{args.sector}]" if args.sector else ""
-            theme_label = f" [{args.theme}]" if args.theme else ""
-            label = submode_labels.get(submode, submode)
-            print(f"\n## {region_name} - モメンタム（{label}）{sector_label}{theme_label} スクリーニング結果\n")
-            print("Step 1: モメンタム条件で絞り込み中...")
-            results = screener.screen(
-                region=region_code, top_n=args.top,
-                submode=submode, sector=args.sector, theme=args.theme,
-            )
-            results, excluded = _annotate(results)
-            print(f"Step 2-3 完了: {len(results)}銘柄がモメンタム条件に合致\n")
-            if excluded:
-                print(f"※ 直近売却済み {excluded}銘柄を除外\n")
-            print(format_momentum_markdown(results))
-            _print_recurring_picks(results)
-            _print_graphrag_context(results)
-            if HAS_HISTORY and results:
-                try:
-                    save_screening(preset="momentum", region=region_code, results=results, sector=args.sector, theme=args.theme)
-                except Exception as e:
-                    print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
-            print()
-        return
-
-    screener = QueryScreener(yahoo_client)
-
-    for region_code in regions:
-        region_name = REGION_NAMES.get(region_code, region_code.upper())
-        sector_label = f" [{args.sector}]" if args.sector else ""
-        theme_label = f" [{args.theme}]" if args.theme else ""
-
-        overrides = None
-
-        if args.with_pullback:
             results = screener.screen(
                 region=region_code,
                 preset=args.preset,
@@ -540,7 +336,6 @@ def run_query_mode(args):
                 theme=args.theme,
                 top_n=args.top,
                 with_pullback=True,
-                criteria_overrides=overrides,
             )
             results, excluded = _annotate(results)
             pullback_label = " + 押し目フィルタ"
@@ -550,36 +345,13 @@ def run_query_mode(args):
             print(format_pullback_markdown(results))
             _print_recurring_picks(results)
             _print_graphrag_context(results)
-            if HAS_HISTORY and results:
-                try:
-                    save_screening(preset=args.preset, region=region_code, results=results, sector=args.sector, theme=args.theme)
-                except Exception as e:
-                    print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
-        else:
-            results = screener.screen(
-                region=region_code,
-                preset=args.preset,
-                sector=args.sector,
-                theme=args.theme,
-                top_n=args.top,
-                criteria_overrides=overrides,
-            )
-            results, excluded = _annotate(results)
-            print(f"\n## {region_name} - {args.preset}{sector_label}{theme_label} スクリーニング結果 (EquityQuery)\n")
-            if excluded:
-                print(f"※ 直近売却済み {excluded}銘柄を除外\n")
-            if args.preset == "shareholder-return" and HAS_SR_FORMAT:
-                print(format_shareholder_return_markdown(results))
-            else:
-                print(format_query_markdown(results))
-            _print_recurring_picks(results)
-            _print_graphrag_context(results)
-            if HAS_HISTORY and results:
-                try:
-                    save_screening(preset=args.preset, region=region_code, results=results, sector=args.sector, theme=args.theme)
-                except Exception as e:
-                    print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
-        print()
+            _save_history(args.preset, region_code, results, sector=args.sector, theme=args.theme)
+            print()
+        return
+
+    # Standard flow: use ScreenerSpec for all presets (KIK-514)
+    for region_code in regions:
+        _run_single_region(spec, region_code, args)
 
 
 def run_legacy_mode(args):
@@ -623,11 +395,7 @@ def run_legacy_mode(args):
         if excluded:
             print(f"※ 直近売却済み {excluded}銘柄を除外\n")
         print(format_markdown(results))
-        if HAS_HISTORY and results:
-            try:
-                save_screening(preset=args.preset, region=market_name, results=results)
-            except Exception as e:
-                print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
+        _save_history(args.preset, market_name, results)
         print()
 
 
@@ -648,7 +416,7 @@ def main():
     parser.add_argument(
         "--preset",
         default="value",
-        choices=["value", "high-dividend", "growth", "growth-value", "deep-value", "quality", "pullback", "alpha", "trending", "long-term", "shareholder-return", "high-growth", "small-cap-growth", "contrarian", "momentum"],
+        choices=_registry.list_presets(),
     )
     parser.add_argument(
         "--submode",
@@ -710,10 +478,10 @@ def main():
             sys.exit(1)
         args.sector = matched
 
-    # Validate theme (KIK-439)
-    _THEME_UNSUPPORTED_PRESETS = {"trending", "pullback", "alpha"}
+    # Validate theme (KIK-439) — use registry for theme support check
     if args.theme is not None:
-        if args.preset in _THEME_UNSUPPORTED_PRESETS:
+        spec = _registry.get(args.preset)
+        if not spec.supports_theme:
             print(f"Warning: --theme is not supported with --preset {args.preset}. Ignoring --theme.")
             args.theme = None
         else:
@@ -732,42 +500,18 @@ def main():
     if args.auto_theme and args.theme:
         print("Error: --auto-theme と --theme は同時に使用できません。")
         sys.exit(1)
-    if args.auto_theme and args.preset in ("trending", "pullback", "alpha"):
-        print(f"Warning: --auto-theme は --preset {args.preset} と併用できません。--auto-theme を無視します。")
-        args.auto_theme = False
+    if args.auto_theme:
+        spec = _registry.get(args.preset)
+        if not spec.supports_theme:
+            print(f"Warning: --auto-theme は --preset {args.preset} と併用できません。--auto-theme を無視します。")
+            args.auto_theme = False
 
-    # pullback preset always uses query mode (needs EquityQuery + technical analysis)
-    if args.preset == "pullback" and args.mode == "legacy":
-        print("Note: pullback preset requires query mode. Switching to --mode query.")
-        args.mode = "query"
-
-    if args.preset == "alpha" and args.mode == "legacy":
-        print("Note: alpha preset requires query mode. Switching to --mode query.")
-        args.mode = "query"
-
-    if args.preset == "growth" and args.mode == "legacy":
-        print("Note: growth preset requires query mode. Switching to --mode query.")
-        args.mode = "query"
-
-    if args.preset == "high-growth" and args.mode == "legacy":
-        print("Note: high-growth preset requires query mode. Switching to --mode query.")
-        args.mode = "query"
-
-    if args.preset == "small-cap-growth" and args.mode == "legacy":
-        print("Note: small-cap-growth preset requires query mode. Switching to --mode query.")
-        args.mode = "query"
-
-    if args.preset == "trending" and args.mode == "legacy":
-        print("Note: trending preset requires query mode. Switching to --mode query.")
-        args.mode = "query"
-
-    if args.preset == "contrarian" and args.mode == "legacy":
-        print("Note: contrarian preset requires query mode. Switching to --mode query.")
-        args.mode = "query"
-
-    if args.preset == "momentum" and args.mode == "legacy":
-        print("Note: momentum preset requires query mode. Switching to --mode query.")
-        args.mode = "query"
+    # Legacy mode check — use registry (KIK-514)
+    if args.mode == "legacy":
+        spec = _registry.get(args.preset)
+        if not spec.supports_legacy:
+            print(f"Note: {args.preset} preset requires query mode. Switching to --mode query.")
+            args.mode = "query"
 
     # Context retrieval (KIK-465)
     print_context(f"screen {args.region} {args.preset}")

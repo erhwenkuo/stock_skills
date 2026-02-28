@@ -456,8 +456,53 @@ Screen stocks using yfinance EquityQuery + yf.screen().
 
 ### src.core.screening.screener
 
-Backward-compatible re-export of screener classes.
+Backward-compatible re-export of screener classes and registry (KIK-422, KIK-514).
 
+
+### src.core.screening.screener_registry (KIK-514: Strategy/Factory + RegionConfig)
+
+ScreenerRegistry: Strategy/Factory pattern for screening dispatch (KIK-514).
+
+- `run_screener_with_spec(spec: ScreenerSpec, yahoo_client, region_code: str, region_config: RegionConfig, *, top_n: int=20, sector: Optional[str]=None, theme: Optional[str]=None, args=None) -> list[dict]` — Instantiate screener from *spec* and run screening for one region.
+- `build_default_registry() -> ScreenerRegistry` — Build the default registry with all 15 presets.
+
+#### class ScreenerSpec
+Specification for a single screening preset.
+
+| Field | Type |
+|:---|:---|
+| `preset` | `str` |
+| `screener_class` | `type` |
+| `formatter` | `Callable` |
+| `display_name` | `str` |
+| `constructor_kwargs` | `dict` |
+| `screen_kwargs_fn` | `Optional[Callable]` |
+| `supports_theme` | `bool` |
+| `supports_legacy` | `bool` |
+| `category` | `str` |
+| `step_messages` | `tuple` |
+| `extra_warnings` | `list` |
+
+
+#### class ScreenerRegistry
+Registry of screener specs, keyed by preset name.
+
+- `register(spec: ScreenerSpec) -> None` — Register a screener spec.  Raises ValueError on duplicate.
+- `get(preset: str) -> ScreenerSpec` — Return spec for *preset*.  Raises KeyError if not found.
+- `has(preset: str) -> bool` — Return True if *preset* is registered.
+- `list_presets() -> list[str]` — Return sorted list of registered preset names.
+- `theme_unsupported_presets() -> set[str]` — Return set of preset names that do not support --theme.
+- `legacy_unsupported_presets() -> set[str]` — Return set of preset names that do not support legacy mode.
+- `growth_presets() -> set[str]` — Return set of presets in the 'growth' category.
+
+#### class RegionConfig
+Region configuration loaded from exchanges.yaml.
+
+- `expand(region: str) -> list[str]` — Expand a user-facing region name to a list of region codes.
+- `display_name(code: str) -> str` — Return display name (e.g. "日本株") for a region code.
+- `small_cap_market_cap(code: str) -> Optional[int]` — Return small-cap market cap threshold for a region code, or None.
+- `market_class_name(code: str) -> Optional[str]` — Return market class name string (e.g. 'JapanMarket') for a region code.
+- `region_codes() -> list[str]` — Return all known region codes.
 
 ### src.core.screening.technicals
 
