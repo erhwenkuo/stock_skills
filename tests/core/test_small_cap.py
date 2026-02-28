@@ -153,3 +153,54 @@ class TestInferRegionCode:
 
     def test_unknown_suffix_defaults_us(self):
         assert infer_region_code("XYZ.ZZ") == "us"
+
+
+# ---------------------------------------------------------------------------
+# Additional edge cases for classify_market_cap
+# ---------------------------------------------------------------------------
+
+class TestClassifyMarketCapEdgeCases:
+    def test_very_large_market_cap(self):
+        """Trillion-dollar market cap -> large in all regions."""
+        for region in _SMALL_CAP_THRESHOLDS:
+            assert classify_market_cap(100_000_000_000_000, region) == "大型"
+
+    def test_very_small_market_cap(self):
+        """Tiny market cap -> small in all regions."""
+        for region in _SMALL_CAP_THRESHOLDS:
+            assert classify_market_cap(1.0, region) == "小型"
+
+    def test_empty_string_region(self):
+        assert classify_market_cap(1_000_000_000, "") == "不明"
+
+    def test_large_cap_multiplier_value(self):
+        """Large cap multiplier is 5."""
+        assert _LARGE_CAP_MULTIPLIER == 5
+
+    def test_jp_threshold_value(self):
+        """JP small-cap threshold is 1000 billion yen."""
+        assert _SMALL_CAP_THRESHOLDS["jp"] == 100_000_000_000
+
+    def test_us_threshold_value(self):
+        """US small-cap threshold is $1B."""
+        assert _SMALL_CAP_THRESHOLDS["us"] == 1_000_000_000
+
+
+class TestCheckSmallCapAllocationMessages:
+    def test_ok_message_contains_percentage(self):
+        result = check_small_cap_allocation(0.10)
+        assert "10%" in result["message"]
+
+    def test_warning_message_contains_percentage(self):
+        result = check_small_cap_allocation(0.30)
+        assert "30%" in result["message"]
+
+    def test_critical_message_contains_percentage(self):
+        result = check_small_cap_allocation(0.40)
+        assert "40%" in result["message"]
+
+    def test_all_levels_have_message(self):
+        for weight in [0.10, 0.30, 0.40]:
+            result = check_small_cap_allocation(weight)
+            assert "message" in result
+            assert len(result["message"]) > 0

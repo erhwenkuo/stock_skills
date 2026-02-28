@@ -161,3 +161,95 @@ class TestGetDefaultIndexSymbol:
             {"symbol": "D05.SI"},
         ]
         assert get_default_index_symbol(positions) == "^JKSE"
+
+    def test_korean_stocks(self):
+        positions = [{"symbol": "005930.KS"}]
+        assert get_default_index_symbol(positions) == "^KS11"
+
+    def test_taiwan_stocks(self):
+        positions = [{"symbol": "2330.TW"}, {"symbol": "2317.TW"}]
+        assert get_default_index_symbol(positions) == "^TWII"
+
+    def test_unknown_suffix_falls_back(self):
+        positions = [{"symbol": "XYZ.ZZ"}, {"symbol": "ABC.ZZ"}]
+        assert get_default_index_symbol(positions) == "^N225"
+
+    def test_missing_symbol_key(self):
+        """Position without symbol key -> empty string -> treated as US."""
+        positions = [{"name": "NoSymbol"}]
+        result = get_default_index_symbol(positions)
+        # Empty symbol has no dot -> falls into US bucket
+        assert result == "^GSPC"
+
+    def test_all_us_no_suffix(self):
+        positions = [{"symbol": "AAPL"}, {"symbol": "MSFT"}, {"symbol": "GOOGL"}]
+        assert get_default_index_symbol(positions) == "^GSPC"
+
+
+class TestMarketRegimeDataclass:
+    def test_creation(self):
+        mr = MarketRegime(
+            regime="bull",
+            sma50_above_200=True,
+            rsi=65.0,
+            drawdown=-0.05,
+            index_symbol="^N225",
+        )
+        assert mr.regime == "bull"
+        assert mr.sma50_above_200 is True
+        assert mr.rsi == 65.0
+        assert mr.drawdown == -0.05
+        assert mr.index_symbol == "^N225"
+
+    def test_neutral_with_none_values(self):
+        mr = MarketRegime(
+            regime="neutral",
+            sma50_above_200=False,
+            rsi=None,
+            drawdown=None,
+            index_symbol="^GSPC",
+        )
+        assert mr.regime == "neutral"
+        assert mr.rsi is None
+        assert mr.drawdown is None
+
+
+class TestDetectRegimeEdgeCases:
+    def test_non_dataframe_returns_neutral(self):
+        client = _MockClient(hist="not a dataframe")
+        result = detect_regime(client, "^N225")
+        assert result.regime == "neutral"
+
+    def test_no_close_column_returns_neutral(self):
+        hist = pd.DataFrame({"Open": [100] * 250, "Volume": [1000] * 250})
+        client = _MockClient(hist)
+        result = detect_regime(client, "^N225")
+        assert result.regime == "neutral"
+
+    def test_custom_index_symbol_passed_through(self):
+        hist = _make_price_history(n=250, base=80.0, trend=0.002)
+        result = detect_regime(_MockClient(hist), index_symbol="^GSPC")
+        assert result.index_symbol == "^GSPC"
+
+    def test_rsi_is_rounded(self):
+        hist = _make_price_history(n=250, base=80.0, trend=0.002)
+        result = detect_regime(_MockClient(hist))
+        if result.rsi is not None:
+            assert result.rsi == round(result.rsi, 2)
+
+    def test_drawdown_is_rounded(self):
+        hist = _make_price_history(n=250, base=80.0, trend=0.002)
+        result = detect_regime(_MockClient(hist))
+        if result.drawdown is not None:
+            assert result.drawdown == round(result.drawdown, 4)
+
+    def test_drawdown_is_nonpositive(self):
+        hist = _make_price_history(n=250, base=80.0, trend=0.002)
+        result = detect_regime(_MockClient(hist))
+        if result.drawdown is not None:
+            assert result.drawdown <= 0.0001  # small float tolerance
+
+    def test_default_index_symbol(self):
+        hist = _make_price_history(n=250, base=80.0, trend=0.002)
+        result = detect_regime(_MockClient(hist))
+        assert result.index_symbol == "^N225"  # default
