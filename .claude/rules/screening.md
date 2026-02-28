@@ -7,6 +7,8 @@ paths:
 
 # スクリーニング開発ルール
 
+> 新スクリーニングプリセット追加の具体的な手順（ファイル一覧・コードテンプレート・テスト例）は [docs/patterns.md](../../docs/patterns.md) の「パターン1」を参照。
+
 ## 5つのスクリーナーエンジン
 
 - **QueryScreener（デフォルト）**: `build_query()` → `screen_stocks()` [EquityQuery bulk API] → `_normalize_quote()` → `calculate_value_score()` → ソート
