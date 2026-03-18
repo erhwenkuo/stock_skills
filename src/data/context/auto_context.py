@@ -478,6 +478,27 @@ def _merge_context(
 # Investment lesson context (KIK-534)
 # ---------------------------------------------------------------------------
 
+def _append_lessons(
+    result: dict | None,
+    symbol: Optional[str] = None,
+) -> dict | None:
+    """Append investment lesson section to context result (KIK-534/554).
+
+    Extracted as a helper so that all code paths (symbol, PF, market)
+    share the same lesson injection logic.
+    """
+    if result is None:
+        return None
+    try:
+        lessons = _load_lessons(symbol=symbol)
+        lesson_md = _format_lesson_section(lessons)
+        if lesson_md:
+            result["context_markdown"] += lesson_md
+    except Exception:
+        pass  # graceful degradation
+    return result
+
+
 def _load_lessons(symbol: Optional[str] = None) -> list[dict]:
     """Load type=lesson notes from JSON files (graceful degradation).
 
@@ -547,8 +568,10 @@ def get_context(user_input: str) -> Optional[dict]:
                 "recommendation_reason": "市況照会",
                 "relationship": "市況",
             }
-            return _merge_context(market_ctx, vector_results) or market_ctx
-        return _merge_context(None, vector_results)
+            result = _merge_context(market_ctx, vector_results) or market_ctx
+        else:
+            result = _merge_context(None, vector_results)
+        return _append_lessons(result)
 
     # Portfolio query (no specific symbol)
     if _is_portfolio_query(user_input):
@@ -564,7 +587,8 @@ def get_context(user_input: str) -> Optional[dict]:
             "recommendation_reason": "ポートフォリオ照会",
             "relationship": "PF",
         }
-        return _merge_context(pf_ctx, vector_results) or pf_ctx
+        result = _merge_context(pf_ctx, vector_results) or pf_ctx
+        return _append_lessons(result)
 
     # Symbol-based query
     symbol = _resolve_symbol(user_input)
@@ -590,13 +614,4 @@ def get_context(user_input: str) -> Optional[dict]:
     merged = _merge_context(symbol_context, vector_results)
 
     # KIK-534: Append investment lesson section
-    if merged is not None:
-        try:
-            lessons = _load_lessons(symbol=symbol if symbol else None)
-            lesson_md = _format_lesson_section(lessons)
-            if lesson_md:
-                merged["context_markdown"] += lesson_md
-        except Exception:
-            pass  # graceful degradation
-
-    return merged
+    return _append_lessons(merged, symbol=symbol)
