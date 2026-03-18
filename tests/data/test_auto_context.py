@@ -1154,3 +1154,49 @@ class TestGetContextWithLessons:
         result = get_context("7203.Tってどう？")
         assert result is not None
         assert "## 投資lesson" not in result["context_markdown"]
+
+    # --- KIK-554: PF/市況クエリでもlesson表示 ---
+
+    @patch("src.data.auto_context._load_lessons")
+    @patch("src.data.auto_context.graph_query")
+    def test_lesson_appended_to_portfolio_query(self, mock_gq, mock_lessons):
+        """PFクエリでもlessonが付与されること (KIK-554)."""
+        mock_gq.get_recent_market_context.return_value = {"date": "2026-03-19"}
+        mock_lessons.return_value = [{
+            "symbol": "",
+            "trigger": "購入直後の警告を鵜呑みにしない",
+            "expected_action": "テーゼ指標を確認してから判断",
+            "content": "lesson",
+            "date": "2026-03-15",
+        }]
+        result = get_context("ポートフォリオ ヘルスチェック")
+        assert result is not None
+        assert "## 投資lesson" in result["context_markdown"]
+        assert "購入直後の警告を鵜呑みにしない" in result["context_markdown"]
+
+    @patch("src.data.auto_context._load_lessons")
+    @patch("src.data.auto_context.graph_query")
+    def test_lesson_appended_to_market_query(self, mock_gq, mock_lessons):
+        """市況クエリでもlessonが付与されること (KIK-554)."""
+        mock_gq.get_recent_market_context.return_value = {"date": "2026-03-19"}
+        mock_lessons.return_value = [{
+            "symbol": "",
+            "trigger": "暴落時にパニック売りした",
+            "expected_action": "冷静に待つ",
+            "content": "lesson",
+            "date": "2026-03-10",
+        }]
+        result = get_context("市況を確認")
+        assert result is not None
+        assert "## 投資lesson" in result["context_markdown"]
+        assert "暴落時にパニック売りした" in result["context_markdown"]
+
+    @patch("src.data.auto_context._load_lessons")
+    @patch("src.data.auto_context.graph_query")
+    def test_pf_query_no_lessons_no_section(self, mock_gq, mock_lessons):
+        """PFクエリでlesson空 → セクション非表示."""
+        mock_gq.get_recent_market_context.return_value = None
+        mock_lessons.return_value = []
+        result = get_context("PFチェック")
+        assert result is not None
+        assert "## 投資lesson" not in result["context_markdown"]
