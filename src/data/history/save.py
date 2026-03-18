@@ -159,6 +159,7 @@ def save_trade(
     pnl_rate: Optional[float] = None,
     hold_days: Optional[int] = None,
     cost_price: Optional[float] = None,
+    stock_info: Optional[dict] = None,
 ) -> str:
     """Save a trade record to JSON.
 
@@ -212,10 +213,23 @@ def save_trade(
     with open(path, "w", encoding="utf-8") as f:
         json.dump(_sanitize(payload), f, ensure_ascii=False, indent=2)
 
-    # Neo4j dual-write (KIK-399/420) -- graceful degradation
+    # Neo4j dual-write (KIK-399/420/555) -- graceful degradation
     def _graph_write(sem_summary, emb):
         from src.data.graph_store import merge_trade, merge_stock
-        merge_stock(symbol=symbol)
+        # KIK-555: Enrich Stock metadata from stock_info or yfinance
+        _si = stock_info
+        if not _si:
+            try:
+                from src.data import yahoo_client
+                _si = yahoo_client.get_stock_info(symbol) or {}
+            except Exception:
+                _si = {}
+        merge_stock(
+            symbol=symbol,
+            name=_si.get("name", ""),
+            sector=_si.get("sector", ""),
+            country=_si.get("country", ""),
+        )
         merge_trade(
             trade_date=date_str, trade_type=trade_type, symbol=symbol,
             shares=shares, price=price, currency=currency, memo=memo,

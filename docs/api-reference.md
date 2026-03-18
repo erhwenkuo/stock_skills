@@ -885,6 +885,7 @@ Portfolio, Trade, HealthCheck, Forecast, StressTest node operations (KIK-507).
 - `get_held_symbols() -> list[str]` — Return symbols currently held in portfolio via HOLDS relationship.
 - `merge_stress_test(test_date: str, scenario: str, portfolio_impact: float, symbols: list[str], var_95: float=0, var_99: float=0, semantic_summary: str='', embedding: list[float] | None=None) -> bool` — Create a StressTest node and STRESSED relationships to stocks.
 - `merge_forecast(forecast_date: str, optimistic: float, base: float, pessimistic: float, symbols: list[str], total_value_jpy: float=0, semantic_summary: str='', embedding: list[float] | None=None) -> bool` — Create a Forecast node and FORECASTED relationships to stocks.
+- `sync_stock_full(symbol: str, client=None, csv_path: str='') -> dict` — Single entry point for complete Stock + Trade Neo4j sync (KIK-555).
 
 ### src.data.graph_store.research
 
@@ -965,7 +966,7 @@ History store save functions (KIK-512 split).
 
 - `save_screening(preset: str, region: str, results: list[dict], sector: str | None=None, theme: str | None=None, base_dir: str='data/history') -> str` — Save screening results to JSON.
 - `save_report(symbol: str, data: dict, score: float, verdict: str, base_dir: str='data/history') -> str` — Save a stock report to JSON.
-- `save_trade(symbol: str, trade_type: str, shares: int, price: float, currency: str, date_str: str, memo: str='', base_dir: str='data/history', sell_price: Optional[float]=None, realized_pnl: Optional[float]=None, pnl_rate: Optional[float]=None, hold_days: Optional[int]=None, cost_price: Optional[float]=None) -> str` — Save a trade record to JSON.
+- `save_trade(symbol: str, trade_type: str, shares: int, price: float, currency: str, date_str: str, memo: str='', base_dir: str='data/history', sell_price: Optional[float]=None, realized_pnl: Optional[float]=None, pnl_rate: Optional[float]=None, hold_days: Optional[int]=None, cost_price: Optional[float]=None, stock_info: Optional[dict]=None) -> str` — Save a trade record to JSON.
 - `save_health(health_data: dict, base_dir: str='data/history') -> str` — Save health check results to JSON.
 - `save_research(research_type: str, target: str, result: dict, base_dir: str='data/history') -> str` — Save research results to JSON (KIK-405).
 - `save_market_context(context: dict, base_dir: str='data/history') -> str` — Save market context snapshot to JSON (KIK-405).

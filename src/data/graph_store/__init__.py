@@ -65,6 +65,7 @@ from src.data.graph_store.portfolio import (  # noqa: F401
     merge_stress_test,
     merge_trade,
     sync_portfolio,
+    sync_stock_full,
 )
 
 # --- market.py: MarketContext + sub-nodes ---

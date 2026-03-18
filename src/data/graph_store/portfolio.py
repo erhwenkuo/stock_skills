@@ -1,7 +1,7 @@
 """Portfolio, Trade, HealthCheck, Forecast, StressTest node operations (KIK-507).
 
 Handles merge_trade, merge_health, sync_portfolio, is_held, get_held_symbols,
-merge_stress_test, merge_forecast.
+merge_stress_test, merge_forecast, sync_stock_full (KIK-555).
 """
 
 from src.data.graph_store import _common
@@ -270,3 +270,112 @@ def merge_forecast(
         return True
     except Exception:
         return False
+
+
+# ---------------------------------------------------------------------------
+# Full stock sync (KIK-555)
+# ---------------------------------------------------------------------------
+
+def sync_stock_full(symbol: str, client=None, csv_path: str = "") -> dict:
+    """Single entry point for complete Stock + Trade Neo4j sync (KIK-555).
+
+    Ensures all of the following are present:
+    1. Stock metadata (name, sector, country) from yfinance
+    2. Trade nodes with embeddings from history JSON
+    3. IN_SECTOR relationship (auto from merge_stock when sector set)
+    4. Community assignment (incremental)
+
+    Parameters
+    ----------
+    symbol : str
+        Ticker symbol.
+    client : module, optional
+        yahoo_client module. If None, imports automatically.
+    csv_path : str, optional
+        Path to portfolio CSV. Used to find trade history.
+
+    Returns
+    -------
+    dict with keys: stock (bool), trades (int), community (bool)
+    """
+    result = {"stock": False, "trades": 0, "community": False}
+
+    if _common._get_mode() == "off":
+        return result
+
+    # 1. Stock metadata from yfinance
+    try:
+        if client is None:
+            from src.data import yahoo_client as client  # noqa: N811
+        info = client.get_stock_info(symbol)
+        if info:
+            from src.data.graph_store.stock import merge_stock
+            result["stock"] = merge_stock(
+                symbol=symbol,
+                name=info.get("name", ""),
+                sector=info.get("sector", ""),
+                country=info.get("country", ""),
+            )
+    except Exception:
+        pass
+
+    # 2. Trade records from history JSON
+    try:
+        import glob
+        import json
+        from pathlib import Path
+
+        history_dir = Path("data/history/trade")
+        if not history_dir.exists():
+            history_dir = Path(__file__).resolve().parents[3] / "data" / "history" / "trade"
+
+        if history_dir.exists():
+            for fp in sorted(history_dir.glob("*.json")):
+                try:
+                    with open(fp, encoding="utf-8") as f:
+                        rec = json.load(f)
+                    if rec.get("symbol") != symbol:
+                        continue
+                    # Build summary + embedding
+                    sem = ""
+                    emb = None
+                    try:
+                        from src.data.context.summary_builder import build_trade_summary
+                        from src.data import embedding_client
+                        sem = build_trade_summary(
+                            rec.get("date", ""), rec.get("trade_type", ""),
+                            symbol, rec.get("shares", 0), rec.get("memo", ""),
+                        )
+                        emb = embedding_client.get_embedding(sem)
+                    except Exception:
+                        pass
+                    ok = merge_trade(
+                        trade_date=rec.get("date", ""),
+                        trade_type=rec.get("trade_type", "buy"),
+                        symbol=symbol,
+                        shares=rec.get("shares", 0),
+                        price=rec.get("price", 0),
+                        currency=rec.get("currency", "JPY"),
+                        memo=rec.get("memo", ""),
+                        semantic_summary=sem,
+                        embedding=emb,
+                        sell_price=rec.get("sell_price"),
+                        realized_pnl=rec.get("realized_pnl"),
+                        hold_days=rec.get("hold_days"),
+                    )
+                    if ok:
+                        result["trades"] += 1
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
+    # 3. Community assignment
+    try:
+        from src.data.graph_query.community import update_stock_community
+        comm = update_stock_community(symbol)
+        result["community"] = comm is not None
+    except Exception:
+        pass
+
+    return result
