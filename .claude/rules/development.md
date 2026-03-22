@@ -38,6 +38,30 @@
 - ブランチ名: `feature/kik-{NNN}-{short-desc}`
 - ワークツリー: `~/stock-skills-kik{NNN}`
 
+## ファイル構成ガイドライン (KIK-572)
+
+### サイズ上限
+- プロダクションコード: 400行以下推奨、500行で分割検討
+- テスト: 600行以下推奨
+- スクリプト: 300行以下推奨
+
+### 新モジュール配置
+- ドメインロジック → src/core/{screening,portfolio,risk,research,health}/
+- データ取得/保存 → src/data/{yahoo_client,graph_store,graph_query,history,context}/
+- 出力整形 → src/output/
+- 汎用ユーティリティ → src/core/common.py
+- テスト → tests/{core,data,output}/ （src/ と1:1対応）
+
+### 分割基準
+- 1ファイルに3つ以上の独立した責務 → 分割
+- 500行超 → 分割を検討
+- 2つ以上のスキルから参照される共通ロジック → src/core/ に昇格
+
+### 後方互換パターン（shim）
+- 分割時は旧パスに sys.modules リダイレクトの shim を残す
+- shim には DeprecationWarning を追加（KIK-572）
+- 新コードは直接パスを使用
+
 ## ドキュメント自動生成 (KIK-525)
 
 `scripts/generate_docs.py` で以下のドキュメントをソースコードから自動生成:

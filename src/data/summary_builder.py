@@ -1,4 +1,11 @@
 """Backward-compatible shim (KIK-517). Real module: src.data.context.summary_builder"""
+import warnings as _warnings
+_warnings.warn(
+    "Import from the subpackage directly (e.g., src.data.context.summary_builder)",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import importlib as _importlib
 import sys as _sys
 
