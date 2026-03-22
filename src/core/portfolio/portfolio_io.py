@@ -292,7 +292,7 @@ def get_performance_review(
             }
         }
     """
-    from src.data.history_store import load_history
+    from src.data.history import load_history
 
     all_trades = load_history("trade", base_dir=base_dir)
 
