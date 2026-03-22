@@ -47,7 +47,7 @@ class TestETFSectorClassification:
             "as_of": "2025-01-01",
         }
 
-        with patch("src.core.portfolio.portfolio_manager.get_snapshot", return_value=snapshot):
+        with patch("src.core.portfolio.portfolio_query.get_snapshot", return_value=snapshot):
             result = get_structure_analysis("dummy.csv", MagicMock())
 
         assert "ETF" in result["sector_breakdown"]
@@ -68,7 +68,7 @@ class TestETFSectorClassification:
             "as_of": "2025-01-01",
         }
 
-        with patch("src.core.portfolio.portfolio_manager.get_snapshot", return_value=snapshot):
+        with patch("src.core.portfolio.portfolio_query.get_snapshot", return_value=snapshot):
             result = get_structure_analysis("dummy.csv", MagicMock())
 
         assert "ETF" in result["size_breakdown"]
@@ -89,7 +89,7 @@ class TestETFSectorClassification:
             "as_of": "2025-01-01",
         }
 
-        with patch("src.core.portfolio.portfolio_manager.get_snapshot", return_value=snapshot):
+        with patch("src.core.portfolio.portfolio_query.get_snapshot", return_value=snapshot):
             result = get_structure_analysis("dummy.csv", MagicMock())
 
         assert "Technology" in result["sector_breakdown"]
@@ -112,7 +112,7 @@ class TestETFSectorClassification:
             "as_of": "2025-01-01",
         }
 
-        with patch("src.core.portfolio.portfolio_manager.get_snapshot", return_value=snapshot):
+        with patch("src.core.portfolio.portfolio_query.get_snapshot", return_value=snapshot):
             result = get_structure_analysis("dummy.csv", MagicMock())
 
         assert "Technology" in result["sector_breakdown"]
@@ -134,7 +134,7 @@ class TestETFSectorClassification:
             "as_of": "2025-01-01",
         }
 
-        with patch("src.core.portfolio.portfolio_manager.get_snapshot", return_value=snapshot):
+        with patch("src.core.portfolio.portfolio_query.get_snapshot", return_value=snapshot):
             result = get_structure_analysis("dummy.csv", MagicMock())
 
         # If sector is already set, it should use that, not fall back to "ETF"

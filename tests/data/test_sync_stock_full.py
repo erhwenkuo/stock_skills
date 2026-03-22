@@ -88,7 +88,7 @@ class TestSaveTradeStockInfo:
 
         stock_info = {"name": "Toyota", "sector": "Industrials", "country": "Japan"}
 
-        with patch("src.data.history.save._dual_write_graph") as mock_dw:
+        with patch("src.data.history.save_trade._dual_write_graph") as mock_dw:
             save_trade(
                 symbol="7203.T", trade_type="buy", shares=100,
                 price=2850.0, currency="JPY", date_str="2026-03-19",
@@ -103,7 +103,7 @@ class TestSaveTradeStockInfo:
         """save_trade without stock_info still works (backward compat)."""
         from src.data.history.save import save_trade
 
-        with patch("src.data.history.save._dual_write_graph"):
+        with patch("src.data.history.save_trade._dual_write_graph"):
             path = save_trade(
                 symbol="AAPL", trade_type="buy", shares=10,
                 price=250.0, currency="USD", date_str="2026-03-19",

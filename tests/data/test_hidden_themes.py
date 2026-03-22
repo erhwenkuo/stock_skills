@@ -246,7 +246,7 @@ class TestDiscoverHiddenThemes:
     def test_returns_empty_no_communities(self):
         from src.data.graph_query.community import discover_hidden_themes
 
-        with patch("src.data.graph_query.community.get_communities", return_value=[]):
+        with patch("src.data.graph_query.community_query.get_communities", return_value=[]):
             with patch("src.data.graph_store._get_driver", return_value=MagicMock()):
                 assert discover_hidden_themes() == []
 
@@ -282,7 +282,7 @@ class TestDiscoverHiddenThemes:
 
         import src.data.graph_store as gs
         gs._driver = driver
-        with patch("src.data.graph_query.community.get_communities", return_value=communities):
+        with patch("src.data.graph_query.community_query.get_communities", return_value=communities):
             discoveries = discover_hidden_themes()
 
         assert len(discoveries) == 1

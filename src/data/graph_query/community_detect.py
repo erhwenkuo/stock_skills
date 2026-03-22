@@ -1,0 +1,486 @@
+"""Community detection pipeline via co-occurrence analysis (KIK-578 split).
+
+Extracted from community.py. Contains the detection pipeline:
+detect_communities, similarity computation, Louvain clustering,
+auto-naming, and hidden theme discovery.
+"""
+
+from collections import Counter, defaultdict
+from datetime import datetime
+from itertools import combinations
+from typing import Optional
+
+from src.data.graph_query import _common
+
+try:
+    import networkx as nx
+    from networkx.algorithms.community import louvain_communities
+
+    _HAS_NETWORKX = True
+except ImportError:
+    _HAS_NETWORKX = False
+
+
+# ---------------------------------------------------------------------------
+# Default signal weights for weighted Jaccard similarity
+# ---------------------------------------------------------------------------
+
+_DEFAULT_WEIGHTS = {
+    "screens": 1.0,
+    "themes": 0.8,
+    "news": 0.6,
+    "sectors": 0.5,
+}
+
+
+# ---------------------------------------------------------------------------
+# Public API — Detection
+# ---------------------------------------------------------------------------
+
+
+def detect_communities(
+    similarity_cutoff: float = 0.3,
+    top_k: int = 10,
+    resolution: float = 1.0,
+) -> list[dict]:
+    """Run community detection pipeline.
+
+    Steps:
+    1. Query co-occurrence vectors from Neo4j
+    2. Compute weighted Jaccard similarity (Python)
+    3. Run Louvain community detection (networkx)
+    4. Auto-name communities from common Sector/Theme
+    5. Save Community nodes + BELONGS_TO relationships
+
+    Returns list of dicts: {community_id, name, level, size, members}
+    Empty list if Neo4j unavailable or insufficient data.
+    """
+    if not _HAS_NETWORKX:
+        return []
+    driver = _common._get_driver()
+    if driver is None:
+        return []
+    try:
+        vectors = _fetch_cooccurrence_vectors(driver)
+        if len(vectors) < 2:
+            return []
+        edges = _compute_jaccard_similarity(vectors, similarity_cutoff, top_k)
+        if not edges:
+            return []
+        communities = _run_louvain(edges, resolution)
+        if not communities:
+            return []
+        # Auto-name and save
+        with driver.session() as session:
+            for comm in communities:
+                comm["name"] = _auto_name_community(
+                    comm["members"], session, comm["community_id"]
+                )
+        _save_communities(communities)
+        return communities
+    except Exception:
+        return []
+
+
+def discover_hidden_themes() -> list[dict]:
+    """Discover hidden themes from community patterns (KIK-550).
+
+    Analyzes all communities and returns those with non-obvious themes
+    (i.e., themes discovered from News/Catalyst keywords rather than
+    explicit Sector/Theme tags).
+
+    Returns list of {community_id, name, confidence, source, members, size}.
+    """
+    from src.data.graph_query.community_query import get_communities
+
+    driver = _common._get_driver()
+    if driver is None:
+        return []
+    try:
+        communities = get_communities(level=0)
+        if not communities:
+            return []
+
+        discoveries = []
+        with driver.session() as session:
+            for comm in communities:
+                members = comm.get("members", [])
+                if len(members) < 2:
+                    continue
+                label = label_community(members, session, fallback_id=0)
+                if label["source"] == "news_keyword":
+                    discoveries.append({
+                        "community_id": comm["id"],
+                        "name": label["name"],
+                        "confidence": label["confidence"],
+                        "source": label["source"],
+                        "members": members,
+                        "size": len(members),
+                    })
+        return discoveries
+    except Exception:
+        return []
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers — Co-occurrence & Similarity
+# ---------------------------------------------------------------------------
+
+
+def _fetch_cooccurrence_vectors(driver) -> dict[str, dict[str, set]]:
+    """Query Neo4j for Stock co-occurrence signals.
+
+    Returns {symbol: {"screens": set, "themes": set, "sectors": set, "news": set}}
+    """
+    vectors: dict[str, dict[str, set]] = {}
+
+    def _ensure(sym: str) -> dict[str, set]:
+        if sym not in vectors:
+            vectors[sym] = {
+                "screens": set(),
+                "themes": set(),
+                "sectors": set(),
+                "news": set(),
+            }
+        return vectors[sym]
+
+    with driver.session() as session:
+        # Screen co-occurrence
+        for r in session.run(
+            "MATCH (sc:Screen)-[:SURFACED]->(s:Stock) "
+            "RETURN s.symbol AS symbol, collect(DISTINCT sc.id) AS ids"
+        ):
+            v = _ensure(r["symbol"])
+            v["screens"] = set(r["ids"])
+
+        # Theme co-occurrence
+        for r in session.run(
+            "MATCH (s:Stock)-[:HAS_THEME]->(t:Theme) "
+            "RETURN s.symbol AS symbol, collect(DISTINCT t.name) AS names"
+        ):
+            v = _ensure(r["symbol"])
+            v["themes"] = set(r["names"])
+
+        # Sector membership
+        for r in session.run(
+            "MATCH (s:Stock)-[:IN_SECTOR]->(sec:Sector) "
+            "RETURN s.symbol AS symbol, collect(DISTINCT sec.name) AS names"
+        ):
+            v = _ensure(r["symbol"])
+            v["sectors"] = set(r["names"])
+
+        # News co-occurrence
+        for r in session.run(
+            "MATCH (n:News)-[:MENTIONS]->(s:Stock) "
+            "RETURN s.symbol AS symbol, collect(DISTINCT n.id) AS ids"
+        ):
+            v = _ensure(r["symbol"])
+            v["news"] = set(r["ids"])
+
+    return vectors
+
+
+def _jaccard_single(
+    a: dict[str, set],
+    b: dict[str, set],
+    weights: Optional[dict[str, float]] = None,
+) -> float:
+    """Compute weighted Jaccard similarity between two co-occurrence vectors."""
+    w = weights or _DEFAULT_WEIGHTS
+    numerator = 0.0
+    denominator = 0.0
+    for key, weight in w.items():
+        a_set = a.get(key, set())
+        b_set = b.get(key, set())
+        union = len(a_set | b_set)
+        if union == 0:
+            continue
+        intersection = len(a_set & b_set)
+        numerator += weight * intersection / union
+        denominator += weight
+    if denominator == 0:
+        return 0.0
+    return numerator / denominator
+
+
+def _compute_jaccard_similarity(
+    vectors: dict[str, dict[str, set]],
+    cutoff: float,
+    top_k: int,
+    weights: Optional[dict[str, float]] = None,
+) -> list[tuple[str, str, float]]:
+    """Compute weighted Jaccard similarity between all Stock pairs.
+
+    Returns list of (symbol_a, symbol_b, similarity) above cutoff,
+    limited to top_k per node.
+    """
+    all_edges: list[tuple[str, str, float]] = []
+    symbols = list(vectors.keys())
+
+    for sym_a, sym_b in combinations(symbols, 2):
+        sim = _jaccard_single(vectors[sym_a], vectors[sym_b], weights)
+        if sim >= cutoff:
+            all_edges.append((sym_a, sym_b, sim))
+
+    if not all_edges:
+        return []
+
+    # Apply top_k limit per node
+    neighbor_count: dict[str, list[tuple[str, float]]] = defaultdict(list)
+    for a, b, s in all_edges:
+        neighbor_count[a].append((b, s))
+        neighbor_count[b].append((a, s))
+
+    # Keep only top_k neighbors per node
+    kept_pairs: set[tuple[str, str]] = set()
+    for sym in neighbor_count:
+        neighbors = sorted(neighbor_count[sym], key=lambda x: x[1], reverse=True)
+        for nb, _ in neighbors[:top_k]:
+            pair = tuple(sorted([sym, nb]))
+            kept_pairs.add(pair)
+
+    return [(a, b, s) for a, b, s in all_edges if tuple(sorted([a, b])) in kept_pairs]
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers — Louvain
+# ---------------------------------------------------------------------------
+
+
+def _run_louvain(
+    edges: list[tuple[str, str, float]],
+    resolution: float = 1.0,
+) -> list[dict]:
+    """Run Louvain community detection on the similarity graph.
+
+    Returns list of {community_id, members, level}
+    """
+    if not _HAS_NETWORKX:
+        return []
+
+    G = nx.Graph()
+    for a, b, w in edges:
+        G.add_edge(a, b, weight=w)
+
+    if G.number_of_nodes() == 0:
+        return []
+
+    communities_sets = louvain_communities(G, weight="weight", resolution=resolution)
+
+    result = []
+    for idx, members in enumerate(sorted(communities_sets, key=len, reverse=True)):
+        result.append(
+            {
+                "community_id": idx,
+                "members": sorted(members),
+                "level": 0,
+                "size": len(members),
+            }
+        )
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers — Naming & Labeling
+# ---------------------------------------------------------------------------
+
+
+def _auto_name_community(
+    members: list[str],
+    session,
+    fallback_id: int = 0,
+) -> str:
+    """Generate a human-readable name for a community.
+
+    Picks the most common Sector and Theme among members.
+    Falls back to News/Catalyst keyword extraction (KIK-550).
+    """
+    result = label_community(members, session, fallback_id)
+    return result["name"]
+
+
+def label_community(
+    members: list[str],
+    session,
+    fallback_id: int = 0,
+) -> dict:
+    """Generate a label for a community with confidence score (KIK-550).
+
+    Naming priority:
+    1. Common Sector + Theme -> high confidence
+    2. Common Sector only -> medium confidence
+    3. Common Theme only -> medium confidence
+    4. News/Catalyst keyword extraction -> low confidence
+    5. Fallback "Community_{id}" -> zero confidence
+
+    Returns {name, confidence, source, details}.
+    """
+    fallback = {
+        "name": f"Community_{fallback_id}",
+        "confidence": 0.0,
+        "source": "fallback",
+        "details": {},
+    }
+    if not members:
+        return fallback
+
+    n = len(members)
+
+    # Most common sector
+    sector_result = session.run(
+        "MATCH (s:Stock)-[:IN_SECTOR]->(sec:Sector) "
+        "WHERE s.symbol IN $symbols "
+        "RETURN sec.name AS name, count(*) AS cnt "
+        "ORDER BY cnt DESC LIMIT 1",
+        symbols=members,
+    )
+    sector_record = sector_result.single()
+    sector_name = sector_record["name"] if sector_record else None
+    sector_cnt = sector_record["cnt"] if sector_record else 0
+
+    # Most common theme
+    theme_result = session.run(
+        "MATCH (s:Stock)-[:HAS_THEME]->(t:Theme) "
+        "WHERE s.symbol IN $symbols "
+        "RETURN t.name AS name, count(*) AS cnt "
+        "ORDER BY cnt DESC LIMIT 1",
+        symbols=members,
+    )
+    theme_record = theme_result.single()
+    theme_name = theme_record["name"] if theme_record else None
+    theme_cnt = theme_record["cnt"] if theme_record else 0
+
+    if sector_name and theme_name:
+        confidence = min(1.0, (sector_cnt + theme_cnt) / (2 * n))
+        return {
+            "name": f"{sector_name} x {theme_name}",
+            "confidence": round(confidence, 2),
+            "source": "sector+theme",
+            "details": {"sector": sector_name, "theme": theme_name},
+        }
+    if sector_name:
+        confidence = min(1.0, sector_cnt / n)
+        return {
+            "name": sector_name,
+            "confidence": round(confidence * 0.8, 2),
+            "source": "sector",
+            "details": {"sector": sector_name},
+        }
+    if theme_name:
+        confidence = min(1.0, theme_cnt / n)
+        return {
+            "name": theme_name,
+            "confidence": round(confidence * 0.8, 2),
+            "source": "theme",
+            "details": {"theme": theme_name},
+        }
+
+    # KIK-550: Fallback to News/Catalyst keyword extraction
+    keyword = _extract_news_keyword(members, session)
+    if keyword:
+        return {
+            "name": keyword,
+            "confidence": 0.3,
+            "source": "news_keyword",
+            "details": {"keyword": keyword},
+        }
+
+    return fallback
+
+
+def _extract_news_keyword(members: list[str], session) -> Optional[str]:
+    """Extract a common keyword from shared News titles (KIK-550).
+
+    Finds News nodes that mention multiple community members
+    and extracts the most frequent non-trivial word from their titles.
+    """
+    result = session.run(
+        "MATCH (n:News)-[:MENTIONS]->(s:Stock) "
+        "WHERE s.symbol IN $symbols "
+        "WITH n, count(DISTINCT s) AS mention_cnt "
+        "WHERE mention_cnt >= 2 "
+        "RETURN n.title AS title "
+        "ORDER BY mention_cnt DESC LIMIT 10",
+        symbols=members,
+    )
+    titles = [r["title"] for r in result if r["title"]]
+    if not titles:
+        return None
+
+    # Simple keyword frequency counting
+    stop_words = {
+        "the", "a", "an", "is", "are", "was", "were", "be", "been",
+        "in", "on", "at", "to", "for", "of", "with", "by", "from",
+        "and", "or", "but", "not", "no", "as", "it", "its", "this",
+        "that", "up", "out", "if", "about", "into", "has", "have",
+        "will", "would", "could", "should", "may", "might",
+        "の", "は", "が", "を", "に", "で", "と", "も", "や", "か",
+        "する", "した", "して", "れる", "られる", "こと", "もの",
+        "ある", "いる", "なる", "から", "まで", "より", "など",
+    }
+
+    word_counts: Counter = Counter()
+    for title in titles:
+        words = title.split()
+        for word in words:
+            w = word.strip(".,;:!?()[]{}\"'").lower()
+            if len(w) >= 2 and w not in stop_words:
+                word_counts[w] += 1
+
+    if not word_counts:
+        return None
+
+    top_word, count = word_counts.most_common(1)[0]
+    if count >= 2:
+        return top_word
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers — Persistence
+# ---------------------------------------------------------------------------
+
+
+def _save_communities(communities: list[dict]) -> bool:
+    """Save Community nodes and BELONGS_TO relationships to Neo4j.
+
+    Clears previous Community nodes first (idempotent).
+    """
+    from src.data.graph_store import _common as gs_common
+
+    if gs_common._get_mode() == "off":
+        return False
+    driver = gs_common._get_driver()
+    if driver is None:
+        return False
+    try:
+        ts = datetime.now().isoformat(timespec="seconds")
+        with driver.session() as session:
+            # Clear existing communities
+            session.run(
+                "MATCH (c:Community) DETACH DELETE c"
+            )
+            # Create new communities
+            for comm in communities:
+                comm_id = f"community_{comm['level']}_{comm['community_id']}"
+                session.run(
+                    "CREATE (c:Community {"
+                    "id: $id, name: $name, size: $size, "
+                    "level: $level, created_at: $ts})",
+                    id=comm_id,
+                    name=comm.get("name", f"Community_{comm['community_id']}"),
+                    size=comm["size"],
+                    level=comm["level"],
+                    ts=ts,
+                )
+                for symbol in comm["members"]:
+                    session.run(
+                        "MATCH (s:Stock {symbol: $symbol}) "
+                        "MATCH (c:Community {id: $cid}) "
+                        "MERGE (s)-[:BELONGS_TO]->(c)",
+                        symbol=symbol,
+                        cid=comm_id,
+                    )
+        return True
+    except Exception:
+        return False
