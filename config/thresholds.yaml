@@ -20,6 +20,14 @@ health:
   small_cap_crit_pct: 0.35       # 小型株比率 > 35% で危険
   small_cap_cross_lookback: 30   # 小型株のクロスルックバック（通常60→30）
 
+  # Long-term suitability (KIK-371)
+  lt_roe_high: 0.15
+  lt_roe_low: 0.10
+  lt_eps_growth_high: 0.10
+  lt_dividend_high: 0.02
+  lt_per_overvalued: 40
+  lt_per_safe: 25
+
 # ---------------------------------------------------------------------------
 # Small-cap classification thresholds (KIK-438/574)
 # Region-specific small-cap market cap thresholds (local currency).
@@ -36,14 +44,6 @@ small_cap:
   kr: 1000000000000     # KRW 1T
   tw: 30000000000       # TWD 30B
   large_cap_multiplier: 5   # 大型株 = 小型株閾値 × 5
-
-  # Long-term suitability (KIK-371)
-  lt_roe_high: 0.15
-  lt_roe_low: 0.10
-  lt_eps_growth_high: 0.10
-  lt_dividend_high: 0.02
-  lt_per_overvalued: 40
-  lt_per_safe: 25
 
 # ---------------------------------------------------------------------------
 # Return estimation (src/core/return_estimate.py)
