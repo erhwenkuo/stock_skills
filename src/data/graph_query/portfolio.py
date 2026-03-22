@@ -237,29 +237,33 @@ def vector_search(
     labels = node_labels or _VECTOR_LABELS
     results: list[dict] = []
 
-    for label in labels:
-        index_name = f"{label.lower()}_embedding"
-        try:
-            with driver.session() as session:
-                records = session.run(
-                    "CALL db.index.vector.queryNodes($index, $k, $emb) "
-                    "YIELD node, score "
-                    "RETURN node.semantic_summary AS summary, "
-                    "node.date AS date, node.id AS id, "
-                    "node.symbol AS symbol, score",
-                    index=index_name, k=top_k, emb=query_embedding,
-                )
-                for r in records:
-                    results.append({
-                        "label": label,
-                        "summary": r["summary"],
-                        "date": r["date"],
-                        "id": r["id"],
-                        "symbol": r.get("symbol"),
-                        "score": r["score"],
-                    })
-        except Exception:
-            continue  # index not yet created or label has no embeddings
+    # KIK-573: Use single session for all queries (was 10 separate sessions)
+    try:
+        with driver.session() as session:
+            for label in labels:
+                index_name = f"{label.lower()}_embedding"
+                try:
+                    records = session.run(
+                        "CALL db.index.vector.queryNodes($index, $k, $emb) "
+                        "YIELD node, score "
+                        "RETURN node.semantic_summary AS summary, "
+                        "node.date AS date, node.id AS id, "
+                        "node.symbol AS symbol, score",
+                        index=index_name, k=top_k, emb=query_embedding,
+                    )
+                    for r in records:
+                        results.append({
+                            "label": label,
+                            "summary": r["summary"],
+                            "date": r["date"],
+                            "id": r["id"],
+                            "symbol": r.get("symbol"),
+                            "score": r["score"],
+                        })
+                except Exception:
+                    continue  # index not yet created or label has no embeddings
+    except Exception:
+        pass
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:top_k]

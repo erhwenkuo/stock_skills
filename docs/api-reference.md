@@ -915,7 +915,7 @@ Stock, Screen, Report node operations (KIK-507).
 - `merge_report_full(report_date: str, symbol: str, score: float, verdict: str, price: float=0, per: float=0, pbr: float=0, dividend_yield: float=0, roe: float=0, market_cap: float=0, semantic_summary: str='', embedding: list[float] | None=None) -> bool` — Extend an existing Report node with full valuation properties (KIK-413).
 - `tag_theme(symbol: str, theme: str) -> bool` — Tag a stock with a theme.
 - `merge_watchlist(name: str, symbols: list[str], semantic_summary: str='', embedding: list[float] | None=None) -> bool` — Create a Watchlist node and BOOKMARKED relationships to stocks.
-- `get_stock_history(symbol: str) -> dict` — Get all graph relationships for a stock.
+- `get_stock_history(symbol: str) -> dict` — Get all graph relationships for a stock (KIK-573: single query).
 
 ### src.data.grok_client._common
 
@@ -1102,6 +1102,9 @@ EquityQuery-based screening via yf.screen() (KIK-449).
 
 Shared formatting helpers used across all output formatters (KIK-394).
 
+- `fmt_jpy(value: Optional[float]) -> str` — Format a value as Japanese Yen with comma separators.
+- `fmt_usd(value: Optional[float]) -> str` — Format a value as US Dollar.
+- `fmt_currency_value(value: Optional[float], currency: str='JPY') -> str` — Format a value in the appropriate currency format.
 - `fmt_pct(value: Optional[float]) -> str` — Format a decimal ratio as a percentage string (e.g. 0.035 -> '3.50%').
 - `fmt_float(value: Optional[float], decimals: int=2) -> str` — Format a float with the given decimal places, or '-' if None.
 - `fmt_pct_sign(value: Optional[float]) -> str` — Format a decimal ratio as a signed percentage (e.g. -0.12 -> '-12.00%').

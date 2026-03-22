@@ -227,7 +227,7 @@ def merge_watchlist(name: str, symbols: list[str],
 # ---------------------------------------------------------------------------
 
 def get_stock_history(symbol: str) -> dict:
-    """Get all graph relationships for a stock.
+    """Get all graph relationships for a stock (KIK-573: single query).
 
     Returns dict with keys: screens, reports, trades, health_checks,
     notes, themes, researches.
@@ -239,73 +239,42 @@ def get_stock_history(symbol: str) -> dict:
     if driver is None:
         return dict(_empty)
     try:
-        result = dict(_empty)
         with driver.session() as session:
-            # Screens
-            records = session.run(
-                "MATCH (sc:Screen)-[:SURFACED]->(s:Stock {symbol: $symbol}) "
-                "RETURN sc.date AS date, sc.preset AS preset, sc.region AS region "
-                "ORDER BY sc.date DESC",
+            record = session.run(
+                "MATCH (s:Stock {symbol: $symbol}) "
+                "OPTIONAL MATCH (sc:Screen)-[:SURFACED]->(s) "
+                "OPTIONAL MATCH (rp:Report)-[:ANALYZED]->(s) "
+                "OPTIONAL MATCH (t:Trade)-[:BOUGHT|SOLD]->(s) "
+                "OPTIONAL MATCH (h:HealthCheck)-[:CHECKED]->(s) "
+                "OPTIONAL MATCH (n:Note)-[:ABOUT]->(s) "
+                "OPTIONAL MATCH (s)-[:HAS_THEME]->(th:Theme) "
+                "OPTIONAL MATCH (rs:Research)-[:RESEARCHED]->(s) "
+                "RETURN "
+                "collect(DISTINCT {date: sc.date, preset: sc.preset, region: sc.region}) AS screens, "
+                "collect(DISTINCT {date: rp.date, score: rp.score, verdict: rp.verdict}) AS reports, "
+                "collect(DISTINCT {date: t.date, type: t.type, shares: t.shares, price: t.price}) AS trades, "
+                "collect(DISTINCT {date: h.date}) AS health_checks, "
+                "collect(DISTINCT {id: n.id, date: n.date, type: n.type, content: n.content}) AS notes, "
+                "collect(DISTINCT th.name) AS themes, "
+                "collect(DISTINCT {date: rs.date, research_type: rs.research_type, summary: rs.summary}) AS researches",
                 symbol=symbol,
-            )
-            result["screens"] = [dict(r) for r in records]
+            ).single()
 
-            # Reports
-            records = session.run(
-                "MATCH (r:Report)-[:ANALYZED]->(s:Stock {symbol: $symbol}) "
-                "RETURN r.date AS date, r.score AS score, r.verdict AS verdict "
-                "ORDER BY r.date DESC",
-                symbol=symbol,
-            )
-            result["reports"] = [dict(r) for r in records]
+            if record is None:
+                return dict(_empty)
 
-            # Trades
-            records = session.run(
-                "MATCH (t:Trade)-[:BOUGHT|SOLD]->(s:Stock {symbol: $symbol}) "
-                "RETURN t.date AS date, t.type AS type, "
-                "t.shares AS shares, t.price AS price "
-                "ORDER BY t.date DESC",
-                symbol=symbol,
-            )
-            result["trades"] = [dict(r) for r in records]
+            # Filter out null entries from OPTIONAL MATCH
+            def _clean(items):
+                return [d for d in items if d and any(v is not None for v in d.values())]
 
-            # Health checks
-            records = session.run(
-                "MATCH (h:HealthCheck)-[:CHECKED]->(s:Stock {symbol: $symbol}) "
-                "RETURN h.date AS date "
-                "ORDER BY h.date DESC",
-                symbol=symbol,
-            )
-            result["health_checks"] = [dict(r) for r in records]
-
-            # Notes
-            records = session.run(
-                "MATCH (n:Note)-[:ABOUT]->(s:Stock {symbol: $symbol}) "
-                "RETURN n.id AS id, n.date AS date, n.type AS type, "
-                "n.content AS content "
-                "ORDER BY n.date DESC",
-                symbol=symbol,
-            )
-            result["notes"] = [dict(r) for r in records]
-
-            # Themes
-            records = session.run(
-                "MATCH (s:Stock {symbol: $symbol})-[:HAS_THEME]->(t:Theme) "
-                "RETURN t.name AS name",
-                symbol=symbol,
-            )
-            result["themes"] = [r["name"] for r in records]
-
-            # Researches (KIK-398)
-            records = session.run(
-                "MATCH (r:Research)-[:RESEARCHED]->(s:Stock {symbol: $symbol}) "
-                "RETURN r.date AS date, r.research_type AS research_type, "
-                "r.summary AS summary "
-                "ORDER BY r.date DESC",
-                symbol=symbol,
-            )
-            result["researches"] = [dict(r) for r in records]
-
-        return result
+            return {
+                "screens": sorted(_clean(record["screens"]), key=lambda x: x.get("date", ""), reverse=True),
+                "reports": sorted(_clean(record["reports"]), key=lambda x: x.get("date", ""), reverse=True),
+                "trades": sorted(_clean(record["trades"]), key=lambda x: x.get("date", ""), reverse=True),
+                "health_checks": sorted(_clean(record["health_checks"]), key=lambda x: x.get("date", ""), reverse=True),
+                "notes": sorted(_clean(record["notes"]), key=lambda x: x.get("date", ""), reverse=True),
+                "themes": [t for t in record["themes"] if t is not None],
+                "researches": sorted(_clean(record["researches"]), key=lambda x: x.get("date", ""), reverse=True),
+            }
     except Exception:
         return dict(_empty)
