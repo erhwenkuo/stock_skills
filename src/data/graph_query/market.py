@@ -1,6 +1,7 @@
-"""MarketContext/Indicator/UpcomingEvent graph queries.
+"""MarketContext/Indicator/UpcomingEvent/Theme graph queries.
 
 Extracted from graph_query.py during KIK-508 submodule split.
+KIK-603/604: Theme trend queries for theme gap detection.
 """
 
 import json
@@ -81,6 +82,34 @@ def get_upcoming_events(limit: int = 10, within_days: int = None) -> list[dict]:
                     "ORDER BY m.date DESC, e.id LIMIT $limit",
                     limit=limit,
                 )
+            return [dict(r) for r in result]
+    except Exception:
+        return []
+
+
+# ---------------------------------------------------------------------------
+# Theme trend queries (KIK-603/604)
+# ---------------------------------------------------------------------------
+
+def get_theme_trends(limit: int = 10) -> list[dict]:
+    """Get trending themes based on recent stock-theme associations.
+
+    Returns themes ordered by number of associated stocks (descending).
+    Each dict has: theme, stock_count.
+
+    Returns [] when Neo4j is unavailable or on error.
+    """
+    driver = _common._get_driver()
+    if driver is None:
+        return []
+    try:
+        with driver.session() as session:
+            result = session.run(
+                "MATCH (s:Stock)-[:HAS_THEME]->(t:Theme) "
+                "RETURN t.name AS theme, count(s) AS stock_count "
+                "ORDER BY stock_count DESC LIMIT $limit",
+                limit=limit,
+            )
             return [dict(r) for r in result]
     except Exception:
         return []

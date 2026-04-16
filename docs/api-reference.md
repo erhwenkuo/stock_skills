@@ -68,6 +68,11 @@ Portfolio health check orchestrator (KIK-576).
 
 - `run_health_check(csv_path: str, client) -> dict` — Run health check on all portfolio holdings.
 
+### src.core.health.theme
+
+Theme exposure analysis for portfolio health checks (KIK-604).
+
+
 ### src.core.health.trend
 
 Trend health analysis for portfolio health checks (KIK-576).
@@ -857,10 +862,11 @@ Community query functions (KIK-578 split from community.py).
 
 ### src.data.graph_query.market
 
-MarketContext/Indicator/UpcomingEvent graph queries.
+MarketContext/Indicator/UpcomingEvent/Theme graph queries.
 
 - `get_recent_market_context() -> Optional[dict]` — Get the most recent MarketContext node.
 - `get_upcoming_events(limit: int=10, within_days: int=None) -> list[dict]` — Get UpcomingEvent nodes from the most recent MarketContext.
+- `get_theme_trends(limit: int=10) -> list[dict]` — Get trending themes based on recent stock-theme associations.
 
 ### src.data.graph_query.nl_query (KIK-411: 自然言語グラフクエリ)
 

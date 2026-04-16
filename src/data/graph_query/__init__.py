@@ -44,10 +44,11 @@ from src.data.graph_query.portfolio import (  # noqa: F401
     vector_search,
 )
 
-# --- Market/Events queries ---
+# --- Market/Events/Theme queries ---
 from src.data.graph_query.market import (  # noqa: F401
     get_recent_market_context,
     get_upcoming_events,
+    get_theme_trends,
 )
 
 # --- ActionItem queries ---
