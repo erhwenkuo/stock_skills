@@ -18,10 +18,16 @@ Plan → Execute → Review の3フェーズで複数エージェントが議論
 
 Plan-Check は以下の2つの経路で発動する。
 
-### 経路1: /plan-execute からのエスカレーション（推奨）(KIK-600)
+### 経路1: /plan-execute v2 からのエスカレーション（推奨）(KIK-609)
 
-`/plan-execute` スキルのプランニング段階で、投資判断を伴うと判定された場合に自動エスカレーション。
-ユーザーが「プランモードで」と指定するだけで、必要に応じて Plan-Check が発動する。
+`/plan-execute` スキルの Orchestrator が投資判断を伴うと判定した場合、自動的に Plan Phase（Strategist + Lesson Checker + Devil's Advocate の3名並列）を実行する。
+
+Orchestrator は以下の場合に Plan Phase をフル実行する:
+- ユーザーの意図が売買・入替・リバランス・調整を含む
+- extract_constraints.py が action_type として swap_proposal / new_buy / sell / rebalance / adjust を返す
+- Phase 4 の自律ループでアクション提案が生成された場合
+
+情報照会のみの場合は Plan Phase を軽量版（Strategist のみ）で実行し、問題検出時に自律ループでフル Plan Phase にエスカレーションする。
 
 ### 経路2: 直接発動（後方互換）
 
