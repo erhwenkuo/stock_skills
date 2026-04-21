@@ -1,6 +1,22 @@
 # stock-skills
 
+[English](README.md) | [繁體中文](README_zh-TW.md) | [简体中文](README_zh-CN.md)
+
 An undervalued stock screening system. Screens for undervalued stocks across 60+ regions using the Yahoo Finance API (yfinance). Runs as [Claude Code](https://claude.ai/code) Skills — just speak in natural language and the right function executes automatically.
+
+## Credits
+
+Thanks to [okiku](https://qiita.com/okikusan-public) who published three interesting articles how he has utilized Claude Code to design [stock-skills](https://github.com/okikusan-public/stock_skills) using agents skills.
+
+1. [Claude Code Skills × 投資分析シリーズ — 記事一覧](https://qiita.com/okikusan-public/items/6707fa0c99dbcc3e493f)
+2. [Claude Code Skills で株スクリーニングを自動化した話 Vol.1【Python × yfinance × バイブコーディング】](https://qiita.com/okikusan-public/items/61100a5b1aa8d752ae24)
+3. [Claude Code Skills で「使うほど賢くなる」投資分析AIを作った話 Vol.2【Neo4j × 個人開発】](https://qiita.com/okikusan-public/items/405949f83e8a39a49566)
+4. [Claude Code Skills × 投資分析 Vol.3 — 処方箋エンジン・逆張り検出・銘柄クラスタリング](https://qiita.com/okikusan-public/items/1765d6afb8c548f019f1)
+5. [Claude Code Skills で株スクリーニングを自動化した話 Vol.4【マルチAIエージェント × Agentic AI Pattern】](https://qiita.com/okikusan-public/items/27d9b0f0177293db8b1a)
+
+The origin repo - [stock_skills](https://github.com/okikusan-public/stock_skills) is the result of "Vol.1〜3" that mentioned above.
+
+There are many Japan characters in origin repo, so this repo translate most of remark, comments, docstring to English for users who want to learn from these awesome sharings.
 
 ## Prerequisites
 

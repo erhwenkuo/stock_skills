@@ -1,6 +1,22 @@
 # stock-skills
 
+[English](README.md) | [繁體中文](README_zh-TW.md) | [简体中文](README_zh-CN.md)
+
 一套低估值股票篩選系統。使用 Yahoo Finance API（yfinance）跨越 60 個以上地區篩選低估值股票。以 [Claude Code](https://claude.ai/code) Skills 形式運作，只需用自然語言說出需求，系統即自動執行對應功能。
+
+## 致謝
+
+感謝 [okiku](https://qiita.com/okikusan-public) 發表了三篇精彩文章，介紹他如何運用 Claude Code 以 Agent Skills 設計 [stock-skills](https://github.com/okikusan-public/stock_skills)。
+
+1. [Claude Code Skills × 投資分析系列 — 文章一覽](https://qiita.com/okikusan-public/items/6707fa0c99dbcc3e493f)
+2. [用 Claude Code Skills 自動化股票篩選 Vol.1【Python × yfinance × 氛圍編程】](https://qiita.com/okikusan-public/items/61100a5b1aa8d752ae24)
+3. [用 Claude Code Skills 打造「越用越聰明」的投資分析 AI Vol.2【Neo4j × 個人開發】](https://qiita.com/okikusan-public/items/405949f83e8a39a49566)
+4. [Claude Code Skills × 投資分析 Vol.3 — 處方箋引擎・逆向訊號偵測・股票聚類](https://qiita.com/okikusan-public/items/1765d6afb8c548f019f1)
+5. [用 Claude Code Skills 自動化股票篩選 Vol.4【多 AI 代理 × Agentic AI 模式】](https://qiita.com/okikusan-public/items/27d9b0f0177293db8b1a)
+
+原始儲存庫 [stock_skills](https://github.com/okikusan-public/stock_skills) 是上述 Vol.1〜3 的成果。
+
+由於原始儲存庫中存在大量日文字符，本儲存庫將大部分備註、注釋、文件字串翻譯為英文，方便希望從這些優質分享中學習的使用者。
 
 ## 前置需求
 
