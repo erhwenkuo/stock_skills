@@ -26,22 +26,22 @@ from portfolio_commands import (
 def cmd_adjust(csv_path: str, full: bool = False) -> None:
     """Generate portfolio adjustment plan from health check."""
     if not HAS_HEALTH_CHECK:
-        print("Error: health_check モジュールが見つかりません。")
+        print("Error: health_check module not found.")
         sys.exit(1)
     if not HAS_MARKET_REGIME:
-        print("Error: market_regime モジュールが見つかりません。")
+        print("Error: market_regime module not found.")
         sys.exit(1)
     if not HAS_ADJUSTMENT_ADVISOR:
-        print("Error: adjustment_advisor モジュールが見つかりません。")
+        print("Error: adjustment_advisor module not found.")
         sys.exit(1)
 
-    print("調整プラン生成中（ヘルスチェック + レジーム判定）...\n")
+    print("Generating adjustment plan (health check + regime detection)...\n")
 
     # 1. Health check
     health_data = hc_run_health_check(csv_path, yahoo_client)
     positions = health_data.get("positions", [])
     if not positions:
-        print("ポートフォリオにデータがありません。")
+        print("No data in portfolio.")
         return
 
     # 2. Market regime
@@ -55,7 +55,7 @@ def cmd_adjust(csv_path: str, full: bool = False) -> None:
     var_result = None
 
     if full:
-        print("フル分析モード（集中度・相関・VaR取得中）...\n")
+        print("Full analysis mode (fetching concentration, correlation, VaR)...\n")
         if HAS_CONCENTRATION:
             try:
                 snapshot = pm_get_snapshot(csv_path, yahoo_client)

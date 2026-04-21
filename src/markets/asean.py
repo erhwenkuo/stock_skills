@@ -38,7 +38,7 @@ class ASEANMarket(Market):
     EquityQuery exchanges: ``SES``, ``SET``, ``KLS``, ``JKT``, ``PHP``
     """
 
-    name = "ASEAN株"
+    name = "ASEAN Stocks"
 
     # -- EquityQuery support ------------------------------------------------
 

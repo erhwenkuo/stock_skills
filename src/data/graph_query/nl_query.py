@@ -187,19 +187,19 @@ def format_result(query_type: str, result, params: dict) -> str:
 def _fmt_prior_report(result, params: dict) -> str:
     symbol = params.get("symbol", "?")
     if not result:
-        return f"{symbol} の過去レポートは見つかりませんでした。"
+        return f"No past report found for {symbol}."
     return (
-        f"## {symbol} の前回レポート\n\n"
-        f"- 日付: {result.get('date', '-')}\n"
-        f"- スコア: {result.get('score', '-')}\n"
-        f"- 判定: {result.get('verdict', '-')}\n"
+        f"## {symbol} Previous Report\n\n"
+        f"- Date: {result.get('date', '-')}\n"
+        f"- Score: {result.get('score', '-')}\n"
+        f"- Verdict: {result.get('verdict', '-')}\n"
     )
 
 
 def _fmt_recurring_picks(result, params: dict) -> str:
     if not result:
-        return "繰り返し候補に上がっている未購入銘柄はありません。"
-    lines = ["## 繰り返し候補（未購入）\n", "| 銘柄 | 出現回数 | 最終日 |", "|:-----|:---------|:-------|"]
+        return "No recurring unpurchased candidates found."
+    lines = ["## Recurring Candidates (Not Purchased)\n", "| Symbol | Count | Last Date |", "|:-------|:------|:----------|"]
     for r in result:
         lines.append(f"| {r.get('symbol', '-')} | {r.get('count', 0)} | {r.get('last_date', '-')} |")
     return "\n".join(lines)
@@ -209,8 +209,8 @@ def _fmt_research_chain(result, params: dict) -> str:
     symbol = params.get("symbol", "?")
     rtype = params.get("research_type", "stock")
     if not result:
-        return f"{symbol} ({rtype}) のリサーチ履歴は見つかりませんでした。"
-    lines = [f"## {symbol} のリサーチ履歴 ({rtype})\n", "| 日付 | サマリー |", "|:-----|:---------|"]
+        return f"No research history found for {symbol} ({rtype})."
+    lines = [f"## {symbol} Research History ({rtype})\n", "| Date | Summary |", "|:-----|:--------|"]
     for r in result:
         summary = (r.get("summary") or "-")[:80]
         lines.append(f"| {r.get('date', '-')} | {summary} |")
@@ -219,20 +219,20 @@ def _fmt_research_chain(result, params: dict) -> str:
 
 def _fmt_market_context(result, params: dict) -> str:
     if not result:
-        return "最近の市況データは見つかりませんでした。"
+        return "No recent market context data found."
     date = result.get("date", "-")
     indices = result.get("indices", [])
-    lines = [f"## 市況コンテキスト ({date})\n"]
+    lines = [f"## Market Context ({date})\n"]
     if indices:
-        lines.append("| 指標 | 値 |")
-        lines.append("|:-----|:---|")
+        lines.append("| Indicator | Value |")
+        lines.append("|:----------|:------|")
         for idx in indices:
             if isinstance(idx, dict):
                 lines.append(f"| {idx.get('name', '-')} | {idx.get('value', '-')} |")
             else:
                 lines.append(f"| {idx} | - |")
     else:
-        lines.append("指標データなし")
+        lines.append("No indicator data")
     return "\n".join(lines)
 
 
@@ -241,18 +241,18 @@ def _fmt_trade_context(result, params: dict) -> str:
     trades = result.get("trades", [])
     notes = result.get("notes", [])
     if not trades and not notes:
-        return f"{symbol} の取引履歴・メモは見つかりませんでした。"
-    lines = [f"## {symbol} の取引コンテキスト\n"]
+        return f"No trade history or notes found for {symbol}."
+    lines = [f"## {symbol} Trade Context\n"]
     if trades:
-        lines.append("### 取引履歴\n")
-        lines.append("| 日付 | 種別 | 株数 | 価格 |")
-        lines.append("|:-----|:-----|:-----|:-----|")
+        lines.append("### Trade History\n")
+        lines.append("| Date | Type | Shares | Price |")
+        lines.append("|:-----|:-----|:-------|:------|")
         for t in trades:
             lines.append(f"| {t.get('date', '-')} | {t.get('type', '-')} | {t.get('shares', '-')} | {t.get('price', '-')} |")
     if notes:
-        lines.append("\n### メモ\n")
-        lines.append("| 日付 | タイプ | 内容 |")
-        lines.append("|:-----|:-------|:-----|")
+        lines.append("\n### Notes\n")
+        lines.append("| Date | Type | Content |")
+        lines.append("|:-----|:-----|:--------|")
         for n in notes:
             content = (n.get("content") or "-")[:50]
             lines.append(f"| {n.get('date', '-')} | {n.get('type', '-')} | {content} |")
@@ -266,10 +266,10 @@ def _fmt_notes(result, params: dict) -> str:
 def _fmt_stock_news(result, params: dict) -> str:
     symbol = params.get("symbol", "?")
     if not result:
-        return f"{symbol} のニュース履歴は見つかりませんでした。"
-    lines = [f"## {symbol} のニュース履歴\n",
-             "| 日付 | ソース | タイトル |",
-             "|:-----|:-------|:---------|"]
+        return f"No news history found for {symbol}."
+    lines = [f"## {symbol} News History\n",
+             "| Date | Source | Title |",
+             "|:-----|:-------|:------|"]
     for r in result:
         title = (r.get("title") or "-")[:80]
         lines.append(f"| {r.get('date', '-')} | {r.get('source', '-')} | {title} |")
@@ -279,10 +279,10 @@ def _fmt_stock_news(result, params: dict) -> str:
 def _fmt_sentiment_trend(result, params: dict) -> str:
     symbol = params.get("symbol", "?")
     if not result:
-        return f"{symbol} のセンチメント推移は見つかりませんでした。"
-    lines = [f"## {symbol} のセンチメント推移\n",
-             "| 日付 | ソース | スコア | サマリー |",
-             "|:-----|:-------|:-------|:---------|"]
+        return f"No sentiment trend found for {symbol}."
+    lines = [f"## {symbol} Sentiment Trend\n",
+             "| Date | Source | Score | Summary |",
+             "|:-----|:-------|:------|:--------|"]
     for r in result:
         summary = (r.get("summary") or "-")[:60]
         score = r.get("score", "-")
@@ -295,14 +295,14 @@ def _fmt_catalysts(result, params: dict) -> str:
     pos = result.get("positive", [])
     neg = result.get("negative", [])
     if not pos and not neg:
-        return f"{symbol} のカタリスト情報は見つかりませんでした。"
-    lines = [f"## {symbol} のカタリスト\n"]
+        return f"No catalyst information found for {symbol}."
+    lines = [f"## {symbol} Catalysts\n"]
     if pos:
-        lines.append("### ポジティブ材料\n")
+        lines.append("### Positive Catalysts\n")
         for p in pos:
             lines.append(f"- {(p or '-')[:100]}")
     if neg:
-        lines.append("\n### ネガティブ材料\n")
+        lines.append("\n### Negative Catalysts\n")
         for n in neg:
             lines.append(f"- {(n or '-')[:100]}")
     return "\n".join(lines)
@@ -311,10 +311,10 @@ def _fmt_catalysts(result, params: dict) -> str:
 def _fmt_report_trend(result, params: dict) -> str:
     symbol = params.get("symbol", "?")
     if not result:
-        return f"{symbol} のバリュエーション推移は見つかりませんでした。"
-    lines = [f"## {symbol} のバリュエーション推移\n",
-             "| 日付 | スコア | 判定 | 株価 | PER | PBR |",
-             "|:-----|:-------|:-----|:-----|:----|:----|"]
+        return f"No valuation trend found for {symbol}."
+    lines = [f"## {symbol} Valuation Trend\n",
+             "| Date | Score | Verdict | Price | PER | PBR |",
+             "|:-----|:------|:--------|:------|:----|:----|"]
     for r in result:
         lines.append(
             f"| {r.get('date', '-')} | {r.get('score', '-')} | {r.get('verdict', '-')} "
@@ -325,8 +325,8 @@ def _fmt_report_trend(result, params: dict) -> str:
 
 def _fmt_upcoming_events(result, params: dict) -> str:
     if not result:
-        return "今後のイベント情報は見つかりませんでした。"
-    lines = ["## 今後のイベント\n"]
+        return "No upcoming event information found."
+    lines = ["## Upcoming Events\n"]
     for r in result:
         lines.append(f"- [{r.get('date', '-')}] {(r.get('text') or '-')[:100]}")
     return "\n".join(lines)
@@ -339,10 +339,10 @@ def _fmt_indicator_history(result, params: dict) -> str:
 
 def _fmt_stress_test_history(result, params: dict) -> str:
     if not result:
-        return "ストレステストの履歴は見つかりませんでした。"
-    lines = ["## ストレステスト履歴\n",
-             "| 日付 | シナリオ | PF影響 | VaR95 | VaR99 | 銘柄数 |",
-             "|:-----|:---------|:-------|:------|:------|:-------|"]
+        return "No stress test history found."
+    lines = ["## Stress Test History\n",
+             "| Date | Scenario | PF Impact | VaR95 | VaR99 | Symbols |",
+             "|:-----|:---------|:----------|:------|:------|:--------|"]
     for r in result:
         impact = r.get("portfolio_impact")
         impact_str = f"{impact * 100:+.1f}%" if impact is not None else "-"
@@ -359,10 +359,10 @@ def _fmt_stress_test_history(result, params: dict) -> str:
 
 def _fmt_forecast_history(result, params: dict) -> str:
     if not result:
-        return "フォーキャストの履歴は見つかりませんでした。"
-    lines = ["## フォーキャスト履歴\n",
-             "| 日付 | 楽観 | ベース | 悲観 | 評価額(万円) | 銘柄数 |",
-             "|:-----|:-----|:-------|:-----|:------------|:-------|"]
+        return "No forecast history found."
+    lines = ["## Forecast History\n",
+             "| Date | Optimistic | Base | Pessimistic | Value (10K JPY) | Symbols |",
+             "|:-----|:-----------|:-----|:------------|:----------------|:--------|"]
     for r in result:
         opt = r.get("optimistic")
         opt_str = f"{opt * 100:+.1f}%" if opt is not None else "-"
@@ -381,10 +381,10 @@ def _fmt_forecast_history(result, params: dict) -> str:
 
 def _fmt_theme_trends(result, params: dict) -> str:
     if not result:
-        return "テーマトレンドの履歴は見つかりませんでした。"
-    lines = ["## テーマトレンド履歴 (KIK-603)\n",
-             "| 日付 | テーマ | 信頼度 | ランク | 地域 | 理由 |",
-             "|:-----|:-------|:-------|:-------|:-----|:-----|"]
+        return "No theme trend history found."
+    lines = ["## Theme Trend History (KIK-603)\n",
+             "| Date | Theme | Confidence | Rank | Region | Reason |",
+             "|:-----|:------|:-----------|:-----|:-------|:-------|"]
     for r in result:
         conf = r.get("confidence")
         conf_str = f"{conf:.2f}" if conf is not None else "-"

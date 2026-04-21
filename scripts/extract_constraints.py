@@ -4,8 +4,8 @@
 Extracts action type and relevant lesson constraints from user query.
 
 Usage:
-    python3 scripts/extract_constraints.py "7751.Tを売って代わりを探して"
-    python3 scripts/extract_constraints.py "NVDAを買いたい" --format markdown
+    python3 scripts/extract_constraints.py "Sell 7751.T and find an alternative"
+    python3 scripts/extract_constraints.py "I want to buy NVDA" --format markdown
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ _TIMEOUT = 10
 
 
 def _timeout_handler(signum, frame):
-    print("タイムアウト: 制約抽出に時間がかかりすぎました", file=sys.stderr)
+    print("Timeout: constraint extraction took too long", file=sys.stderr)
     sys.exit(1)
 
 
@@ -66,7 +66,7 @@ def main():
         else:
             print(json.dumps(result, ensure_ascii=False, indent=2))
     except Exception as e:
-        print(f"エラー: {e}", file=sys.stderr)
+        print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
     finally:
         if hasattr(signal, "SIGALRM"):

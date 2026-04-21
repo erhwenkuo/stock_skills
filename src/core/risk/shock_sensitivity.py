@@ -115,23 +115,23 @@ def compute_fundamental_sensitivity(stock_info: dict) -> dict:
     # Build human-readable detail
     details_parts = []
     if per_score >= 1.3:
-        details_parts.append(f"PER({per:.1f})高め")
+        details_parts.append(f"PER({per:.1f}) high")
     elif per_score <= 0.8:
-        details_parts.append(f"PER({per:.1f})割安")
+        details_parts.append(f"PER({per:.1f}) undervalued")
     if pbr_score >= 1.3:
-        details_parts.append(f"PBR({pbr:.2f})高め")
+        details_parts.append(f"PBR({pbr:.2f}) high")
     elif pbr_score <= 0.8:
-        details_parts.append(f"PBR({pbr:.2f})割安")
+        details_parts.append(f"PBR({pbr:.2f}) undervalued")
     if dividend_score <= 0.8:
-        details_parts.append(f"高配当({dividend_yield*100:.1f}%)")
+        details_parts.append(f"High dividend({dividend_yield*100:.1f}%)")
     elif dividend_score >= 1.2:
-        details_parts.append("低配当")
+        details_parts.append("Low dividend")
     if size_score <= 0.9:
-        details_parts.append("大型株")
+        details_parts.append("Large-cap")
     elif size_score >= 1.2:
-        details_parts.append("小型株")
+        details_parts.append("Small-cap")
 
-    detail = "; ".join(details_parts) if details_parts else "中立的なファンダメンタル"
+    detail = "; ".join(details_parts) if details_parts else "Neutral fundamentals"
 
     return {
         "score": round(score, 4),
@@ -174,7 +174,7 @@ def compute_technical_sensitivity(hist: pd.DataFrame, period: int = 14) -> dict:
         "ma_deviation_score": 1.0,
         "surge_score": 1.0,
         "volume_heat_score": 1.0,
-        "detail": "データ不足のため中立値",
+        "detail": "Insufficient data, using neutral value",
     }
 
     if hist is None or hist.empty or "Close" not in hist.columns:
@@ -275,19 +275,19 @@ def compute_technical_sensitivity(hist: pd.DataFrame, period: int = 14) -> dict:
     # Detail string
     parts = []
     if rsi_score >= 1.3:
-        parts.append(f"RSI({current_rsi:.1f})過熱")
+        parts.append(f"RSI({current_rsi:.1f}) overbought")
     elif rsi_score <= 0.85:
-        parts.append(f"RSI({current_rsi:.1f})売られ過ぎ")
+        parts.append(f"RSI({current_rsi:.1f}) oversold")
     if ma_deviation_score >= 1.3:
-        parts.append(f"MA乖離(+{ma_deviation*100:.1f}%)大")
+        parts.append(f"MA deviation(+{ma_deviation*100:.1f}%) large")
     elif ma_deviation_score <= 0.8:
-        parts.append(f"MA乖離({ma_deviation*100:.1f}%)下方")
+        parts.append(f"MA deviation({ma_deviation*100:.1f}%) below")
     if surge_score >= 1.3:
-        parts.append(f"30日急騰(+{surge*100:.1f}%)")
+        parts.append(f"30d surge(+{surge*100:.1f}%)")
     if volume_heat_score >= 1.2:
-        parts.append(f"出来高過熱({volume_heat:.2f}x)")
+        parts.append(f"Volume overheated({volume_heat:.2f}x)")
 
-    detail = "; ".join(parts) if parts else "テクニカル中立"
+    detail = "; ".join(parts) if parts else "Technical neutral"
 
     return {
         "score": round(score, 4),
@@ -324,34 +324,34 @@ def classify_quadrant(fundamental_score: float, technical_score: float) -> dict:
 
     if f_vulnerable and t_overbought:
         return {
-            "quadrant": "最危険",
+            "quadrant": "Highest risk",
             "emoji": "\U0001f534",  # red circle
-            "description": "ファンダ脆弱かつテクニカル過熱。ショック時に最も大きな下落リスク。",
+            "description": "Fundamentally weak and technically overbought. Highest downside risk in a shock.",
         }
     if f_vulnerable and t_oversold:
         return {
-            "quadrant": "底抜けリスク",
+            "quadrant": "Breakdown risk",
             "emoji": "\u26a0",  # warning sign
-            "description": "ファンダ脆弱かつ既に売り込まれている。更なる底抜けの懸念。",
+            "description": "Fundamentally weak and already oversold. Risk of further breakdown.",
         }
     if f_sound and t_overbought:
         return {
-            "quadrant": "短期調整リスク",
+            "quadrant": "Short-term correction risk",
             "emoji": "\u26a0",  # warning sign
-            "description": "ファンダ健全だがテクニカル過熱。短期的な調整に注意。",
+            "description": "Fundamentally sound but technically overbought. Watch for short-term correction.",
         }
     if f_sound and t_oversold:
         return {
-            "quadrant": "耐性最強",
+            "quadrant": "Most resilient",
             "emoji": "\u2705",  # check mark
-            "description": "ファンダ健全かつ売られ過ぎ水準。ショック耐性が最も高い。",
+            "description": "Fundamentally sound and oversold. Highest shock resilience.",
         }
 
     # Middle zone: does not clearly fit any quadrant
     return {
-        "quadrant": "中立",
+        "quadrant": "Neutral",
         "emoji": "\u25cb",  # white circle
-        "description": "明確な象限に分類されない中間領域。",
+        "description": "Intermediate zone that does not clearly fit any quadrant.",
     }
 
 
@@ -447,7 +447,7 @@ def analyze_stock_sensitivity(
             "ma_deviation_score": 1.0,
             "surge_score": 1.0,
             "volume_heat_score": 1.0,
-            "detail": "価格履歴なし",
+            "detail": "No price history",
         }
 
     # Layer 4 (integrates L1, L2, L3)
@@ -464,10 +464,10 @@ def analyze_stock_sensitivity(
     summary = (
         f"{symbol}"
         f"{'(' + name + ')' if name else ''}: "
-        f"ファンダ={fundamental['score']:.2f}, "
-        f"テクニカル={technical['score']:.2f}, "
-        f"集中度={concentration_multiplier:.2f} -> "
-        f"調整後ショック={adjusted_pct:+.1f}% "
+        f"Fundamental={fundamental['score']:.2f}, "
+        f"Technical={technical['score']:.2f}, "
+        f"Concentration={concentration_multiplier:.2f} -> "
+        f"Adjusted shock={adjusted_pct:+.1f}% "
         f"[{quadrant_name}]"
     )
 

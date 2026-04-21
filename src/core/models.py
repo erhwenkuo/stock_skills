@@ -127,9 +127,9 @@ class HealthResult:
     symbol : str
         Ticker symbol.
     trend : str
-        Price trend direction: "上昇", "横ばい", or "下降".
+        Price trend direction: "Uptrend", "Sideways", or "Downtrend".
     quality_label : str
-        Fundamental quality: "良好", "1指標↓", "複数悪化", or "対象外".
+        Fundamental quality: "Good", "1 metric↓", "Multiple deteriorated", or "N/A".
     alert_level : str
         Alert severity: "", "early_warning", "caution", or "exit".
     reasons : list
@@ -193,7 +193,7 @@ class RebalanceAction:
 
 @dataclass
 class YearlySnapshot:
-    """1年分のシミュレーション結果 (KIK-366)."""
+    """Single-year simulation result (KIK-366)."""
 
     year: int
     value: float
@@ -207,7 +207,7 @@ class YearlySnapshot:
 
 @dataclass
 class SimulationResult:
-    """複利シミュレーション結果 (KIK-366)."""
+    """Compound interest simulation result (KIK-366)."""
 
     scenarios: dict[str, list[YearlySnapshot]]
     target: Optional[float]
@@ -249,7 +249,7 @@ class SimulationResult:
 
     @classmethod
     def empty(cls) -> "SimulationResult":
-        """シミュレーション不可時の空結果。"""
+        """Empty result when simulation is not possible."""
         return cls(
             scenarios={},
             target=None,

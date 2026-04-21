@@ -1,50 +1,50 @@
 ---
 name: stock-report
-description: 個別銘柄・ETFの詳細レポート。ティッカーシンボルを指定して財務分析レポートを生成する。個別株はバリュエーション・割安度判定・株主還元率を表示。ETFは経費率・AUM・ファンド規模を自動評価。
-argument-hint: "[ticker]  例: 7203.T, AAPL, D05.SI"
+description: Detailed report for individual stocks and ETFs. Generates a financial analysis report from a ticker symbol. Individual stocks show valuation, undervaluation score, and shareholder return rate. ETFs show expense ratio, AUM, and fund size.
+argument-hint: "[ticker]  e.g.: 7203.T, AAPL, D05.SI"
 allowed-tools: Bash(python3 *)
 ---
 
-# 個別銘柄レポートスキル
+# Individual Stock Report Skill
 
-$ARGUMENTS からティッカーシンボルを取り出し、以下のコマンドを実行してください。
+Extract the ticker symbol from $ARGUMENTS and run the following command.
 
 ```bash
 python3 /Users/kikuchihiroyuki/stock-skills/.claude/skills/stock-report/scripts/generate_report.py $ARGUMENTS
 ```
 
-## 出力内容
+## Output Contents
 
-- **セクター・業種**
-- **株価情報**: 現在値、時価総額
-- **バリュエーション**: PER, PBR, 配当利回り, ROE, ROA, 利益成長率
-- **割安度判定**: 0-100点スコア + 判定（割安/やや割安/適正/割高）
-- **株主還元**（KIK-375）: 配当利回り + 自社株買い利回り = **総株主還元率**
-- **逆張りシグナル**（KIK-504/533）: 逆張りスコア (0-100) + グレード (A/B/C/D) + 3軸内訳 (テクニカル/バリュエーション/ファンダメンタル乖離)
-- **業界コンテキスト**（KIK-433, Neo4j 接続時）: 同セクターの直近業界リサーチから追い風・リスクを自動表示
+- **Sector & Industry**
+- **Price Information**: Current price, market cap
+- **Valuation**: P/E, P/B, dividend yield, ROE, ROA, earnings growth rate
+- **Undervaluation Score**: 0-100 score + judgment (undervalued/slightly undervalued/fair/overvalued)
+- **Shareholder Returns** (KIK-375): Dividend yield + buyback yield = **total shareholder return rate**
+- **Contrarian Signals** (KIK-504/533): Contrarian score (0-100) + grade (A/B/C/D) + 3-axis breakdown (technical/valuation/fundamental divergence)
+- **Industry Context** (KIK-433, when Neo4j connected): Auto-display tailwinds and risks from recent industry research in the same sector
 
-### ETF自動検出（KIK-469）
+### ETF Auto-Detection (KIK-469)
 
-ETF（quoteType=ETF）を自動検出し、個別株レポートの代わりにETF専用レポートを出力する:
+Automatically detects ETFs (quoteType=ETF) and outputs an ETF-specific report instead of the individual stock report:
 
-- **ファンド概要**: カテゴリ、ファンドファミリー、純資産総額(AUM)、経費率
-- **経費率評価**: 超低コスト（<=0.1%）/ 低コスト（<=0.5%）/ やや高め（<=1.0%）/ 高コスト（>1.0%）
-- **パフォーマンス**: 現在値、配当利回り、β値、52週レンジ
-- **ファンド規模**: 大規模（$10B+）/ 中規模（$1B+）/ 小規模（$100M+）/ 極小（<$100M）
+- **Fund Overview**: Category, fund family, AUM (net assets), expense ratio
+- **Expense Ratio Assessment**: Ultra-low cost (<=0.1%) / Low cost (<=0.5%) / Slightly high (<=1.0%) / High cost (>1.0%)
+- **Performance**: Current price, dividend yield, beta, 52-week range
+- **Fund Size**: Large ($10B+) / Mid ($1B+) / Small ($100M+) / Micro (<$100M)
 
-結果をそのまま表示してください。
+Display the result as-is.
 
-## 前提知識統合ルール (KIK-466)
+## Knowledge Integration Rules (KIK-466)
 
-get_context.py の出力に以下がある場合、レポート結果と統合して回答する:
+When `get_context.py` output contains the following, integrate with the report result:
 
-- **スクリーニング出現回数**: 「3回スクリーニング上位 → 繰り返し注目される銘柄」
-- **購入経緯（BOUGHT）**: 保有中なら「保有銘柄として: 含み益+12%、テーゼとの整合性は良好」
-- **過去レポート**: 前回の数値との差分。「PER: 12.3→8.5（改善）、ROE: 15%→12%（低下）」
-- **投資メモ**: 懸念・テーゼがあればレポートに織り込む。「懸念メモ: 在庫リスク → 最新四半期で在庫圧縮確認」
-- **リサーチ履歴**: 前回リサーチの要点を参照し、変化点をハイライト
+- **Screening appearance count**: "Top 3 screenings in a row → repeatedly noticed stock"
+- **Purchase history (BOUGHT)**: If currently held: "As a held stock: unrealized gain +12%, thesis alignment is good"
+- **Past reports**: Diff from previous figures. "P/E: 12.3→8.5 (improved), ROE: 15%→12% (declined)"
+- **Investment notes**: Incorporate concerns and thesis into the report. "Concern note: inventory risk → latest quarter shows inventory reduction confirmed"
+- **Research history**: Reference key points from the previous research and highlight changes
 
-### 分析結論の記録促し
+### Prompting to Record Analysis Conclusions
 
-バリュエーション判定・割安度判定・バリュートラップ判定で具体的な投資見解を含む回答をした場合:
-> 💡 この分析を投資メモとして記録しますか？
+When the response includes specific investment opinions for valuation/undervaluation/value-trap assessments:
+> 💡 Would you like to record this analysis as an investment note?

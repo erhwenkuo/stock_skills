@@ -78,7 +78,7 @@ def build_trade_summary(
     action = trade_type.upper() if trade_type else "TRADE"
     parts = [f"{trade_date} {action} {symbol}"]
     if shares:
-        parts[0] += f" {shares}株"
+        parts[0] += f" {shares}sh"
     if memo:
         parts.append(memo)
     return _trunc(" / ".join(parts))
@@ -92,23 +92,23 @@ def build_health_summary(
 
     Example: "2026-02-18 ヘルスチェック / 全5銘柄 / 健全3 注意1 EXIT1"
     """
-    parts = [f"{health_date} ヘルスチェック"]
+    parts = [f"{health_date} Health Check"]
     if summary:
         total = summary.get("total", 0)
         healthy = summary.get("healthy", 0)
         early = summary.get("early_warning", 0)
         caution = summary.get("caution", 0)
         exit_count = summary.get("exit", 0)
-        parts.append(f"全{total}銘柄")
+        parts.append(f"Total {total}")
         detail = []
         if healthy:
-            detail.append(f"健全{healthy}")
+            detail.append(f"Healthy {healthy}")
         if early:
-            detail.append(f"注意{early}")
+            detail.append(f"Early {early}")
         if caution:
-            detail.append(f"警戒{caution}")
+            detail.append(f"Caution {caution}")
         if exit_count:
-            detail.append(f"EXIT{exit_count}")
+            detail.append(f"EXIT {exit_count}")
         if detail:
             parts.append(" ".join(detail))
     return _trunc(" / ".join(parts))
@@ -141,10 +141,10 @@ def build_research_summary(
                 parts.append(headline[:80])
         xs = grok.get("x_sentiment") or result.get("x_sentiment") or {}
         if isinstance(xs, dict) and xs.get("score") is not None:
-            parts.append(f"Xセンチメント{xs['score']}")
+            parts.append(f"X-sentiment {xs['score']}")
         vs = result.get("value_score")
         if vs is not None:
-            parts.append(f"スコア{vs}")
+            parts.append(f"Score {vs}")
 
     elif research_type == "market":
         pa = grok.get("price_action", "")
@@ -155,7 +155,7 @@ def build_research_summary(
             parts.append(pa_clean[:120])
         sent = grok.get("sentiment") or {}
         if isinstance(sent, dict) and sent.get("score") is not None:
-            parts.append(f"センチメント{sent['score']}")
+            parts.append(f"Sentiment {sent['score']}")
 
     elif research_type == "industry":
         trends = grok.get("trends", "")
@@ -227,7 +227,7 @@ def build_note_summary(
             parts.append(symbol)
         elif category and category != "stock":
             parts.append(f"[{category}]")
-        parts.append("投資lesson:")
+        parts.append("Investment lesson:")
         if trigger and expected_action:
             parts.append(f"{trigger} → {expected_action}")
         elif trigger:
@@ -276,13 +276,13 @@ def build_stress_test_summary(
 
     Example: "2026-02-19 ストレステスト / トリプル安 / 14銘柄 / PF影響+1.1%"
     """
-    parts = [f"{test_date} ストレステスト"]
+    parts = [f"{test_date} Stress Test"]
     if scenario:
         parts.append(scenario)
     if symbol_count:
-        parts.append(f"{symbol_count}銘柄")
+        parts.append(f"{symbol_count} stocks")
     if portfolio_impact:
-        parts.append(f"PF影響{portfolio_impact * 100:+.1f}%")
+        parts.append(f"PF impact {portfolio_impact * 100:+.1f}%")
     return _trunc(" / ".join(parts))
 
 
@@ -297,13 +297,13 @@ def build_forecast_summary(
 
     Example: "2026-02-19 フォーキャスト / 14銘柄 / ベース+14.4%"
     """
-    parts = [f"{forecast_date} フォーキャスト"]
+    parts = [f"{forecast_date} Forecast"]
     if symbol_count:
-        parts.append(f"{symbol_count}銘柄")
+        parts.append(f"{symbol_count} stocks")
     if base is not None:
-        parts.append(f"ベース{base * 100:+.1f}%")
+        parts.append(f"Base {base * 100:+.1f}%")
     if optimistic is not None:
-        parts.append(f"楽観{optimistic * 100:+.1f}%")
+        parts.append(f"Optimistic {optimistic * 100:+.1f}%")
     if pessimistic is not None:
-        parts.append(f"悲観{pessimistic * 100:+.1f}%")
+        parts.append(f"Pessimistic {pessimistic * 100:+.1f}%")
     return _trunc(" / ".join(parts))

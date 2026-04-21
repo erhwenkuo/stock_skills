@@ -175,17 +175,17 @@ def get_stock_info(symbol: str) -> Optional[dict]:
 
     except (TimeoutError, socket.timeout) as e:
         print(
-            f"⚠️  Yahoo Financeへの接続がタイムアウトしました ({symbol})\n"
-            "    原因: ネットワーク接続が不安定、またはYahoo Financeが一時的に応答していません\n"
-            "    対処: ネットワーク接続を確認し、再試行してください"
+            f"⚠️  Yahoo Finance connection timed out ({symbol})\n"
+            "    Cause: unstable network or Yahoo Finance temporarily unavailable\n"
+            "    Fix: check your network connection and retry"
         )
         return None
     except Exception as e:
         if "timed out" in str(e).lower() or "timeout" in str(e).lower():
             print(
-                f"⚠️  Yahoo Financeへの接続がタイムアウトしました ({symbol})\n"
-                "    原因: ネットワーク接続が不安定、またはYahoo Financeが一時的に応答していません\n"
-                "    対処: ネットワーク接続を確認し、再試行してください"
+                f"⚠️  Yahoo Finance connection timed out ({symbol})\n"
+                "    Cause: unstable network or Yahoo Finance temporarily unavailable\n"
+                "    Fix: check your network connection and retry"
             )
         else:
             print(f"[yahoo_client] Error fetching {symbol}: {e}")
@@ -491,17 +491,17 @@ def get_stock_detail(symbol: str) -> Optional[dict]:
 
     except (TimeoutError, socket.timeout) as e:
         print(
-            f"⚠️  Yahoo Financeへの接続がタイムアウトしました ({symbol})\n"
-            "    原因: ネットワーク接続が不安定、またはYahoo Financeが一時的に応答していません\n"
-            "    対処: ネットワーク接続を確認し、再試行してください"
+            f"⚠️  Yahoo Finance connection timed out ({symbol})\n"
+            "    Cause: unstable network or Yahoo Finance temporarily unavailable\n"
+            "    Fix: check your network connection and retry"
         )
         return None
     except Exception as e:
         if "timed out" in str(e).lower() or "timeout" in str(e).lower():
             print(
-                f"⚠️  Yahoo Financeへの接続がタイムアウトしました ({symbol})\n"
-                "    原因: ネットワーク接続が不安定、またはYahoo Financeが一時的に応答していません\n"
-                "    対処: ネットワーク接続を確認し、再試行してください"
+                f"⚠️  Yahoo Finance connection timed out ({symbol})\n"
+                "    Cause: unstable network or Yahoo Finance temporarily unavailable\n"
+                "    Fix: check your network connection and retry"
             )
         else:
             print(f"[yahoo_client] Error fetching detail for {symbol}: {e}")

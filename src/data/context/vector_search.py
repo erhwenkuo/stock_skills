@@ -40,12 +40,12 @@ def _vector_search(user_input: str, _graph_query=None) -> list[dict]:
 
 def _format_vector_results(results: list[dict]) -> str:
     """Format vector search results as markdown with freshness labels (KIK-427)."""
-    lines = ["## 関連する過去の記録"]
+    lines = ["## Related Past Records"]
     for r in results[:5]:
         score_pct = f"{r['score'] * 100:.0f}%"
-        summary = r.get("summary") or "(要約なし)"
+        summary = r.get("summary") or "(no summary)"
         fl = freshness_label(r.get("date", ""))
-        lines.append(f"- [{r['label']}][{fl}] {summary} (類似度{score_pct})")
+        lines.append(f"- [{r['label']}][{fl}] {summary} (similarity {score_pct})")
     return "\n".join(lines)
 
 
@@ -92,8 +92,8 @@ def _merge_context(
             "context_markdown": (_action_directive(overall) + "\n\n"
                                  + _format_vector_results(vector_results)),
             "recommended_skill": _infer_skill_from_vectors(vector_results),
-            "recommendation_reason": "ベクトル類似検索",
-            "relationship": "関連",
+            "recommendation_reason": "Vector similarity search",
+            "relationship": "Related",
         }
 
     # Both available: append vector results to symbol context

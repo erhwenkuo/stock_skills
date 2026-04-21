@@ -5,47 +5,47 @@ paths:
   - "config/screening_presets.yaml"
 ---
 
-# スクリーニング開発ルール
+# Screening Development Rules
 
-> 新スクリーニングプリセット追加の具体的な手順（ファイル一覧・コードテンプレート・テスト例）は [docs/patterns.md](../../docs/patterns.md) の「パターン1」を参照。
+> For specific steps to add a new screening preset (file list, code templates, test examples), see "Pattern 1" in [docs/patterns.md](../../docs/patterns.md).
 
-## 5つのスクリーナーエンジン
+## 5 Screener Engines
 
-- **QueryScreener（デフォルト）**: `build_query()` → `screen_stocks()` [EquityQuery bulk API] → `_normalize_quote()` → `calculate_value_score()` → ソート
-- **ValueScreener（Legacy）**: 銘柄リスト方式。`get_stock_info()` → `apply_filters()` → `calculate_value_score()`。japan/us/asean のみ
-- **PullbackScreener**: 3段パイプライン。EquityQuery → `detect_pullback_in_uptrend()` → value_score。"full"（完全一致）と"partial"（bounce_score>=30）の2種
-- **AlphaScreener**: 4段パイプライン。EquityQuery(割安足切り) → `compute_change_score()` → 押し目判定 → 2軸スコアリング
-- **MomentumScreener** (KIK-506): 2段パイプライン。EquityQuery → `detect_momentum_surge()` → surge_score ランキング。"stable"（継続上昇, 50MA +10-15%）と"surge"（急騰, 50MA +15%+）の2サブモード
+- **QueryScreener (default)**: `build_query()` → `screen_stocks()` [EquityQuery bulk API] → `_normalize_quote()` → `calculate_value_score()` → sort
+- **ValueScreener (Legacy)**: Stock list approach. `get_stock_info()` → `apply_filters()` → `calculate_value_score()`. Japan/US/ASEAN only
+- **PullbackScreener**: 3-stage pipeline. EquityQuery → `detect_pullback_in_uptrend()` → value_score. Two modes: "full" (exact match) and "partial" (bounce_score>=30)
+- **AlphaScreener**: 4-stage pipeline. EquityQuery (undervaluation filter) → `compute_change_score()` → pullback detection → 2-axis scoring
+- **MomentumScreener** (KIK-506): 2-stage pipeline. EquityQuery → `detect_momentum_surge()` → surge_score ranking. Two submodes: "stable" (sustained uptrend, 50MA +10-15%) and "surge" (rapid surge, 50MA +15%+)
 
-## バリュースコア配分
+## Value Score Distribution
 
-PER(25) + PBR(25) + 配当利回り(20) + ROE(15) + 売上成長率(15) = 100点
+P/E(25) + P/B(25) + Dividend Yield(20) + ROE(15) + Revenue Growth(15) = 100 points
 
-## EquityQuery ルール
+## EquityQuery Rules
 
-- フィールド名は yfinance 準拠（`trailingPE`, `priceToBook`, `dividendYield` 等）
-- プリセットは `config/screening_presets.yaml` で定義。criteria の閾値を YAML で管理
+- Field names follow yfinance convention (`trailingPE`, `priceToBook`, `dividendYield`, etc.)
+- Presets defined in `config/screening_presets.yaml`. Criteria thresholds managed in YAML
 
-## yahoo_client データ取得
+## yahoo_client Data Retrieval
 
-- `get_stock_info(symbol)`: `ticker.info` のみ。キャッシュ `{symbol}.json` (24h TTL)
-- `get_stock_detail(symbol)`: info + price_history + balance_sheet + cashflow + income_stmt。キャッシュ `{symbol}_detail.json`
-- `screen_stocks(query)`: EquityQuery ベースのバルクスクリーニング（キャッシュなし）
-- `get_price_history(symbol, period)`: OHLCV DataFrame（キャッシュなし、デフォルト1年分）
+- `get_stock_info(symbol)`: `ticker.info` only. Cache `{symbol}.json` (24h TTL)
+- `get_stock_detail(symbol)`: info + price_history + balance_sheet + cashflow + income_stmt. Cache `{symbol}_detail.json`
+- `screen_stocks(query)`: EquityQuery-based bulk screening (no cache)
+- `get_price_history(symbol, period)`: OHLCV DataFrame (no cache, default 1 year)
 
-## 異常値ガード
+## Anomaly Guard
 
-`_sanitize_anomalies()` で以下をサニタイズ:
-- 配当利回り > 15% → None
-- PBR < 0.1 or PBR > 100 → None
-- PER < 0 or PER > 500 → None
+`_sanitize_anomalies()` sanitizes the following:
+- Dividend yield > 15% → None
+- P/B < 0.1 or P/B > 100 → None
+- P/E < 0 or P/E > 500 → None
 - ROE > 200% → None
 
-## コミュニティグルーピング (KIK-549)
+## Community Grouping (KIK-549)
 
-スクリーニング結果の「📊 グラフコンテキスト」セクション（Neo4j接続時のみ）にコミュニティ別銘柄グルーピングが表示される。
+The "📊 Graph Context" section (Neo4j connection only) of screening results displays community-based stock grouping.
 
-- `screening_context.py`: `symbol_communities` キーで各銘柄のコミュニティ所属を取得
-- `screening_summary_formatter.py`: コミュニティ名 × メンバー数で表示（例: 「Technology x AI: A、B（2銘柄）」）
-- LLMはこのグルーピングを解釈し「半導体関連3銘柄が上位」等のサマリーを生成
-- 活用: 類似銘柄の比較分析、既保有銘柄との重複確認、分散度判断
+- `screening_context.py`: Retrieves each stock's community membership via `symbol_communities` key
+- `screening_summary_formatter.py`: Displays by community name × member count (e.g., "Technology x AI: A, B (2 stocks)")
+- LLM interprets this grouping and generates summaries like "3 semiconductor-related stocks in top positions"
+- Usage: Comparative analysis of similar stocks, checking overlap with existing holdings, assessing diversification

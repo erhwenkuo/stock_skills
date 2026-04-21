@@ -27,7 +27,7 @@ def save_health(
         positions_out.append({
             "symbol": pos.get("symbol"),
             "pnl_pct": pos.get("pnl_pct"),
-            "trend": pos.get("trend_health", {}).get("trend", "不明"),
+            "trend": pos.get("trend_health", {}).get("trend", "Unknown"),
             "quality_label": pos.get("change_quality", {}).get("quality_label", "-"),
             "alert_level": pos.get("alert", {}).get("level", "none"),
         })

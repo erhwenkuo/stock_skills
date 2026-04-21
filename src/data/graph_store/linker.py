@@ -76,7 +76,7 @@ class AIGraphLinker:
         node_type = new_node.get("type", "Node")
         target = new_node.get("target") or new_node.get("symbol") or ""
         description = (new_node.get("summary") or new_node.get("content") or "")[:300]
-        node_desc = f"種別: {node_type}\n対象: {target}\n内容要約: {description}"
+        node_desc = f"Type: {node_type}\nTarget: {target}\nSummary: {description}"
 
         cand_lines = []
         for i, c in enumerate(candidates):
@@ -87,21 +87,21 @@ class AIGraphLinker:
         cands_text = "\n".join(cand_lines)
 
         return (
-            "あなたは投資知識グラフのリレーション判定エンジンです。\n\n"
-            f"## 新ノード\n{node_desc}\n\n"
-            f"## 既存ノード候補\n{cands_text}\n\n"
-            "## タスク\n"
-            "新ノードと各候補の意味的関係を判定してください。\n"
-            f"confidence が {_CONFIDENCE_THRESHOLD} 未満の関係は含めない。"
-            "関係がない場合は [] を返す。\n\n"
-            "## 関係種別\n"
-            "- INFLUENCES: 新ノードが既存ノードの価値・見通しに直接影響する\n"
-            "- CONTRADICTS: 新ノードが既存ノードの投資テーゼと矛盾する\n"
-            "- CONTEXT_OF: 新ノードが既存ノードを解釈するコンテキストになる\n"
-            "- INFORMS: 新ノードが既存ノードの判断材料を提供する\n"
-            "- SUPPORTS: 新ノードが既存ノードの投資テーゼを支持する\n\n"
-            "## 出力形式（JSON配列のみ、説明・コードブロック不要）\n"
-            '[{"rel_type":"INFLUENCES","to_id":"candidate_0","confidence":0.85,"reason":"理由"}]'
+            "You are a relationship detection engine for an investment knowledge graph.\n\n"
+            f"## New Node\n{node_desc}\n\n"
+            f"## Candidate Existing Nodes\n{cands_text}\n\n"
+            "## Task\n"
+            "Determine the semantic relationship between the new node and each candidate.\n"
+            f"Exclude relationships with confidence below {_CONFIDENCE_THRESHOLD}."
+            "If no relationship exists, return [].\n\n"
+            "## Relationship Types\n"
+            "- INFLUENCES: new node directly affects the value/outlook of the existing node\n"
+            "- CONTRADICTS: new node contradicts the investment thesis of the existing node\n"
+            "- CONTEXT_OF: new node provides interpretive context for the existing node\n"
+            "- INFORMS: new node provides decision-making material for the existing node\n"
+            "- SUPPORTS: new node supports the investment thesis of the existing node\n\n"
+            "## Output format (JSON array only, no explanation or code block)\n"
+            '[{"rel_type":"INFLUENCES","to_id":"candidate_0","confidence":0.85,"reason":"reason"}]'
         )
 
     def _call_llm(self, prompt: str, timeout: int = _LLM_TIMEOUT) -> str:

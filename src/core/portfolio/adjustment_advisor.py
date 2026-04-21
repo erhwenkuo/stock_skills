@@ -98,11 +98,11 @@ def evaluate_position_rules(
         alert_level = pos.get("alert", {}).get("level", "none")
         is_trap = pos.get("value_trap", {}).get("is_trap", False)
         is_small_cap = pos.get("is_small_cap", False)
-        trend = pos.get("trend_health", {}).get("trend", "不明")
+        trend = pos.get("trend_health", {}).get("trend", "Unknown")
         cross_signal = pos.get("trend_health", {}).get("cross_signal", "none")
-        long_term_label = pos.get("long_term", {}).get("label", "要検討")
+        long_term_label = pos.get("long_term", {}).get("label", "Review needed")
         stability = pos.get("return_stability", {}).get("stability", "")
-        quality_label = pos.get("change_quality", {}).get("quality_label", "良好")
+        quality_label = pos.get("change_quality", {}).get("quality_label", "Good")
 
         # P1: EXIT → SELL (HIGH)
         if alert_level == "exit":
@@ -110,7 +110,7 @@ def evaluate_position_rules(
                 type=ActionType.SELL,
                 urgency=Urgency.HIGH,
                 target=symbol,
-                reasons=["EXIT判定"],
+                reasons=["EXIT judgment"],
                 rule_ids=["P1"],
             ))
 
@@ -121,16 +121,16 @@ def evaluate_position_rules(
                     type=ActionType.SWAP,
                     urgency=Urgency.HIGH,
                     target=symbol,
-                    reasons=["バリュートラップ + EXIT判定"],
+                    reasons=["Value trap + EXIT judgment"],
                     rule_ids=["P2"],
-                    screening_hint="同セクター割安株",
+                    screening_hint="Same-sector undervalued stocks",
                 ))
             else:
                 actions.append(Action(
                     type=ActionType.FLAG,
                     urgency=Urgency.MEDIUM,
                     target=symbol,
-                    reasons=["バリュートラップの疑い"],
+                    reasons=["Suspected value trap"],
                     rule_ids=["P2"],
                 ))
 
@@ -140,7 +140,7 @@ def evaluate_position_rules(
                 type=ActionType.SELL,
                 urgency=Urgency.MEDIUM,
                 target=symbol,
-                reasons=[f"小型株 + {alert_level.upper()}判定"],
+                reasons=[f"Small-cap + {alert_level.upper()} judgment"],
                 rule_ids=["P3"],
             ))
 
@@ -151,17 +151,17 @@ def evaluate_position_rules(
                 type=ActionType.SELL,
                 urgency=Urgency.MEDIUM,
                 target=symbol,
-                reasons=["デッドクロス + EPS減少"],
+                reasons=["Death cross + EPS declining"],
                 rule_ids=["P4"],
             ))
 
         # P5: Short-term suitability held > 90 days
-        if long_term_label == "短期向き":
+        if long_term_label == "Short-term":
             actions.append(Action(
                 type=ActionType.FLAG,
                 urgency=Urgency.LOW,
                 target=symbol,
-                reasons=["短期向き銘柄（長期保有に不向き）"],
+                reasons=["Short-term stock (unsuitable for long-term holding)"],
                 rule_ids=["P5"],
             ))
 
@@ -172,27 +172,27 @@ def evaluate_position_rules(
                     type=ActionType.SWAP,
                     urgency=Urgency.MEDIUM,
                     target=symbol,
-                    reasons=[f"還元安定度「{stability}」+ EXIT判定"],
+                    reasons=[f"Return stability '{stability}' + EXIT judgment"],
                     rule_ids=["P6"],
-                    screening_hint="高還元安定株",
+                    screening_hint="High stable-return stocks",
                 ))
             else:
                 actions.append(Action(
                     type=ActionType.FLAG,
                     urgency=Urgency.LOW,
                     target=symbol,
-                    reasons=[f"還元安定度「{stability}」"],
+                    reasons=[f"Return stability '{stability}'"],
                     rule_ids=["P6"],
                 ))
 
-        # P7: Quality "複数悪化"
-        if quality_label == "複数悪化":
+        # P7: Quality "Multiple deteriorated"
+        if quality_label == "Multiple deteriorated":
             if alert_level in ("caution", "exit"):
                 actions.append(Action(
                     type=ActionType.SELL,
                     urgency=Urgency.MEDIUM,
                     target=symbol,
-                    reasons=[f"変化の質「複数悪化」+ {alert_level.upper()}"],
+                    reasons=[f"Change quality 'Multiple deteriorated' + {alert_level.upper()}"],
                     rule_ids=["P7"],
                 ))
             else:
@@ -200,17 +200,17 @@ def evaluate_position_rules(
                     type=ActionType.FLAG,
                     urgency=Urgency.MEDIUM,
                     target=symbol,
-                    reasons=["変化の質「複数悪化」"],
+                    reasons=["Change quality 'Multiple deteriorated'"],
                     rule_ids=["P7"],
                 ))
 
         # P8: Downtrend + EARLY_WARNING or higher
-        if trend == "下降" and alert_level in ("early_warning", "caution", "exit"):
+        if trend == "Downtrend" and alert_level in ("early_warning", "caution", "exit"):
             actions.append(Action(
                 type=ActionType.FLAG,
                 urgency=Urgency.MEDIUM,
                 target=symbol,
-                reasons=[f"下降トレンド + {alert_level.upper()}"],
+                reasons=[f"Downtrend + {alert_level.upper()}"],
                 rule_ids=["P8"],
             ))
 
@@ -230,7 +230,7 @@ def evaluate_position_rules(
                         type=ActionType.FLAG,
                         urgency=Urgency.LOW,
                         target=weaker,
-                        reasons=[f"高相関ペア（{sym_a}/{sym_b} r={corr:.2f}）"],
+                        reasons=[f"High-correlation pair ({sym_a}/{sym_b} r={corr:.2f})"],
                         rule_ids=["P9"],
                     ))
 
@@ -248,7 +248,7 @@ def evaluate_position_rules(
                         type=ActionType.FLAG,
                         urgency=Urgency.MEDIUM,
                         target=sym,
-                        reasons=[f"VaR寄与大（ウェイト{weight*100:.0f}%、VaR95={var_95*100:.1f}%）"],
+                        reasons=[f"Large VaR contribution (weight {weight*100:.0f}%, VaR95={var_95*100:.1f}%)"],
                         rule_ids=["P10"],
                     ))
 
@@ -319,7 +319,7 @@ def evaluate_portfolio_rules(
                 type=ActionType.TRIM_CLASS,
                 urgency=Urgency.HIGH,
                 target="concentration",
-                reasons=[f"集中度 HHI {hhi:.2f} > 0.50（危険水準）"],
+                reasons=[f"Concentration HHI {hhi:.2f} > 0.50 (danger level)"],
                 rule_ids=["F1"],
             ))
         elif hhi > 0.25:
@@ -327,7 +327,7 @@ def evaluate_portfolio_rules(
                 type=ActionType.FLAG,
                 urgency=Urgency.MEDIUM,
                 target="concentration",
-                reasons=[f"集中度 HHI {hhi:.2f} > 0.25（やや高い）"],
+                reasons=[f"Concentration HHI {hhi:.2f} > 0.25 (somewhat high)"],
                 rule_ids=["F2"],
             ))
 
@@ -340,7 +340,7 @@ def evaluate_portfolio_rules(
                 type=ActionType.TRIM_CLASS,
                 urgency=Urgency.HIGH,
                 target="small_cap",
-                reasons=[f"小型株比率 {weight*100:.0f}% > 35%（過集中）"],
+                reasons=[f"Small-cap ratio {weight*100:.0f}% > 35% (over-concentrated)"],
                 rule_ids=["F3"],
             ))
         elif level == "warning":
@@ -348,7 +348,7 @@ def evaluate_portfolio_rules(
                 type=ActionType.FLAG,
                 urgency=Urgency.MEDIUM,
                 target="small_cap",
-                reasons=[f"小型株比率 {weight*100:.0f}% > 25%（やや多い）"],
+                reasons=[f"Small-cap ratio {weight*100:.0f}% > 25% (somewhat high)"],
                 rule_ids=["F4"],
             ))
 
@@ -364,7 +364,7 @@ def evaluate_portfolio_rules(
                 type=ActionType.FLAG,
                 urgency=Urgency.MEDIUM,
                 target="correlation",
-                reasons=[f"高相関ペア: {', '.join(pair_strs)}"],
+                reasons=[f"High-correlation pairs: {', '.join(pair_strs)}"],
                 rule_ids=["F5"],
             ))
 
@@ -376,7 +376,7 @@ def evaluate_portfolio_rules(
                 type=ActionType.FLAG,
                 urgency=Urgency.HIGH,
                 target="var_risk",
-                reasons=[f"VaR(95%) = {var_95*100:.1f}%（深刻な損失リスク）"],
+                reasons=[f"VaR(95%) = {var_95*100:.1f}% (serious loss risk)"],
                 rule_ids=["F6"],
             ))
 
@@ -388,7 +388,7 @@ def evaluate_portfolio_rules(
                 type=ActionType.FLAG,
                 urgency=Urgency.HIGH,
                 target="stress_risk",
-                reasons=[f"ストレス最大損失 {max_loss*100:.1f}%（>30%）"],
+                reasons=[f"Stress max loss {max_loss*100:.1f}% (>30%)"],
                 rule_ids=["F7"],
             ))
 

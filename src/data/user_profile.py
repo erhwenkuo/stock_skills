@@ -105,7 +105,7 @@ def get_tax_cost(gain_jpy: float) -> dict:
 def get_broker_info() -> dict:
     """Get broker name and account type."""
     profile = get_profile()
-    return profile.get("broker", {"name": "不明", "account_type": "一般口座"})
+    return profile.get("broker", {"name": "Unknown", "account_type": "General account"})
 
 
 def needs_tax_filing() -> bool:
@@ -117,7 +117,7 @@ def needs_tax_filing() -> bool:
 def _get_defaults() -> dict:
     """Return sensible default profile when no config file exists."""
     return {
-        "broker": {"name": "不明", "account_type": "一般口座"},
+        "broker": {"name": "Unknown", "account_type": "General account"},
         "fees": {
             "us_stock": {
                 "rate": 0.00495,

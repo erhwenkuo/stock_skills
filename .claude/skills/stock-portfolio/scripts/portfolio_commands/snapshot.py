@@ -13,7 +13,7 @@ from portfolio_commands import (
 
 def cmd_snapshot(csv_path: str) -> None:
     """Generate a portfolio snapshot with current prices and P&L."""
-    print("データ取得中...\n")
+    print("Fetching data...\n")
 
     if HAS_PORTFOLIO_MANAGER:
         # Use portfolio_manager's full snapshot (includes FX conversion)
@@ -21,7 +21,7 @@ def cmd_snapshot(csv_path: str) -> None:
         positions = snapshot.get("positions", [])
 
         if not positions:
-            print("ポートフォリオにデータがありません。")
+            print("No data in portfolio.")
             return
 
         if HAS_PORTFOLIO_FORMATTER:
@@ -53,9 +53,9 @@ def cmd_snapshot(csv_path: str) -> None:
             print(format_snapshot(fmt_data))
         else:
             # Fallback: table output
-            print("## ポートフォリオ スナップショット\n")
-            print("| 銘柄 | 名称 | 保有数 | 取得単価 | 現在価格 | 評価額(円) | 損益(円) | 損益率 |")
-            print("|:-----|:-----|------:|--------:|--------:|---------:|--------:|------:|")
+            print("## Portfolio Snapshot\n")
+            print("| Symbol | Name | Shares | Cost Price | Current Price | Market Value (JPY) | P&L (JPY) | P&L % |")
+            print("|:-------|:-----|-------:|-----------:|--------------:|-------------------:|----------:|------:|")
             for p in positions:
                 price_str = f"{p['current_price']:.2f}" if p.get("current_price") else "-"
                 mv_str = f"{p.get('evaluation_jpy', 0):,.0f}"
@@ -67,8 +67,8 @@ def cmd_snapshot(csv_path: str) -> None:
                     f"| {pnl_str} | {pnl_pct_str} |"
                 )
             print()
-            print(f"**総評価額: ¥{snapshot.get('total_value_jpy', 0):,.0f}** / "
-                  f"総損益: ¥{snapshot.get('total_pnl_jpy', 0):+,.0f} "
+            print(f"**Total Market Value: ¥{snapshot.get('total_value_jpy', 0):,.0f}** / "
+                  f"Total P&L: ¥{snapshot.get('total_pnl_jpy', 0):+,.0f} "
                   f"({snapshot.get('total_pnl_pct', 0) * 100:+.1f}%)")
         return
 
@@ -78,9 +78,9 @@ def cmd_snapshot(csv_path: str) -> None:
         _print_no_portfolio_message(csv_path)
         return
 
-    print("## ポートフォリオ スナップショット\n")
-    print("| 銘柄 | 保有数 | 取得単価 | 現在価格 | 損益率 |")
-    print("|:-----|------:|--------:|--------:|------:|")
+    print("## Portfolio Snapshot\n")
+    print("| Symbol | Shares | Cost Price | Current Price | P&L % |")
+    print("|:-------|-------:|-----------:|--------------:|------:|")
     for h in holdings:
         symbol = h["symbol"]
         # Skip cash positions

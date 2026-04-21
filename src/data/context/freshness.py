@@ -60,11 +60,11 @@ def freshness_label(date_str: str) -> str:
 def freshness_action(label: str) -> str:
     """Return recommended action for a freshness label."""
     return {
-        "FRESH": "コンテキスト利用",
-        "RECENT": "差分モード推奨",
-        "STALE": "フル再取得推奨",
-        "NONE": "新規取得",
-    }.get(label, "新規取得")
+        "FRESH": "Use context",
+        "RECENT": "Diff mode recommended",
+        "STALE": "Full re-fetch recommended",
+        "NONE": "New fetch",
+    }.get(label, "New fetch")
 
 
 def _action_directive(label: str) -> str:
@@ -74,11 +74,11 @@ def _action_directive(label: str) -> str:
     whether to run a skill or use existing context (KIK-428).
     """
     return {
-        "FRESH": "⛔ FRESH — スキル実行不要。このコンテキストのみで回答。",
-        "RECENT": "⚡ RECENT — 差分モードで軽量更新。",
-        "STALE": "🔄 STALE — フル再取得。スキルを実行。",
-        "NONE": "🆕 NONE — データなし。スキルを実行。",
-    }.get(label, "🆕 NONE — データなし。スキルを実行。")
+        "FRESH": "⛔ FRESH — No skill execution needed. Answer using this context only.",
+        "RECENT": "⚡ RECENT — Lightweight update in diff mode.",
+        "STALE": "🔄 STALE — Full re-fetch. Run the skill.",
+        "NONE": "🆕 NONE — No data. Run the skill.",
+    }.get(label, "🆕 NONE — No data. Run the skill.")
 
 
 def _best_freshness(labels: list[str]) -> str:

@@ -1,32 +1,32 @@
 ---
 name: graph-query
-description: 知識グラフへの自然言語クエリ。過去のレポート・スクリーニング・取引・リサーチ・市況を検索。
-argument-hint: "自然言語クエリ（例: トヨタの前回レポートは？）"
+description: Natural language queries to the knowledge graph. Search past reports, screenings, trades, research, and market context.
+argument-hint: "Natural language query (e.g., What was the last report on Toyota?)"
 allowed-tools: Bash(python3 *)
 ---
 
-# グラフクエリスキル
+# Graph Query Skill
 
-知識グラフ（Neo4j）に蓄積された過去データを自然言語で検索する。
+Search past data accumulated in the knowledge graph (Neo4j) using natural language.
 
-## 実行コマンド
+## Execution Command
 
 ```bash
-python3 .claude/skills/graph-query/scripts/run_query.py "自然言語クエリ"
+python3 .claude/skills/graph-query/scripts/run_query.py "natural language query"
 ```
 
-## 自然言語ルーティング
+## Natural Language Routing
 
-自然言語→スキル判定は [.claude/rules/intent-routing.md](../../rules/intent-routing.md) を参照。
+For natural language → skill selection, see [.claude/rules/intent-routing.md](../../rules/intent-routing.md).
 
-## 出力
+## Output
 
-結果はMarkdown形式で表示される。データが見つからない場合はその旨を表示。
-Neo4j が未接続の場合は「データが見つかりませんでした」と表示。
+Results are displayed in Markdown format. If no data is found, a message is shown.
+If Neo4j is not connected, displays "No data found."
 
-## 前提知識統合ルール (KIK-466)
+## Knowledge Integration Rules (KIK-466)
 
-グラフクエリ結果を表示する際、会話文脈と統合:
+When displaying graph query results, integrate with conversation context:
 
-- クエリ結果に保有銘柄が含まれれば「保有中」マークを付記
-- 過去レポートの検索結果は「最新データとの差分を確認するなら /stock-report 推奨」と促す
+- If query results contain held stocks, add a "Currently holding" marker
+- For past report search results, prompt: "To check the latest data, /stock-report is recommended"

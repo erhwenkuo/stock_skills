@@ -121,13 +121,13 @@ def find_high_correlation_pairs(
                 continue
             if abs(r) >= threshold:
                 if r >= 0.85:
-                    label = "非常に強い正の相関"
+                    label = "Very strong positive correlation"
                 elif r >= 0.7:
-                    label = "強い正の相関"
+                    label = "Strong positive correlation"
                 elif r <= -0.7:
-                    label = "強い逆相関"
+                    label = "Strong inverse correlation"
                 else:
-                    label = "逆相関"
+                    label = "Inverse correlation"
                 pairs.append({
                     "pair": [symbols[i], symbols[j]],
                     "correlation": round(r, 4),
@@ -144,10 +144,10 @@ def find_high_correlation_pairs(
 
 MACRO_FACTORS = [
     {"symbol": "USDJPY=X", "name": "USD/JPY"},
-    {"symbol": "^N225", "name": "日経225"},
+    {"symbol": "^N225", "name": "Nikkei 225"},
     {"symbol": "^GSPC", "name": "S&P500"},
-    {"symbol": "CL=F", "name": "原油"},
-    {"symbol": "^TNX", "name": "米10年金利"},
+    {"symbol": "CL=F", "name": "Crude Oil"},
+    {"symbol": "^TNX", "name": "US 10Y Yield"},
 ]
 
 

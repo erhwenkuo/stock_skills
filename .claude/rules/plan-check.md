@@ -1,187 +1,188 @@
-# Plan-Check: 投資判断マルチエージェントフロー (KIK-596)
+# Plan-Check: Investment Decision Multi-Agent Flow (KIK-596)
 
-投資判断の実行を伴う発言（入替・購入・売却・リバランス・調整）に対して、
-Plan → Execute → Review の3フェーズで複数エージェントが議論し、
-過去のlessonが自動的に制約として適用される仕組み。
+For statements involving investment decision execution (replacement, purchase, sale, rebalancing, adjustment),
+three phases — Plan → Execute → Review — are conducted with multiple agents debating,
+and past lessons are automatically applied as constraints.
 
-## 重要原則
+## Key Principles
 
-**Planは「何をするか（意思決定）」ではなく「どう調べるか（ワークフロー設計）」を決めるフェーズ。**
+**The Plan phase is about "how to investigate (workflow design)," not "what to do (decision-making)."**
 
-- Plan = 実行計画書（どんなステップで、何を分析するか）
-- Execute = 分析実行（複数パターンを比較し、データに基づいて判断）
-- Review = 検証（制約充足・品質・リスクのチェック）
+- Plan = execution blueprint (what steps and what to analyze)
+- Execute = analysis execution (compare multiple patterns and make data-driven decisions)
+- Review = verification (constraint satisfaction, quality, and risk checks)
 
-「売るべきか」「何を買うべきか」はPlanが決めることではない。Executeで分析した結果として導出される。
+"Should we sell?" and "What should we buy?" are not for the Plan phase to decide. They are derived as results from the Execute analysis.
 
-## トリガー条件
+## Trigger Conditions
 
-Plan-Check は以下の2つの経路で発動する。
+Plan-Check is triggered via the following two paths.
 
-### 経路1: /plan-execute v2 からのエスカレーション（推奨）(KIK-609)
+### Path 1: Escalation from /plan-execute v2 (Recommended) (KIK-609)
 
-`/plan-execute` スキルの Orchestrator が投資判断を伴うと判定した場合、自動的に Plan Phase（Strategist + Lesson Checker + Devil's Advocate の3名並列）を実行する。
+When the `/plan-execute` skill's Orchestrator determines that an investment decision is involved, it automatically executes the Plan Phase (3 agents in parallel: Strategist + Lesson Checker + Devil's Advocate).
 
-Orchestrator は以下の場合に Plan Phase をフル実行する:
-- ユーザーの意図が売買・入替・リバランス・調整を含む
-- extract_constraints.py が action_type として swap_proposal / new_buy / sell / rebalance / adjust を返す
-- Phase 4 の自律ループでアクション提案が生成された場合
+The Orchestrator runs the full Plan Phase in the following cases:
+- The user's intent involves buying, selling, replacement, rebalancing, or adjustment
+- `extract_constraints.py` returns action_type: swap_proposal / new_buy / sell / rebalance / adjust
+- An action proposal is generated during Phase 4's autonomous loop
 
-情報照会のみの場合は Plan Phase を軽量版（Strategist のみ）で実行し、問題検出時に自律ループでフル Plan Phase にエスカレーションする。
+For information queries only, the Plan Phase runs in a lightweight version (Strategist only), and escalates to a full Plan Phase via the autonomous loop when issues are detected.
 
-### 経路2: 直接発動（後方互換）
+### Path 2: Direct Trigger (Backward Compatible)
 
-以下のアクションタイプに該当する発言があった場合、このフローを直接発動する。
+Trigger this flow directly when a statement matches one of the following action types.
 
-| アクションタイプ | 判定キーワード |
+| Action Type | Trigger Keywords |
 |:---|:---|
-| `swap_proposal` | 入替、乗り換え、代わり、スワップ |
-| `new_buy` | 買いたい、エントリー、追加したい |
-| `sell` | 売りたい、損切り、利確、売却 |
-| `rebalance` | リバランス、配分調整、バランス改善 |
-| `adjust` | 調整、処方箋、直して、改善して、アドバイス |
+| `swap_proposal` | Replace, switch, alternative, swap |
+| `new_buy` | Want to buy, entry, want to add |
+| `sell` | Want to sell, stop-loss, take profit, sell |
+| `rebalance` | Rebalance, allocation adjustment, improve balance |
+| `adjust` | Adjust, prescription, fix, improve, advise |
 
-**発動しないケース**: 情報照会（"見せて"）、売買記録（"買った"過去形）、スクリーニング探索（"いい株ある？"）
+**Cases that do NOT trigger**: Information queries ("show me"), trade recording (past tense "I bought"), screening exploration ("any good stocks?")
 
-## フロー
+## Flow
 
-### Phase 1: Plan（ワークフロー設計）
+### Phase 1: Plan (Workflow Design)
 
-**目的**: どんなステップで、何を分析し、どう比較するかを決める。意思決定はしない。
+**Purpose**: Decide what steps to take, what to analyze, and how to compare. No decision-making.
 
-1. `python3 scripts/extract_constraints.py "<ユーザー入力>"` を実行し制約JSONを取得
-2. 以下3エージェントを並列起動し、**ワークフロー**を設計させる
+1. Run `python3 scripts/extract_constraints.py "<user input>"` to get constraints JSON
+2. Launch the following 3 agents in parallel to design the **workflow**
 
 #### Strategist
 
-実行ワークフローを設計する。以下を含めること:
-- 分析ステップの一覧（何を、どの順番で実行するか）
-- 各ステップで使用するスキル/スクリプト
-- **比較すべき選択肢**（例: 売却/ホールド/一部売却の3パターン）
-- 成功基準（どうなったらOKか）
+Design the execution workflow. Must include:
+- List of analysis steps (what to do, in what order)
+- Skills/scripts to use at each step
+- **Options to compare** (e.g., 3 patterns: sell / hold / partial sell)
+- Success criteria (what constitutes a successful outcome)
 
-**必須の分析観点**（ワークフローに必ず含めること）:
-- セクター・地域・通貨の分散（既存）
-- **大型/中型/小型の規模バランス**（追加後にPFの規模構成がどう変わるか）
-- **リスク資産/安全資産のバランス**（Beta・ボラティリティの変化）
-- **PF全体のリスクリターンプロファイル**（what-ifでBefore/Afterを比較）
-- **PF全体の過熱/売られすぎ判定**:
-  - PF加重平均RSI（70超=過熱、30未満=売られすぎ）
-  - RSI70超の銘柄がPFの何%を占めるか（過熱集中度）
-  - 含み益の集中度（1銘柄に利益が偏っていないか）
-  - F&Gスコアとの整合性（市場が過熱しているのにPFも過熱しているか）
-- **「何もしない」選択肢の期待値**（全てのアクションはこれを上回る必要がある）
-**注意**: 「売るべき」「買うべき」等の意思決定を含めない。「売却パターンと保有パターンを比較する」という分析手順を設計する。
+**Required analysis perspectives** (must be included in the workflow):
+- Sector, region, and currency diversification (existing)
+- **Large/mid/small-cap balance** (how the portfolio's size composition changes after addition)
+- **Risk asset / safe asset balance** (changes in Beta and volatility)
+- **Portfolio-wide risk-return profile** (Before/After what-if comparison)
+- **Portfolio overheating/oversold assessment**:
+  - Portfolio weighted average RSI (>70 = overheated, <30 = oversold)
+  - Percentage of portfolio that RSI>70 stocks represent (overheating concentration)
+  - Unrealized gain concentration (is profit skewed to one stock?)
+  - Alignment with F&G score (is the market overheating while the portfolio is too?)
+- **Expected value of "do nothing" option** (all actions must exceed this)
+
+**Note**: Do not include decisions like "should sell" or "should buy." Design analysis steps like "compare the sell and hold patterns."
 
 #### Lesson Checker
 
-制約条件（extract_constraints.pyの出力）がワークフローに組み込まれているかチェックする:
-- 各constraintのexpected_actionがワークフローのステップに含まれているか
-- 漏れている制約があれば、ワークフローにステップを追加するよう指摘
-- 判定: PASS（全制約がワークフローに反映済み）/ FAIL（漏れあり）
+Check whether constraint conditions (output of extract_constraints.py) are incorporated into the workflow:
+- Whether each constraint's expected_action is included in a workflow step
+- If any constraints are missing, indicate steps to add to the workflow
+- Verdict: PASS (all constraints reflected) / FAIL (missing)
 
 #### Devil's Advocate
 
-ワークフローの盲点を指摘する:
-- 検討すべきなのに含まれていない選択肢
-- 分析すべきなのに抜けている観点（例: ホールド選択肢の比較が抜けている等）
-- ワークフローのバイアス（結論ありきのステップ設計になっていないか）
-- **PF構造のバランス観点が抜けていないか**:
-  - 大型株偏重 or 小型株偏重にならないか
-  - ディフェンシブに寄りすぎ or グロースに寄りすぎないか
-  - Beta/ボラティリティの変化が考慮されているか
-  - 税コスト（譲渡益課税約20%）が計算されているか
-  - 決算タイミングとの兼ね合いが検討されているか
-- **PFの過熱/売られすぎ状態が考慮されているか**:
-  - PF加重平均RSIが過熱圏（70超）なのに買い増しを提案していないか
-  - 含み益が1-2銘柄に集中しているリスクは検討されているか
-  - 市場(F&G)とPFの過熱度が同調している場合の反転リスクは考慮されているか
-- **テーマ順張りリスク**: F&G 80超でトレンドテーマに追加購入する場合、テーマバブル崩壊リスクを指摘 (KIK-605)
-- **テーマ退潮リスク**: PF内テーマの直近トレンドスコアが低下している場合、保有継続の妥当性を確認 (KIK-605)
-- **セクター相対PERリスク**: 銘柄PERがセクター中央値の2倍超の場合、割高バリュエーションリスクを指摘 (KIK-605)
+Point out blind spots in the workflow:
+- Options that should be considered but are not included
+- Perspectives that should be analyzed but are missing (e.g., hold option comparison is absent)
+- Workflow bias (is the step design conclusion-driven?)
+- **Are portfolio balance perspectives missing?**:
+  - Will it become overly large-cap or small-cap heavy?
+  - Will it become too defensive or too growth-oriented?
+  - Is the change in Beta/volatility considered?
+  - Is tax cost (approximately 20% capital gains tax) calculated?
+  - Is the timing relative to earnings considered?
+- **Is the portfolio's overheated/oversold state considered?**:
+  - Is a buy-add proposal made even though portfolio weighted average RSI is overheated (>70)?
+  - Is the risk of unrealized gains concentrated in 1-2 stocks considered?
+  - Is the reversal risk considered when both market (F&G) and portfolio overheating are aligned?
+- **Theme momentum risk**: When adding to a trending theme with F&G >80, flag the theme bubble collapse risk (KIK-605)
+- **Theme fading risk**: If the trend score for a theme in the portfolio has been declining, verify whether continued holding is appropriate (KIK-605)
+- **Sector relative PER risk**: If a stock's PER is more than 2x the sector median, flag overvaluation risk (KIK-605)
 
-3. 3エージェントの結果を統合してワークフローを確定
-4. Lesson CheckerがFAIL → ワークフローを修正（最大2回）
+3. Integrate results from the 3 agents and finalize the workflow
+4. If Lesson Checker returns FAIL → revise the workflow (up to 2 times)
 
-**Plan Phaseの出力例**:
+**Example Plan Phase output**:
 ```
-Step 1: 7751.Tのヘルスチェック + フォーキャスト確認
-Step 2: 売却/ホールド/50株売却の3パターンを期待値で比較
-Step 3: 売却の場合 → 3地域でスクリーニング（JP/SG/HK）
-Step 4: 各候補の通貨配分影響を計算（USD60%以下の制約）
-Step 5: 売買単位×株価が予算内か確認
-Step 6: what-ifシミュレーション（上位3候補）
-Step 7: 全パターンの比較表を作成し推奨を導出
+Step 1: Health check + forecast review for 7751.T
+Step 2: Compare 3 patterns by expected value: sell / hold / partial sell (50 shares)
+Step 3: If selling → screen in 3 regions (JP/SG/HK)
+Step 4: Calculate currency allocation impact for each candidate (constraint: USD ≤60%)
+Step 5: Confirm lot cost × price is within budget
+Step 6: What-if simulation (top 3 candidates)
+Step 7: Create comparison table of all patterns and derive recommendation
 ```
 
-### Phase 2: Execute（分析実行）
+### Phase 2: Execute (Analysis Execution)
 
-Plan Phaseで設計したワークフローに従い、各ステップを実行する。
+Execute each step according to the workflow designed in the Plan Phase.
 
-**典型的な実行内容（アクションタイプ別）**:
+**Typical execution content (by action type)**:
 
-| アクションタイプ | 典型的なステップ |
+| Action Type | Typical Steps |
 |:---|:---|
-| swap_proposal | health → 売却/ホールド比較 → screen-stocks（3地域以上）→ 通貨配分計算 → what-if |
-| new_buy | get_context → stock-report → 通貨配分計算 → what-if |
-| sell | get_context → health → 売却/ホールド比較 → what-if |
+| swap_proposal | health → sell/hold comparison → screen-stocks (3+ regions) → currency allocation calculation → what-if |
+| new_buy | get_context → stock-report → currency allocation calculation → what-if |
+| sell | get_context → health → sell/hold comparison → what-if |
 | rebalance | health → analyze → rebalance |
 | adjust | health → adjust |
 
-制約条件に「最低3地域で検索」がある場合、スクリーニングは必ず3地域以上で実行する。
+If constraints specify "search in at least 3 regions," screening must be run in 3+ regions.
 
-**Executeの出力**: 分析結果の比較表 + データに基づく推奨（ここで初めて意思決定が導出される）
+**Execute output**: Comparison table of analysis results + data-driven recommendation (this is where decision-making is derived for the first time)
 
-### Phase 3: Review（検証）
+### Phase 3: Review (Verification)
 
-1. 以下3エージェントを並列起動
+1. Launch the following 3 agents in parallel
 
 #### Constraint Checker
 
-制約条件の充足を最終確認:
-- 各constraintのexpected_actionが実行されたか
-- 出力に制約違反がないか
-- 判定: PASS / FAIL（差し戻し理由）
+Final confirmation that constraint conditions are satisfied:
+- Whether each constraint's expected_action was executed
+- Whether there are any constraint violations in the output
+- Verdict: PASS / FAIL (with reason for return)
 
 #### Quality Checker
 
-出力の品質と論理整合性を確認:
-- 数値の整合性（what-ifの資金収支、HHI変化等）
-- 推奨の論理的根拠が明示されているか
-- portfolio.mdのルール（スワップ前what-if必須、単元株コスト制限等）への準拠
-- **規模バランスの検証**: 追加後のPFが大型/中型/小型で偏っていないか
-- **リスクリターンの検証**: 追加後のPF加重平均Betaがディフェンシブ過剰（<0.5）or 攻撃過剰（>1.0）になっていないか
-- **過熱/売られすぎ検証**: PF加重平均RSIが過熱圏（70超）で買い増し、or 売られすぎ（30未満）で売却を提案していないか
-- **税コストの検証**: 利確を伴う場合、税引後の実質リターンが計算されているか
+Verify output quality and logical consistency:
+- Numerical consistency (what-if fund balance, HHI changes, etc.)
+- Whether the logical basis for recommendations is explicitly stated
+- Compliance with portfolio.md rules (what-if required before swap, lot cost limits, etc.)
+- **Size balance verification**: Is the post-addition portfolio balanced across large/mid/small cap?
+- **Risk-return verification**: Is the post-addition portfolio weighted average Beta overly defensive (<0.5) or aggressive (>1.0)?
+- **Overheated/oversold verification**: Is a buy-add proposed with portfolio weighted average RSI in overheated territory (>70), or a sell proposed with it in oversold territory (<30)?
+- **Tax cost verification**: If realizing gains, is the after-tax actual return calculated?
 
 #### Risk Checker
 
-見落とされたリスクがないか最終確認:
-- 通貨集中リスク（USD比率60%超等）
-- セクター/地域集中リスク
-- **規模集中リスク**（小型株比率25%超 or 大型株比率80%超）
-- **ボラティリティリスク**（追加銘柄のBetaが2.0超の場合、PF全体への影響）
-- 流動性リスク（単元株コスト vs PF総額）
-- 市況リスク（決算直前、地政学イベント等）
-- **過熱リスク**: PF加重平均RSI 70超 or RSI70超銘柄がPFの30%以上を占める場合、追加購入は慎重に
-- **含み益集中リスク**: 含み益が1銘柄にPF総利益の50%以上集中している場合、警告
+Final check for overlooked risks:
+- Currency concentration risk (USD ratio >60%, etc.)
+- Sector/region concentration risk
+- **Size concentration risk** (small-cap ratio >25% or large-cap ratio >80%)
+- **Volatility risk** (if added stock's Beta >2.0, impact on overall portfolio)
+- Liquidity risk (lot cost vs total portfolio value)
+- Market risk (just before earnings, geopolitical events, etc.)
+- **Overheating risk**: Portfolio weighted average RSI >70 or RSI>70 stocks representing >30% of portfolio — proceed with caution on additional purchases
+- **Unrealized gain concentration risk**: If gains are concentrated in one stock representing >50% of total portfolio profit, issue a warning
 
-2. 結果統合
-3. いずれかのCheckerがFAIL → Phase 1に差し戻し（差し戻し理由を付与）
-4. 全PASS → 最終出力をユーザーに提示
+2. Consolidate results
+3. If any Checker returns FAIL → return to Phase 1 (with return reason)
+4. All PASS → present final output to user
 
-## 差し戻しルール
+## Return Rules
 
-- 最大差し戻し回数: 2回
-- 3回目はWARN付きで出力（無限ループ防止）
-- 差し戻し時: FAIL理由 + 該当constraintをPlan Phaseの入力に追加
+- Maximum returns: 2 times
+- On the 3rd attempt, output with WARN (to prevent infinite loops)
+- On return: include FAIL reason + relevant constraint and add to Phase 1 input
 
-## 制約抽出コマンド
+## Constraint Extraction Command
 
 ```bash
-# JSON形式（エージェント入力用）
-python3 scripts/extract_constraints.py "<ユーザー入力>"
+# JSON format (for agent input)
+python3 scripts/extract_constraints.py "<user input>"
 
-# Markdown形式（人間可読）
-python3 scripts/extract_constraints.py "<ユーザー入力>" --format markdown
+# Markdown format (human-readable)
+python3 scripts/extract_constraints.py "<user input>" --format markdown
 ```

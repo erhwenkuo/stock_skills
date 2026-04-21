@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>成長株スクリーニング アプローチ整理（KIK-432）</title>
+  <title>Growth Stock Screening Approach Guide (KIK-432)</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -409,36 +409,36 @@
   <!-- Header -->
   <div class="header">
     <div class="badge">KIK-432</div>
-    <h1>成長株スクリーニング<br>アプローチ整理</h1>
-    <p>利益不問の高成長株対応 — 設計方針ドキュメント</p>
+    <h1>Growth Stock Screening<br>Approach Guide</h1>
+    <p>High-growth stock support regardless of profitability — Design policy document</p>
   </div>
 
   <!-- Problem -->
   <div class="section">
     <div class="section-title">
       <div class="icon" style="background:#2d1515;">⚠️</div>
-      現状の課題
+      Current Problems
     </div>
     <div class="problem-grid">
       <div class="problem-card">
-        <div class="label">制約 1</div>
+        <div class="label">Constraint 1</div>
         <div class="code">ROE >= 15%</div>
-        <p>赤字企業はROEがマイナスになるため自動的に除外される。先行投資型の成長株が対象外に。</p>
+        <p>Companies with losses have negative ROE and are automatically excluded. Early-stage growth stocks with front-loaded investments are filtered out.</p>
       </div>
       <div class="problem-card">
-        <div class="label">制約 2</div>
-        <div class="code">EPS成長率 >= 10%</div>
-        <p>赤字→赤字縮小のフェーズは計算不能orマイナス。黒字転換前の銘柄が検出できない。</p>
+        <div class="label">Constraint 2</div>
+        <div class="code">EPS Growth >= 10%</div>
+        <p>The loss-narrowing phase is incalculable or negative. Stocks before profitability turnaround cannot be detected.</p>
       </div>
       <div class="problem-card">
-        <div class="label">制約 3</div>
-        <div class="code">min_market_cap: 1,000億円</div>
-        <p>小型成長株が完全に除外。初期フェーズの有望企業を見逃す。</p>
+        <div class="label">Constraint 3</div>
+        <div class="code">min_market_cap: ¥100B</div>
+        <p>Small-cap growth stocks are fully excluded. Promising early-stage companies are missed.</p>
       </div>
       <div class="problem-card">
-        <div class="label">制約 4</div>
-        <div class="code">PERベースの割安判定</div>
-        <p>「赤字でも高PER = 将来利益への期待」という市場評価を反映できない。PSR・PEGが不在。</p>
+        <div class="label">Constraint 4</div>
+        <div class="code">PER-based undervaluation</div>
+        <p>Cannot reflect market valuations where "loss-making + high P/E = expectations of future profits." PSR and PEG are absent.</p>
       </div>
     </div>
   </div>
@@ -447,42 +447,42 @@
   <div class="section">
     <div class="section-title">
       <div class="icon" style="background:#1e3a5f;">🗺</div>
-      アプローチの棲み分け
+      Approach Differentiation
     </div>
     <div class="approach-grid">
       <div class="approach-card quantitative">
         <div class="approach-label">Approach A</div>
-        <h3>定量スクリーニング</h3>
-        <p>EquityQueryで財務指標をフィルタリング。深く・正確に。</p>
+        <h3>Quantitative Screening</h3>
+        <p>Filter by financial metrics using EquityQuery. Deep and precise.</p>
         <div>
           <span class="tag blue">PSR</span>
-          <span class="tag blue">売上成長率</span>
-          <span class="tag blue">粗利率</span>
-          <span class="tag blue">PEGレシオ</span>
+          <span class="tag blue">Revenue Growth</span>
+          <span class="tag blue">Gross Margin</span>
+          <span class="tag blue">PEG Ratio</span>
         </div>
         <div style="margin-top:14px; font-size:12px; color:#475569;">
           → <code style="background:#1e2d44;color:#93c5fd;padding:2px 6px;border-radius:4px;">growth</code> /
-          <code style="background:#1e2d44;color:#93c5fd;padding:2px 6px;border-radius:4px;">high-growth</code> プリセット
+          <code style="background:#1e2d44;color:#93c5fd;padding:2px 6px;border-radius:4px;">high-growth</code> presets
         </div>
       </div>
       <div class="approach-card trend">
         <div class="approach-label">Approach B</div>
-        <h3>トレンド・バズ検索</h3>
-        <p>Grok API（X/Web検索）で話題の銘柄を発掘。浅く・広く。</p>
+        <h3>Trend &amp; Buzz Search</h3>
+        <p>Discover trending stocks via Grok API (X/Web search). Broad and shallow.</p>
         <div>
-          <span class="tag purple">Xポスト</span>
-          <span class="tag purple">センチメント</span>
-          <span class="tag purple">話題性</span>
+          <span class="tag purple">X Posts</span>
+          <span class="tag purple">Sentiment</span>
+          <span class="tag purple">Buzz</span>
         </div>
         <div style="margin-top:14px; font-size:12px; color:#475569;">
-          → <code style="background:#2e1065;color:#c4b5fd;padding:2px 6px;border-radius:4px;">trending</code> プリセット（実装済み）
+          → <code style="background:#2e1065;color:#c4b5fd;padding:2px 6px;border-radius:4px;">trending</code> preset (already implemented)
         </div>
       </div>
     </div>
     <div class="card" style="margin-top:16px; background:#131720;">
       <p style="font-size:13px; color:#94a3b8; text-align:center;">
-        KIK-432は <strong style="color:#60a5fa;">Approach A（定量）</strong> の強化。<br>
-        Approach B（トレンド）は既存の <code style="background:#1e293b;color:#c4b5fd;padding:2px 6px;border-radius:4px;">trending</code> プリセットが担う。
+        KIK-432 enhances <strong style="color:#60a5fa;">Approach A (Quantitative)</strong>.<br>
+        Approach B (Trend) is handled by the existing <code style="background:#1e293b;color:#c4b5fd;padding:2px 6px;border-radius:4px;">trending</code> preset.
       </p>
     </div>
   </div>
@@ -491,32 +491,32 @@
   <div class="section">
     <div class="section-title">
       <div class="icon" style="background:#14291c;">📊</div>
-      成長株の種類と現状カバレッジ
+      Growth Stock Types &amp; Current Coverage
     </div>
     <div class="growth-type-grid">
       <div class="growth-type-card covered">
-        <div class="covered-badge">✓ 対応済み</div>
+        <div class="covered-badge">✓ Covered</div>
         <div class="type-icon">💰</div>
-        <h4>黒字成長株</h4>
-        <p>利益を出しながら成長。ROE・EPS成長率が高い。</p>
-        <div class="examples">例: トヨタ、任天堂、Apple（成熟期）</div>
-        <div style="margin-top:10px;"><span class="tag green">growth プリセット</span></div>
+        <h4>Profitable Growth Stocks</h4>
+        <p>Growing while generating profits. High ROE and EPS growth.</p>
+        <div class="examples">Examples: Toyota, Nintendo, Apple (mature phase)</div>
+        <div style="margin-top:10px;"><span class="tag green">growth preset</span></div>
       </div>
       <div class="growth-type-card missing">
-        <div class="missing-badge">✗ 未対応</div>
+        <div class="missing-badge">✗ Not Covered</div>
         <div class="type-icon">🚀</div>
-        <h4>赤字高成長株</h4>
-        <p>利益なしでも売上が急拡大。市場が将来利益を先取り評価。PERが非常に高い or 計算不能。</p>
-        <div class="examples">例: SaaS、バイオ、EV初期</div>
-        <div style="margin-top:10px;"><span class="tag red">high-growth プリセット（新設）</span></div>
+        <h4>High-Growth Loss-Making Stocks</h4>
+        <p>Rapid revenue expansion without profits. Market prices in future earnings. P/E is extremely high or incalculable.</p>
+        <div class="examples">Examples: SaaS, Biotech, early-stage EV</div>
+        <div style="margin-top:10px;"><span class="tag red">high-growth preset (new)</span></div>
       </div>
       <div class="growth-type-card missing">
-        <div class="missing-badge">✗ 未対応</div>
+        <div class="missing-badge">✗ Not Covered</div>
         <div class="type-icon">🌱</div>
-        <h4>小型成長株</h4>
-        <p>時価総額1000億円以下。初期フェーズで機関投資家未発見の有望株。</p>
-        <div class="examples">例: 新興IT、地方ニッチ企業</div>
-        <div style="margin-top:10px;"><span class="tag orange">small-cap-growth（検討中）</span></div>
+        <h4>Small-Cap Growth Stocks</h4>
+        <p>Market cap under ¥100B. Early-stage promising stocks undiscovered by institutional investors.</p>
+        <div class="examples">Examples: Emerging IT, regional niche companies</div>
+        <div style="margin-top:10px;"><span class="tag orange">small-cap-growth (under consideration)</span></div>
       </div>
     </div>
   </div>
@@ -525,7 +525,7 @@
   <div class="section">
     <div class="section-title">
       <div class="icon" style="background:#14291c;">⚙️</div>
-      4プリセット 条件一覧
+      4-Preset Criteria Comparison
     </div>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
 
@@ -533,62 +533,62 @@
       <div class="preset-card" style="background:#0f2130; border:1px solid #2563eb44; border-radius:12px; padding:20px;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
           <div class="preset-name" style="color:#93c5fd;">growth-value</div>
-          <span style="background:#1e3a5f; color:#60a5fa; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px;">既存</span>
+          <span style="background:#1e3a5f; color:#60a5fa; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px;">Existing</span>
         </div>
-        <div class="preset-desc">GARP型 — 割安×成長・黒字・大型</div>
-        <div class="criterion"><span class="crit-label">PER</span><span class="crit-value" style="color:#93c5fd;">&lt;= 20</span></div>
+        <div class="preset-desc">GARP — Undervalued × Growth · Profitable · Large-cap</div>
+        <div class="criterion"><span class="crit-label">P/E</span><span class="crit-value" style="color:#93c5fd;">&lt;= 20</span></div>
         <div class="criterion"><span class="crit-label">ROE</span><span class="crit-value" style="color:#93c5fd;">>= 10%</span></div>
-        <div class="criterion"><span class="crit-label">売上成長率</span><span class="crit-value" style="color:#93c5fd;">>= 5%</span></div>
-        <div class="criterion"><span class="crit-label">時価総額</span><span class="crit-value" style="color:#93c5fd;">大型（制限なし）</span></div>
-        <div class="criterion"><span class="crit-label">赤字企業</span><span class="crit-value removed">除外</span></div>
-        <div style="margin-top:12px; font-size:11px; color:#475569;">リスク: ★☆☆☆</div>
+        <div class="criterion"><span class="crit-label">Revenue Growth</span><span class="crit-value" style="color:#93c5fd;">>= 5%</span></div>
+        <div class="criterion"><span class="crit-label">Market Cap</span><span class="crit-value" style="color:#93c5fd;">Large (no limit)</span></div>
+        <div class="criterion"><span class="crit-label">Loss-making</span><span class="crit-value removed">Excluded</span></div>
+        <div style="margin-top:12px; font-size:11px; color:#475569;">Risk: ★☆☆☆</div>
       </div>
 
       <!-- growth -->
       <div class="preset-card" style="background:#1a1030; border:1px solid #7c3aed44; border-radius:12px; padding:20px;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
           <div class="preset-name" style="color:#c4b5fd;">growth</div>
-          <span style="background:#2e1065; color:#a78bfa; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px;">既存</span>
+          <span style="background:#2e1065; color:#a78bfa; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px;">Existing</span>
         </div>
-        <div class="preset-desc">安定成長型 — ROE/EPS重視・黒字・大型</div>
+        <div class="preset-desc">Stable Growth — ROE/EPS focused · Profitable · Large-cap</div>
         <div class="criterion"><span class="crit-label">ROE</span><span class="crit-value" style="color:#c4b5fd;">>= 15%</span></div>
-        <div class="criterion"><span class="crit-label">EPS成長率</span><span class="crit-value" style="color:#c4b5fd;">>= 10%</span></div>
-        <div class="criterion"><span class="crit-label">売上成長率</span><span class="crit-value" style="color:#c4b5fd;">>= 5%</span></div>
-        <div class="criterion"><span class="crit-label">時価総額</span><span class="crit-value" style="color:#c4b5fd;">>= 1,000億円</span></div>
-        <div class="criterion"><span class="crit-label">赤字企業</span><span class="crit-value removed">除外</span></div>
-        <div style="margin-top:12px; font-size:11px; color:#475569;">リスク: ★★☆☆</div>
+        <div class="criterion"><span class="crit-label">EPS Growth</span><span class="crit-value" style="color:#c4b5fd;">>= 10%</span></div>
+        <div class="criterion"><span class="crit-label">Revenue Growth</span><span class="crit-value" style="color:#c4b5fd;">>= 5%</span></div>
+        <div class="criterion"><span class="crit-label">Market Cap</span><span class="crit-value" style="color:#c4b5fd;">>= ¥100B</span></div>
+        <div class="criterion"><span class="crit-label">Loss-making</span><span class="crit-value removed">Excluded</span></div>
+        <div style="margin-top:12px; font-size:11px; color:#475569;">Risk: ★★☆☆</div>
       </div>
 
       <!-- high-growth -->
       <div class="preset-card" style="background:#150d2a; border:1px solid #dc262644; border-radius:12px; padding:20px;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
           <div class="preset-name" style="color:#fca5a5;">high-growth</div>
-          <span style="background:#7f1d1d; color:#fca5a5; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px;">KIK-432 新設</span>
+          <span style="background:#7f1d1d; color:#fca5a5; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px;">KIK-432 New</span>
         </div>
-        <div class="preset-desc">急成長型 — 赤字許容・PSR基準・大型</div>
-        <div class="criterion"><span class="crit-label">ROE</span><span class="crit-value added">制限なし</span></div>
-        <div class="criterion"><span class="crit-label">EPS成長率</span><span class="crit-value added">制限なし</span></div>
-        <div class="criterion"><span class="crit-label">売上成長率YoY</span><span class="crit-value new-field">>= 20%</span></div>
-        <div class="criterion"><span class="crit-label">直近四半期売上成長</span><span class="crit-value new-field">>= 10%</span></div>
+        <div class="preset-desc">Rapid Growth — Loss-tolerant · PSR-based · Large-cap</div>
+        <div class="criterion"><span class="crit-label">ROE</span><span class="crit-value added">No restriction</span></div>
+        <div class="criterion"><span class="crit-label">EPS Growth</span><span class="crit-value added">No restriction</span></div>
+        <div class="criterion"><span class="crit-label">Revenue Growth YoY</span><span class="crit-value new-field">>= 20%</span></div>
+        <div class="criterion"><span class="crit-label">Quarterly Revenue Growth</span><span class="crit-value new-field">>= 10%</span></div>
         <div class="criterion"><span class="crit-label">PSR</span><span class="crit-value new-field">&lt;= 20</span></div>
-        <div class="criterion"><span class="crit-label">粗利率</span><span class="crit-value new-field">>= 20%</span></div>
-        <div class="criterion"><span class="crit-label">赤字企業</span><span class="crit-value added">許容</span></div>
-        <div style="margin-top:12px; font-size:11px; color:#475569;">リスク: ★★★☆</div>
+        <div class="criterion"><span class="crit-label">Gross Margin</span><span class="crit-value new-field">>= 20%</span></div>
+        <div class="criterion"><span class="crit-label">Loss-making</span><span class="crit-value added">Allowed</span></div>
+        <div style="margin-top:12px; font-size:11px; color:#475569;">Risk: ★★★☆</div>
       </div>
 
       <!-- small-cap-growth -->
       <div class="preset-card" style="background:#2d1515; border:1px dashed #dc262655; border-radius:12px; padding:20px; opacity:0.75;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
           <div class="preset-name" style="color:#f87171;">small-cap-growth</div>
-          <span style="background:#450a0a; color:#f87171; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px;">検討中</span>
+          <span style="background:#450a0a; color:#f87171; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px;">Under Consideration</span>
         </div>
-        <div class="preset-desc">小型急成長型 — 赤字許容・小型・最ハイリスク</div>
-        <div class="criterion"><span class="crit-label">売上成長率YoY</span><span class="crit-value" style="color:#fca5a5;">>= 20%</span></div>
-        <div class="criterion"><span class="crit-label">時価総額（上限）</span><span class="crit-value" style="color:#fca5a5;">&lt;= 1,000億円</span></div>
-        <div class="criterion"><span class="crit-label">PSR</span><span class="crit-value" style="color:#fca5a5;">&lt;= 15（より厳しく）</span></div>
-        <div class="criterion"><span class="crit-label">粗利率</span><span class="crit-value" style="color:#fca5a5;">>= 20%</span></div>
-        <div class="criterion"><span class="crit-label">赤字企業</span><span class="crit-value added">許容</span></div>
-        <div style="margin-top:12px; font-size:11px; color:#475569;">リスク: ★★★★ ／ 別issueで設計予定</div>
+        <div class="preset-desc">Small-cap Rapid Growth — Loss-tolerant · Small-cap · Highest risk</div>
+        <div class="criterion"><span class="crit-label">Revenue Growth YoY</span><span class="crit-value" style="color:#fca5a5;">>= 20%</span></div>
+        <div class="criterion"><span class="crit-label">Market Cap (upper limit)</span><span class="crit-value" style="color:#fca5a5;">&lt;= ¥100B</span></div>
+        <div class="criterion"><span class="crit-label">PSR</span><span class="crit-value" style="color:#fca5a5;">&lt;= 15 (stricter)</span></div>
+        <div class="criterion"><span class="crit-label">Gross Margin</span><span class="crit-value" style="color:#fca5a5;">>= 20%</span></div>
+        <div class="criterion"><span class="crit-label">Loss-making</span><span class="crit-value added">Allowed</span></div>
+        <div style="margin-top:12px; font-size:11px; color:#475569;">Risk: ★★★★ / Separate issue planned</div>
       </div>
 
     </div>
@@ -598,38 +598,38 @@
   <div class="section">
     <div class="section-title">
       <div class="icon" style="background:#1e3a5f;">📐</div>
-      採用指標の設計思想
+      Key Metrics Design Rationale
     </div>
     <div class="metrics-grid">
       <div class="metric-card">
         <div class="metric-name">totalrevenues1yrgrowth</div>
-        <div class="metric-desc">売上成長率（YoY）≥ 20%</div>
-        <div class="metric-reason">PERが使えない赤字企業のメイン条件。「会社が成長しているか」の最も直接的な指標。</div>
+        <div class="metric-desc">Revenue Growth (YoY) ≥ 20%</div>
+        <div class="metric-reason">The primary criterion for loss-making companies where P/E is unusable. The most direct indicator of "is the company growing?"</div>
       </div>
       <div class="metric-card">
         <div class="metric-name">lastclosemarketcaptotalrevenue</div>
-        <div class="metric-desc">PSR（Price/Sales Ratio）≤ 20</div>
-        <div class="metric-reason">赤字企業のバリュエーション指標。PSR > 20はバブルリスクが高い。PERの代替として機能。</div>
+        <div class="metric-desc">PSR (Price/Sales Ratio) ≤ 20</div>
+        <div class="metric-reason">Valuation metric for loss-making companies. PSR > 20 carries high bubble risk. Functions as a substitute for P/E.</div>
       </div>
       <div class="metric-card">
         <div class="metric-name">quarterlyrevenuegrowth</div>
-        <div class="metric-desc">直近四半期売上成長率 ≥ 10%</div>
-        <div class="metric-reason">成長が「継続中」かの確認。YoY高成長でも直近四半期が鈍化していれば警戒シグナル。</div>
+        <div class="metric-desc">Latest Quarterly Revenue Growth ≥ 10%</div>
+        <div class="metric-reason">Confirms growth is "ongoing." A high YoY growth with recent quarterly deceleration is a warning signal.</div>
       </div>
       <div class="metric-card">
         <div class="metric-name">grossprofitmargin</div>
-        <div class="metric-desc">粗利率 ≥ 20%</div>
-        <div class="metric-reason">赤字でも最低限の事業性チェック。粗利がマイナスのビジネスは成長しても収益化できない。</div>
+        <div class="metric-desc">Gross Margin ≥ 20%</div>
+        <div class="metric-reason">Minimum viability check even for loss-making companies. Businesses with negative gross margins cannot achieve profitability even with growth.</div>
       </div>
       <div class="metric-card">
         <div class="metric-name">pegratio_5y</div>
-        <div class="metric-desc">PEGレシオ（オプション）</div>
-        <div class="metric-reason">黒字転換済みの成長株に有効。PER ÷ 成長率で「成長を織り込んでも割高か」を判定。PEG &lt; 2が目安。</div>
+        <div class="metric-desc">PEG Ratio (optional)</div>
+        <div class="metric-reason">Effective for profitable growth stocks. P/E ÷ growth rate determines "is it overvalued even accounting for growth?" PEG &lt; 2 is the benchmark.</div>
       </div>
       <div class="metric-card">
         <div class="metric-name">intradaymarketcap</div>
-        <div class="metric-desc">時価総額（小型株フィルター）</div>
-        <div class="metric-reason">small-cap-growth プリセット用。上限を設けることで機関未発見の初期フェーズ企業を対象にできる。</div>
+        <div class="metric-desc">Market Cap (small-cap filter)</div>
+        <div class="metric-reason">For the small-cap-growth preset. Setting an upper limit targets early-stage companies not yet discovered by institutional investors.</div>
       </div>
     </div>
   </div>
@@ -638,25 +638,25 @@
   <div class="section">
     <div class="section-title">
       <div class="icon" style="background:#1a1f2e;">🔄</div>
-      スクリーニングフロー（high-growth）
+      Screening Flow (high-growth)
     </div>
     <div class="card">
       <div class="flow">
-        <div class="flow-step">全銘柄</div>
+        <div class="flow-step">All Stocks</div>
         <div class="flow-arrow">→</div>
-        <div class="flow-step highlight">売上成長率 ≥ 20%</div>
+        <div class="flow-step highlight">Revenue Growth ≥ 20%</div>
         <div class="flow-arrow">→</div>
-        <div class="flow-step highlight">四半期成長率 ≥ 10%</div>
+        <div class="flow-step highlight">Quarterly Growth ≥ 10%</div>
         <div class="flow-arrow">→</div>
         <div class="flow-step highlight">PSR ≤ 20</div>
         <div class="flow-arrow">→</div>
-        <div class="flow-step highlight">粗利率 ≥ 20%</div>
+        <div class="flow-step highlight">Gross Margin ≥ 20%</div>
         <div class="flow-arrow">→</div>
-        <div class="flow-step">上位N件</div>
+        <div class="flow-step">Top N Results</div>
       </div>
       <p style="font-size:12px; color:#475569; margin-top:12px;">
-        * PER・ROE・EPS成長率は使用しない（赤字企業対応のため）<br>
-        * 赤字企業も粗利率が確保されていれば候補に入る
+        * P/E, ROE, and EPS growth are not used (to support loss-making companies)<br>
+        * Loss-making companies are included as candidates if gross margin is secured
       </p>
     </div>
   </div>
@@ -665,7 +665,7 @@
   <div class="section">
     <div class="section-title">
       <div class="icon" style="background:#1a1f2e;">🎯</div>
-      成長株プリセット スペクトラム
+      Growth Stock Preset Spectrum
     </div>
     <div class="card" style="padding: 32px 28px;">
       <!-- Spectrum bar -->
@@ -675,63 +675,63 @@
 
           <!-- growth-value -->
           <div style="background:#0f2130; border:1px solid #2563eb55; border-radius:12px; padding:20px;">
-            <div style="font-size:11px; font-weight:700; color:#60a5fa; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">割安重視</div>
+            <div style="font-size:11px; font-weight:700; color:#60a5fa; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Value Focused</div>
             <div style="font-family:'SF Mono','Fira Code',monospace; font-size:16px; font-weight:700; color:#93c5fd; margin-bottom:4px;">growth-value</div>
-            <div style="font-size:12px; color:#64748b; margin-bottom:14px;">GARP型（成長＋割安）</div>
+            <div style="font-size:12px; color:#64748b; margin-bottom:14px;">GARP (Growth At Reasonable Price)</div>
             <div style="font-size:12px; color:#94a3b8; line-height:1.8;">
-              PER ≤ 20<br>
+              P/E ≤ 20<br>
               ROE ≥ 10%<br>
-              売上成長 ≥ 5%<br>
-              <span style="color:#4ade80;">黒字必須</span>
+              Revenue Growth ≥ 5%<br>
+              <span style="color:#4ade80;">Profitability required</span>
             </div>
-            <div style="margin-top:12px; font-size:11px; color:#475569;">安定感があり割安。長期保有向き。</div>
+            <div style="margin-top:12px; font-size:11px; color:#475569;">Stable and undervalued. Suited for long-term holding.</div>
           </div>
 
           <!-- growth -->
           <div style="background:#1a1030; border:1px solid #7c3aed55; border-radius:12px; padding:20px;">
-            <div style="font-size:11px; font-weight:700; color:#a78bfa; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">バランス型</div>
+            <div style="font-size:11px; font-weight:700; color:#a78bfa; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Balanced</div>
             <div style="font-family:'SF Mono','Fira Code',monospace; font-size:16px; font-weight:700; color:#c4b5fd; margin-bottom:4px;">growth</div>
-            <div style="font-size:12px; color:#64748b; margin-bottom:14px;">安定成長型（既存）</div>
+            <div style="font-size:12px; color:#64748b; margin-bottom:14px;">Stable Growth (existing)</div>
             <div style="font-size:12px; color:#94a3b8; line-height:1.8;">
               ROE ≥ 15%<br>
-              EPS成長 ≥ 10%<br>
-              売上成長 ≥ 5%<br>
-              <span style="color:#4ade80;">黒字必須</span>
+              EPS Growth ≥ 10%<br>
+              Revenue Growth ≥ 5%<br>
+              <span style="color:#4ade80;">Profitability required</span>
             </div>
-            <div style="margin-top:12px; font-size:11px; color:#475569;">質の高い成長。収益性も重視。</div>
+            <div style="margin-top:12px; font-size:11px; color:#475569;">High-quality growth. Profitability also valued.</div>
           </div>
 
           <!-- high-growth -->
           <div style="background:#2d1515; border:1px solid #dc262655; border-radius:12px; padding:20px;">
-            <div style="font-size:11px; font-weight:700; color:#f87171; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">成長重視 <span style="background:#7f1d1d; padding:1px 6px; border-radius:8px; font-size:10px;">NEW</span></div>
+            <div style="font-size:11px; font-weight:700; color:#f87171; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Growth Focused <span style="background:#7f1d1d; padding:1px 6px; border-radius:8px; font-size:10px;">NEW</span></div>
             <div style="font-family:'SF Mono','Fira Code',monospace; font-size:16px; font-weight:700; color:#fca5a5; margin-bottom:4px;">high-growth</div>
-            <div style="font-size:12px; color:#64748b; margin-bottom:14px;">急成長型（新設）</div>
+            <div style="font-size:12px; color:#64748b; margin-bottom:14px;">Rapid Growth (new)</div>
             <div style="font-size:12px; color:#94a3b8; line-height:1.8;">
-              売上成長 ≥ 20%<br>
-              四半期成長 ≥ 10%<br>
+              Revenue Growth ≥ 20%<br>
+              Quarterly Growth ≥ 10%<br>
               PSR ≤ 20<br>
-              <span style="color:#fbbf24;">赤字許容</span>
+              <span style="color:#fbbf24;">Losses tolerated</span>
             </div>
-            <div style="margin-top:12px; font-size:11px; color:#475569;">ハイリスク。将来利益を先取り評価。</div>
+            <div style="margin-top:12px; font-size:11px; color:#475569;">High risk. Future profits priced in by the market.</div>
           </div>
         </div>
       </div>
 
       <!-- Use case guide -->
       <div style="background:#131720; border-radius:10px; padding:18px; margin-top:8px;">
-        <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">どれを使う？</div>
+        <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Which one to use?</div>
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
           <div style="font-size:12px; color:#94a3b8;">
             <span style="color:#60a5fa; font-weight:700;">growth-value</span><br>
-            「割安で成長中の銘柄を長期保有したい」「バリュー×成長の両取り」
+            "I want to hold undervalued growth stocks long-term" "Best of both value and growth"
           </div>
           <div style="font-size:12px; color:#94a3b8;">
             <span style="color:#a78bfa; font-weight:700;">growth</span><br>
-            「利益を出しながら着実に成長している会社」「ROEが高く質のいい成長株」
+            "Companies growing steadily while profitable" "High-quality growth stocks with high ROE"
           </div>
           <div style="font-size:12px; color:#94a3b8;">
             <span style="color:#f87171; font-weight:700;">high-growth</span><br>
-            「赤字でもいい、売上が爆発的に伸びている銘柄」「SaaS・バイオ・EV系」
+            "Losses are fine, as long as revenue is exploding" "SaaS, Biotech, EV sector"
           </div>
         </div>
       </div>
@@ -742,28 +742,28 @@
   <div class="section">
     <div class="section-title">
       <div class="icon" style="background:#1a1f2e;">🗂</div>
-      規模 × 収益性 マトリクス
+      Size × Profitability Matrix
     </div>
     <div class="card" style="padding:28px;">
       <div style="display:grid; grid-template-columns: 80px 1fr 1fr; grid-template-rows: auto 1fr 1fr; gap:8px;">
 
-        <!-- 空セル（左上） -->
+        <!-- Empty cell (top-left) -->
         <div></div>
 
-        <!-- 列ラベル -->
+        <!-- Column labels -->
         <div style="text-align:center; padding:8px; font-size:12px; font-weight:700; color:#64748b; letter-spacing:1px; text-transform:uppercase;">
-          🏢 大型株<br><span style="font-weight:400; font-size:11px;">時価総額 1,000億円〜</span>
+          🏢 Large-cap<br><span style="font-weight:400; font-size:11px;">Market cap ¥100B+</span>
         </div>
         <div style="text-align:center; padding:8px; font-size:12px; font-weight:700; color:#64748b; letter-spacing:1px; text-transform:uppercase;">
-          🌱 小型株<br><span style="font-weight:400; font-size:11px;">時価総額 〜1,000億円</span>
+          🌱 Small-cap<br><span style="font-weight:400; font-size:11px;">Market cap ~¥100B</span>
         </div>
 
-        <!-- 行ラベル（黒字） -->
+        <!-- Row label (profitable) -->
         <div style="display:flex; align-items:center; justify-content:flex-end; padding-right:12px; font-size:12px; font-weight:700; color:#4ade80; writing-mode:horizontal-tb; text-align:right; line-height:1.4;">
-          💰 黒字<br><span style="font-weight:400; color:#64748b;">収益化済み</span>
+          💰 Profitable<br><span style="font-weight:400; color:#64748b;">Monetized</span>
         </div>
 
-        <!-- 黒字 × 大型 → growth / growth-value -->
+        <!-- Profitable × Large-cap → growth / growth-value -->
         <div style="background:#0f2130; border:1px solid #2563eb44; border-radius:12px; padding:20px;">
           <div style="font-size:11px; color:#60a5fa; font-weight:700; margin-bottom:8px;">LOW RISK / MODERATE RETURN</div>
           <div style="margin-bottom:6px;">
@@ -771,29 +771,29 @@
             <span style="font-family:'SF Mono','Fira Code',monospace; font-size:13px; color:#93c5fd; background:#1e3a5f; padding:2px 8px; border-radius:6px;">growth-value</span>
           </div>
           <div style="font-size:12px; color:#94a3b8; margin-top:10px; line-height:1.6;">
-            安定収益 + 着実な成長。機関投資家カバレッジが厚い。株価変動は比較的穏やか。<br>
-            <span style="color:#60a5fa; font-weight:600;">ROE≥15% · EPS成長≥10%</span>
+            Stable earnings + steady growth. Heavy institutional coverage. Relatively mild price fluctuation.<br>
+            <span style="color:#60a5fa; font-weight:600;">ROE≥15% · EPS Growth≥10%</span>
           </div>
         </div>
 
-        <!-- 黒字 × 小型 → small-cap（未実装） -->
+        <!-- Profitable × Small-cap → small-cap (not implemented) -->
         <div style="background:#1a1f2e; border:1px dashed #334155; border-radius:12px; padding:20px; opacity:0.7;">
           <div style="font-size:11px; color:#fbbf24; font-weight:700; margin-bottom:8px;">MODERATE RISK / HIGH RETURN</div>
           <div style="margin-bottom:6px;">
             <span style="font-family:'SF Mono','Fira Code',monospace; font-size:13px; color:#d97706; background:#2d1b00; padding:2px 8px; border-radius:6px;">small-cap-value</span>
           </div>
           <div style="font-size:12px; color:#94a3b8; margin-top:10px; line-height:1.6;">
-            黒字だが未発見の小型株。機関投資家が少なく流動性リスクあり。割安感が大きい傾向。<br>
-            <span style="color:#fbbf24; font-size:11px;">※ 未実装（検討中）</span>
+            Profitable but undiscovered small-caps. Few institutional investors, liquidity risk. Tends to have high undervaluation.<br>
+            <span style="color:#fbbf24; font-size:11px;">※ Not implemented (under consideration)</span>
           </div>
         </div>
 
-        <!-- 行ラベル（赤字） -->
+        <!-- Row label (loss-making) -->
         <div style="display:flex; align-items:center; justify-content:flex-end; padding-right:12px; font-size:12px; font-weight:700; color:#f87171; text-align:right; line-height:1.4;">
-          🔥 赤字<br><span style="font-weight:400; color:#64748b;">先行投資中</span>
+          🔥 Loss-making<br><span style="font-weight:400; color:#64748b;">Front-loaded investment</span>
         </div>
 
-        <!-- 赤字 × 大型 → high-growth -->
+        <!-- Loss-making × Large-cap → high-growth -->
         <div style="background:#1a1020; border:1px solid #7c3aed44; border-radius:12px; padding:20px;">
           <div style="font-size:11px; color:#a78bfa; font-weight:700; margin-bottom:8px;">MODERATE-HIGH RISK / HIGH RETURN</div>
           <div style="margin-bottom:6px;">
@@ -801,20 +801,20 @@
             <span style="background:#2d1515; color:#fca5a5; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px; margin-left:6px;">NEW</span>
           </div>
           <div style="font-size:12px; color:#94a3b8; margin-top:10px; line-height:1.6;">
-            時価総額が大きく市場認知は高い。売上急成長で将来利益を先取り評価済み。<br>
-            <span style="color:#a78bfa; font-weight:600;">売上成長≥20% · PSR≤20</span>
+            Large market cap with high market recognition. Rapid revenue growth with future profits already priced in.<br>
+            <span style="color:#a78bfa; font-weight:600;">Revenue Growth≥20% · PSR≤20</span>
           </div>
         </div>
 
-        <!-- 赤字 × 小型 → small-cap-growth（最ハイリスク） -->
+        <!-- Loss-making × Small-cap → small-cap-growth (highest risk) -->
         <div style="background:#2d1515; border:1px dashed #dc262655; border-radius:12px; padding:20px; opacity:0.7;">
           <div style="font-size:11px; color:#f87171; font-weight:700; margin-bottom:8px;">HIGHEST RISK / HIGHEST RETURN</div>
           <div style="margin-bottom:6px;">
             <span style="font-family:'SF Mono','Fira Code',monospace; font-size:13px; color:#fca5a5; background:#7f1d1d; padding:2px 8px; border-radius:6px;">small-cap-growth</span>
           </div>
           <div style="font-size:12px; color:#94a3b8; margin-top:10px; line-height:1.6;">
-            赤字 × 小型 = 最もハイリスク。10倍株候補だが倒産リスクも高い。機関未発見ゾーン。<br>
-            <span style="color:#f87171; font-size:11px;">※ 未実装（検討中）</span>
+            Loss-making × Small-cap = highest risk. 10x stock candidates but also high bankruptcy risk. Undiscovered by institutions.<br>
+            <span style="color:#f87171; font-size:11px;">※ Not implemented (under consideration)</span>
           </div>
         </div>
 
@@ -822,7 +822,7 @@
 
       <!-- Risk scale -->
       <div style="margin-top:20px; background:#131720; border-radius:10px; padding:16px; display:flex; align-items:center; gap:12px;">
-        <div style="font-size:12px; color:#64748b; white-space:nowrap;">リスク</div>
+        <div style="font-size:12px; color:#64748b; white-space:nowrap;">Risk</div>
         <div style="flex:1; height:6px; border-radius:3px; background:linear-gradient(to right, #1e40af, #7c3aed, #dc2626);"></div>
         <div style="font-size:12px; color:#64748b; white-space:nowrap;">Low → High</div>
         <div style="width:1px; height:16px; background:#334155; margin:0 4px;"></div>
@@ -841,42 +841,42 @@
   <div class="section">
     <div class="section-title">
       <div class="icon" style="background:#1a1f2e;">🛠</div>
-      実装ステップ
+      Implementation Steps
     </div>
     <div class="steps">
       <div class="step">
         <div class="step-num"></div>
         <div class="step-content">
-          <h4>EquityQueryフィールド動作確認</h4>
-          <p><code>totalrevenues1yrgrowth</code> / <code>quarterlyrevenuegrowth</code> / <code>lastclosemarketcaptotalrevenue</code> / <code>grossprofitmargin</code> で実際に銘柄がヒットするか検証</p>
+          <h4>Verify EquityQuery Field Behavior</h4>
+          <p>Validate that stocks actually appear using <code>totalrevenues1yrgrowth</code> / <code>quarterlyrevenuegrowth</code> / <code>lastclosemarketcaptotalrevenue</code> / <code>grossprofitmargin</code></p>
         </div>
       </div>
       <div class="step">
         <div class="step-num"></div>
         <div class="step-content">
-          <h4>config/screening_presets.yaml に high-growth 追加</h4>
-          <p>PSRベースの条件定義。既存 <code>growth</code> プリセットは維持（黒字成長株向けとして並存）</p>
+          <h4>Add high-growth to config/screening_presets.yaml</h4>
+          <p>Define PSR-based criteria. The existing <code>growth</code> preset is preserved (coexists as the profitable growth stock option)</p>
         </div>
       </div>
       <div class="step">
         <div class="step-num"></div>
         <div class="step-content">
-          <h4>growth_screener.py を拡張</h4>
-          <p>PSRによるバリュエーション計算・バブル判定ロジックを追加</p>
+          <h4>Extend growth_screener.py</h4>
+          <p>Add PSR-based valuation calculation and bubble detection logic</p>
         </div>
       </div>
       <div class="step">
         <div class="step-num"></div>
         <div class="step-content">
-          <h4>intent-routing.md 更新</h4>
-          <p>「高成長株」「赤字成長株」「PSR」「売上成長」などのキーワードを <code>high-growth</code> プリセットにルーティング</p>
+          <h4>Update intent-routing.md</h4>
+          <p>Route keywords like "high-growth stocks," "loss-making growth stocks," "PSR," "revenue growth" to the <code>high-growth</code> preset</p>
         </div>
       </div>
       <div class="step">
         <div class="step-num"></div>
         <div class="step-content">
-          <h4>E2Eテスト</h4>
-          <p>米国・日本で各5件以上ヒットすることを確認。既存 <code>growth</code> プリセットのデグレがないことをテスト</p>
+          <h4>E2E Testing</h4>
+          <p>Confirm at least 5 hits each for US and Japan. Test that there is no regression in the existing <code>growth</code> preset</p>
         </div>
       </div>
     </div>

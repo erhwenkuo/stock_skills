@@ -99,7 +99,7 @@ class ResearchSearcher(Protocol):
         Parameters
         ----------
         industry_or_theme : str
-            Industry name or theme (e.g. "半導体", "EV", "AI").
+            Industry name or theme (e.g. "Semiconductors", "EV", "AI").
         timeout : int
             Request timeout in seconds.
         context : str
@@ -123,7 +123,7 @@ class ResearchSearcher(Protocol):
         Parameters
         ----------
         market_or_index : str
-            Market or index name (e.g. "日経平均", "S&P500").
+            Market or index name (e.g. "Nikkei average", "S&P500").
         timeout : int
             Request timeout in seconds.
         context : str

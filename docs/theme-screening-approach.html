@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>テーマ別スクリーニング × Grok駆動テーマ発見</title>
+  <title>Theme-Based Screening × Grok-Driven Theme Discovery</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -413,19 +413,19 @@
         <span class="badge badge-orange">Grok API</span>
         <span class="badge badge-blue">EquityQuery</span>
         <span class="badge badge-green">Theme Screening</span>
-        <span class="badge badge-purple">新機能提案</span>
+        <span class="badge badge-purple">New Feature Proposal</span>
       </div>
-      <h1>テーマ別スクリーニング<br>× <span>Grok駆動テーマ発見</span></h1>
-      <p>「今どのセクターが熱い？」を Grok に聞いてから、そのテーマで割安株をスクリーニングする2段階パイプライン</p>
+      <h1>Theme-Based Screening<br>× <span>Grok-Driven Theme Discovery</span></h1>
+      <p>A 2-stage pipeline that asks Grok "which sectors are hot right now?" then screens for undervalued stocks within that theme</p>
     </div>
 
     <!-- Vision -->
     <div class="vision">
       <p>
-        <strong>スクリーニングを「条件入力」から「意図入力」へ。</strong><br>
-        ユーザーが「今熱いテーマで割安株を探して」と言うだけで、
-        <em>Grok がトレンドテーマを検出</em>し、<em>EquityQuery がそのテーマ内で質の高い銘柄を絞り込む</em>。
-        市場の空気を読んで投資候補を自動で届ける。
+        <strong>Evolving screening from "condition input" to "intent input."</strong><br>
+        When the user says "find undervalued stocks in today's hottest themes,"
+        <em>Grok detects trending themes</em> and <em>EquityQuery narrows down quality stocks within those themes</em>.
+        Investment candidates are delivered automatically by reading the market's pulse.
       </p>
     </div>
 
@@ -433,15 +433,15 @@
     <div class="section">
       <div class="section-title">
         <div class="icon" style="background:#1c1008;">🔄</div>
-        2段階パイプライン
+        2-Stage Pipeline
       </div>
 
       <div class="pipeline">
 
         <div class="pipe-step step-grok">
           <div class="pipe-num">Step 1</div>
-          <div class="pipe-title">Grok でトレンド検出</div>
-          <div class="pipe-desc">X / Web を横断して今注目のセクター・テーマを自然言語で取得</div>
+          <div class="pipe-title">Detect Trends with Grok</div>
+          <div class="pipe-desc">Retrieve today's notable sectors and themes in natural language by scanning X and the Web</div>
           <span class="pipe-tag">Grok API</span>
         </div>
 
@@ -453,8 +453,8 @@
 
         <div class="pipe-step step-map">
           <div class="pipe-num">Step 2</div>
-          <div class="pipe-title">テーマ名をマッピング</div>
-          <div class="pipe-desc">Grok の回答を themes.yaml のテーマキーに変換（ai / ev / defense など）</div>
+          <div class="pipe-title">Map Theme Names</div>
+          <div class="pipe-desc">Convert Grok's response to theme keys in themes.yaml (ai / ev / defense, etc.)</div>
           <span class="pipe-tag">themes.yaml</span>
         </div>
 
@@ -466,8 +466,8 @@
 
         <div class="pipe-step step-screen">
           <div class="pipe-num">Step 3</div>
-          <div class="pipe-title">テーマ × プリセットでスクリーニング</div>
-          <div class="pipe-desc">テーマに対応する industries を EquityQuery に変換し、既存プリセット条件と AND 結合</div>
+          <div class="pipe-title">Screen by Theme × Preset</div>
+          <div class="pipe-desc">Convert theme-corresponding industries to EquityQuery and AND-combine with existing preset criteria</div>
           <span class="pipe-tag">EquityQuery</span>
         </div>
 
@@ -479,8 +479,8 @@
 
         <div class="pipe-step step-output">
           <div class="pipe-num">Step 4</div>
-          <div class="pipe-title">テーマ解説つきで出力</div>
-          <div class="pipe-desc">「なぜ今このテーマか」の理由と銘柄スコアをセットで提示</div>
+          <div class="pipe-title">Output with Theme Context</div>
+          <div class="pipe-desc">Present the reason "why this theme now" together with stock scores</div>
           <span class="pipe-tag">Report</span>
         </div>
 
@@ -491,11 +491,11 @@
     <div class="section">
       <div class="section-title">
         <div class="icon" style="background:#1c1008;">💬</div>
-        Grok とのやり取りイメージ
+        Sample Grok Interaction
       </div>
 
       <div class="grok-box">
-        <span class="g-label">▶ Claude → Grok に送るプロンプト</span>
+        <span class="g-label">▶ Prompt sent from Claude → Grok</span>
         <div class="g-prompt">
           "What sectors or investment themes are trending in global markets right now?<br>
           Return as JSON array of theme names with brief reasons.<br>
@@ -504,18 +504,18 @@
       </div>
 
       <div class="grok-box">
-        <span class="g-label">◀ Grok からの回答（例）</span>
+        <span class="g-label">◀ Grok response (example)</span>
         <div class="g-response">
           [<br>
-          &nbsp;&nbsp;{ "theme": <span class="g-highlight">"AI/Semiconductor"</span>, "reason": "NVIDIA Blackwell需要爆発、AI CapEx $6500億超" },<br>
-          &nbsp;&nbsp;{ "theme": <span class="g-highlight">"Defense"</span>,         "reason": "欧州NATO予算拡大、地政学リスク継続" },<br>
-          &nbsp;&nbsp;{ "theme": <span class="g-highlight">"Energy Transition"</span>, "reason": "再エネ投資再加速、IRA補助金執行継続" }<br>
+          &nbsp;&nbsp;{ "theme": <span class="g-highlight">"AI/Semiconductor"</span>, "reason": "NVIDIA Blackwell demand explosion, AI CapEx exceeds $650B" },<br>
+          &nbsp;&nbsp;{ "theme": <span class="g-highlight">"Defense"</span>,         "reason": "European NATO budget expansion, ongoing geopolitical risks" },<br>
+          &nbsp;&nbsp;{ "theme": <span class="g-highlight">"Energy Transition"</span>, "reason": "Renewable investment re-accelerating, IRA subsidy execution continuing" }<br>
           ]
         </div>
       </div>
 
       <div style="margin-top:12px; font-size:12px; color:#475569; text-align:center;">
-        → テーマキーに変換:
+        → Converted to theme keys:
         <code style="background:#1e293b; color:#fb923c; padding:2px 8px; border-radius:4px; margin:0 4px;">ai</code>
         <code style="background:#1e293b; color:#fb923c; padding:2px 8px; border-radius:4px; margin:0 4px;">defense</code>
         <code style="background:#1e293b; color:#fb923c; padding:2px 8px; border-radius:4px; margin:0 4px;">renewable-energy</code>
@@ -526,7 +526,7 @@
     <div class="section">
       <div class="section-title">
         <div class="icon" style="background:#1a1030;">🗂️</div>
-        テーマ → Industries マッピング（config/themes.yaml）
+        Theme → Industries Mapping (config/themes.yaml)
       </div>
 
       <div class="theme-grid">
@@ -544,7 +544,7 @@
           <div class="theme-name">ev</div>
           <div class="theme-industries">
             <span>Auto Manufacturers</span>
-            <span>Electrical Equipment & Parts</span>
+            <span>Electrical Equipment &amp; Parts</span>
             <span>Electronic Components</span>
           </div>
         </div>
@@ -554,7 +554,7 @@
           <div class="theme-industries">
             <span>Software—Infrastructure</span>
             <span>Software—Application</span>
-            <span>Internet Content & Info</span>
+            <span>Internet Content &amp; Info</span>
           </div>
         </div>
 
@@ -562,7 +562,7 @@
           <div class="theme-name">cybersecurity</div>
           <div class="theme-industries">
             <span>Software—Infrastructure</span>
-            <span>Internet Content & Info</span>
+            <span>Internet Content &amp; Info</span>
           </div>
         </div>
 
@@ -580,7 +580,7 @@
           <div class="theme-industries">
             <span>Solar</span>
             <span>Utilities—Renewable</span>
-            <span>Electrical Equipment & Parts</span>
+            <span>Electrical Equipment &amp; Parts</span>
           </div>
         </div>
 
@@ -596,7 +596,7 @@
         <div class="theme-card">
           <div class="theme-name">defense</div>
           <div class="theme-industries">
-            <span>Aerospace & Defense</span>
+            <span>Aerospace &amp; Defense</span>
           </div>
         </div>
 
@@ -605,7 +605,7 @@
           <div class="theme-industries">
             <span>Healthcare Plans</span>
             <span>Medical Devices</span>
-            <span>Diagnostics & Research</span>
+            <span>Diagnostics &amp; Research</span>
           </div>
         </div>
 
@@ -616,28 +616,28 @@
     <div class="section">
       <div class="section-title">
         <div class="icon" style="background:#14291c;">💬</div>
-        自然言語 → スクリーニング変換例
+        Natural Language → Screening Conversion Examples
       </div>
 
       <div class="nl-grid">
 
         <div class="nl-row">
           <div class="nl-input">
-            <div class="nl-tag">ユーザー</div>
-            今どのセクターが熱い？
+            <div class="nl-tag">User</div>
+            Which sectors are hot right now?
           </div>
           <div class="nl-arrow">→</div>
           <div class="nl-output">
             <span class="cmd">Grok</span>.get_trending_themes()<br>
             → [ai, defense, renewable-energy]<br>
-            <span class="theme">テーマ概要を表示</span>
+            <span class="theme">Display theme overview</span>
           </div>
         </div>
 
         <div class="nl-row">
           <div class="nl-input">
-            <div class="nl-tag">ユーザー</div>
-            今熱いテーマで割安株を探して
+            <div class="nl-tag">User</div>
+            Find undervalued stocks in today's hottest themes
           </div>
           <div class="nl-arrow">→</div>
           <div class="nl-output">
@@ -649,20 +649,20 @@
 
         <div class="nl-row">
           <div class="nl-input">
-            <div class="nl-tag">ユーザー</div>
-            AI関連で成長株を探して
+            <div class="nl-tag">User</div>
+            Find growth stocks in AI
           </div>
           <div class="nl-arrow">→</div>
           <div class="nl-output">
-            テーマ固定（Grokスキップ）<br>
+            Theme fixed (Grok skipped)<br>
             <span class="cmd">screen</span> --theme <span class="theme">ai</span> --preset <span class="preset">high-growth</span>
           </div>
         </div>
 
         <div class="nl-row">
           <div class="nl-input">
-            <div class="nl-tag">ユーザー</div>
-            半導体の割安株、日本で
+            <div class="nl-tag">User</div>
+            Undervalued semiconductor stocks in Japan
           </div>
           <div class="nl-arrow">→</div>
           <div class="nl-output">
@@ -674,14 +674,14 @@
 
         <div class="nl-row">
           <div class="nl-input">
-            <div class="nl-tag">ユーザー</div>
-            今の相場で何を買えばいい？
+            <div class="nl-tag">User</div>
+            What should I buy in today's market?
           </div>
           <div class="nl-arrow">→</div>
           <div class="nl-output">
-            <span class="cmd">Grok</span> → トレンドテーマ検出<br>
-            <span class="cmd">screen</span> × 各テーマ × <span class="preset">alpha</span><br>
-            <span class="theme">テーマ解説 + 銘柄候補を統合表示</span>
+            <span class="cmd">Grok</span> → Detect trending themes<br>
+            <span class="cmd">screen</span> × each theme × <span class="preset">alpha</span><br>
+            <span class="theme">Display theme context + stock candidates integrated</span>
           </div>
         </div>
 
@@ -692,62 +692,62 @@
     <div class="section">
       <div class="section-title">
         <div class="icon" style="background:#0f1a2e;">⚖️</div>
-        現在の trending プリセットとの違い
+        Difference from the Current trending Preset
       </div>
 
       <div class="compare-grid">
 
         <div class="compare-card card-current">
-          <div class="card-label">現在</div>
+          <div class="card-label">Current</div>
           <div class="card-name">trending preset</div>
-          <div class="card-desc">Xで今話題の個別銘柄を発見する</div>
+          <div class="card-desc">Discover individual stocks trending on X right now</div>
           <hr class="divider">
           <div class="compare-row">
-            <span class="label">対象粒度</span>
-            <span class="value" style="color:#93c5fd;">個別銘柄</span>
+            <span class="label">Detection granularity</span>
+            <span class="value" style="color:#93c5fd;">Individual stocks</span>
           </div>
           <div class="compare-row">
-            <span class="label">情報源</span>
-            <span class="value">X（ポスト・バズ）</span>
+            <span class="label">Data source</span>
+            <span class="value">X (posts &amp; buzz)</span>
           </div>
           <div class="compare-row">
-            <span class="label">検出軸</span>
-            <span class="value">銘柄名の言及数・センチメント</span>
+            <span class="label">Detection axis</span>
+            <span class="value">Stock name mentions &amp; sentiment</span>
           </div>
           <div class="compare-row">
-            <span class="label">出力</span>
-            <span class="value">スコア付き銘柄リスト</span>
+            <span class="label">Output</span>
+            <span class="value">Scored stock list</span>
           </div>
           <div class="compare-row">
-            <span class="label">テーマ文脈</span>
-            <span class="value" style="color:#475569;">なし</span>
+            <span class="label">Theme context</span>
+            <span class="value" style="color:#475569;">None</span>
           </div>
         </div>
 
         <div class="compare-card card-new">
-          <div class="card-label">新機能</div>
+          <div class="card-label">New Feature</div>
           <div class="card-name">theme screening</div>
-          <div class="card-desc">今熱いテーマ内で質の高い銘柄を探す</div>
+          <div class="card-desc">Find quality stocks within today's hottest themes</div>
           <hr class="divider">
           <div class="compare-row">
-            <span class="label">対象粒度</span>
-            <span class="value" style="color:#c4b5fd;">セクター / テーマ</span>
+            <span class="label">Detection granularity</span>
+            <span class="value" style="color:#c4b5fd;">Sector / Theme</span>
           </div>
           <div class="compare-row">
-            <span class="label">情報源</span>
-            <span class="value">X + Web（マクロトレンド）</span>
+            <span class="label">Data source</span>
+            <span class="value">X + Web (macro trends)</span>
           </div>
           <div class="compare-row">
-            <span class="label">検出軸</span>
-            <span class="value">業界動向・マクロ・資金フロー</span>
+            <span class="label">Detection axis</span>
+            <span class="value">Industry trends, macro, capital flows</span>
           </div>
           <div class="compare-row">
-            <span class="label">出力</span>
-            <span class="value">テーマ別銘柄リスト + テーマ解説</span>
+            <span class="label">Output</span>
+            <span class="value">Theme-grouped stock list + theme explanation</span>
           </div>
           <div class="compare-row">
-            <span class="label">テーマ文脈</span>
-            <span class="value" style="color:#4ade80;">あり（なぜ今このテーマか）</span>
+            <span class="label">Theme context</span>
+            <span class="value" style="color:#4ade80;">Yes (why this theme now)</span>
           </div>
         </div>
 
@@ -758,17 +758,17 @@
     <div class="section">
       <div class="section-title">
         <div class="icon" style="background:#052e16;">🔗</div>
-        実装の依存関係
+        Implementation Dependencies
       </div>
 
       <div class="dep-chain">
 
         <div class="dep-box dep-base">
-          <div class="dep-kik">KIK-??? 基盤</div>
-          <div class="dep-title">テーマ別スクリーニング</div>
+          <div class="dep-kik">KIK-??? Foundation</div>
+          <div class="dep-title">Theme-Based Screening</div>
           <div class="dep-desc">
-            config/themes.yaml 定義 + query_builder に industry 条件追加<br>
-            <code style="font-size:10px; color:#60a5fa;">--theme ai --preset value</code> が動く状態にする
+            config/themes.yaml definition + add industry condition to query_builder<br>
+            Get <code style="font-size:10px; color:#60a5fa;">--theme ai --preset value</code> working
           </div>
         </div>
 
@@ -779,29 +779,29 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2">
             <path d="M12 5v14M5 12l7 7 7-7"/>
           </svg>
-          <div style="font-size:10px; color:#334155; text-align:center; padding:2px 0;">依存</div>
+          <div style="font-size:10px; color:#334155; text-align:center; padding:2px 0;">depends on</div>
         </div>
 
         <div class="dep-box dep-app">
-          <div class="dep-kik">KIK-??? 応用層</div>
-          <div class="dep-title">Grok駆動テーマ発見</div>
+          <div class="dep-kik">KIK-??? Application Layer</div>
+          <div class="dep-title">Grok-Driven Theme Discovery</div>
           <div class="dep-desc">
-            Grok でトレンドテーマを自動検出 → テーマスクリーニングに渡す<br>
-            <code style="font-size:10px; color:#fb923c;">「今熱いテーマで割安株を」</code> で全自動化
+            Auto-detect trending themes with Grok → pass to theme screening<br>
+            <code style="font-size:10px; color:#fb923c;">"Find undervalued stocks in today's hottest themes"</code> fully automated
           </div>
         </div>
 
       </div>
 
       <div style="margin-top:28px; background:#0f1629; border:1px solid #1e293b; border-radius:12px; padding:20px 24px;">
-        <div style="font-size:12px; color:#475569; margin-bottom:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">実装ファイル</div>
+        <div style="font-size:12px; color:#475569; margin-bottom:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">Implementation Files</div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px; color:#64748b;">
-          <div>📄 config/<span style="color:#fb923c;">themes.yaml</span> — テーマ定義</div>
-          <div>📄 src/core/screening/<span style="color:#60a5fa;">query_builder.py</span> — industry条件追加</div>
-          <div>📄 src/core/screening/<span style="color:#60a5fa;">query_screener.py</span> — theme パラメータ</div>
-          <div>📄 src/data/<span style="color:#fb923c;">grok_client.py</span> — get_trending_themes() 追加</div>
+          <div>📄 config/<span style="color:#fb923c;">themes.yaml</span> — Theme definitions</div>
+          <div>📄 src/core/screening/<span style="color:#60a5fa;">query_builder.py</span> — Add industry condition</div>
+          <div>📄 src/core/screening/<span style="color:#60a5fa;">query_screener.py</span> — theme parameter</div>
+          <div>📄 src/data/<span style="color:#fb923c;">grok_client.py</span> — Add get_trending_themes()</div>
           <div>📄 .claude/skills/screen-stocks/<span style="color:#4ade80;">run_screen.py</span> — --theme CLI</div>
-          <div>📄 .claude/rules/<span style="color:#a78bfa;">intent-routing.md</span> — テーマキーワード追加</div>
+          <div>📄 .claude/rules/<span style="color:#a78bfa;">intent-routing.md</span> — Add theme keywords</div>
         </div>
       </div>
     </div>

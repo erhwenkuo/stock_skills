@@ -24,7 +24,7 @@ class TrendingScreener:
 
     UNDERVALUED_THRESHOLD = 60
     FAIR_VALUE_THRESHOLD = 30
-    CLASSIFICATION_NO_DATA = "話題×データ不足"
+    CLASSIFICATION_NO_DATA = "Trending×Insufficient data"
 
     def __init__(self, yahoo_client, grok_client_module):
         self.yahoo_client = yahoo_client
@@ -33,10 +33,10 @@ class TrendingScreener:
     @staticmethod
     def classify(value_score: float) -> str:
         if value_score >= TrendingScreener.UNDERVALUED_THRESHOLD:
-            return "話題×割安"
+            return "Trending×Undervalued"
         elif value_score >= TrendingScreener.FAIR_VALUE_THRESHOLD:
-            return "話題×適正"
-        return "話題×割高"
+            return "Trending×Fair"
+        return "Trending×Overvalued"
 
     def screen(
         self,
@@ -104,7 +104,7 @@ class TrendingScreener:
                 "sector": info.get("sector"),
             })
 
-        _CLASS_ORDER = {"話題×割安": 0, "話題×適正": 1, "話題×割高": 2, "話題×データ不足": 3}
+        _CLASS_ORDER = {"Trending×Undervalued": 0, "Trending×Fair": 1, "Trending×Overvalued": 2, "Trending×Insufficient data": 3}
         results.sort(
             key=lambda r: (
                 _CLASS_ORDER.get(r.get("classification", ""), 2),

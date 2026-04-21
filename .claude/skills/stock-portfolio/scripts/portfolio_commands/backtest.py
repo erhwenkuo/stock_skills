@@ -17,10 +17,10 @@ def cmd_backtest(
 ) -> None:
     """Run backtest on accumulated screening history."""
     if not HAS_BACKTEST:
-        print("Error: backtest モジュールが見つかりません。")
+        print("Error: backtest module not found.")
         sys.exit(1)
 
-    print("バックテスト実行中（蓄積データ + 現在価格取得）...\n")
+    print("Running backtest (accumulated data + current price fetch)...\n")
 
     result = run_backtest(
         yahoo_client_module=yahoo_client,
@@ -34,26 +34,26 @@ def cmd_backtest(
     period = result.get("period", {})
 
     if not stocks:
-        print("対象期間のスクリーニング履歴がありません。")
-        print(f"期間: {period.get('start', '?')} → {period.get('end', '?')}")
+        print("No screening history found for the target period.")
+        print(f"Period: {period.get('start', '?')} -> {period.get('end', '?')}")
         if preset:
-            print(f"プリセット: {preset}")
+            print(f"Preset: {preset}")
         if region:
-            print(f"リージョン: {region}")
+            print(f"Region: {region}")
         return
 
     # Header
-    print(f"## バックテスト結果（過去{days}日）")
-    print(f"期間: {period.get('start', '?')} → {period.get('end', '?')}")
+    print(f"## Backtest Results (past {days} days)")
+    print(f"Period: {period.get('start', '?')} -> {period.get('end', '?')}")
     if preset:
-        print(f"プリセット: {preset}")
+        print(f"Preset: {preset}")
     if region:
-        print(f"リージョン: {region}")
-    print(f"対象スクリーニング回数: {result.get('total_screens', 0)}")
+        print(f"Region: {region}")
+    print(f"Number of screenings: {result.get('total_screens', 0)}")
     print()
 
     # Stock table
-    print("| 銘柄 | 名称 | スクリーニング日 | 当時スコア | 当時価格 | 現在価格 | リターン |")
+    print("| Symbol | Name | Screen Date | Score at Screen | Price at Screen | Current Price | Return |")
     print("|:-----|:-----|:--------------|--------:|-------:|-------:|------:|")
     for s in stocks:
         ret_str = f"{s['return_pct'] * 100:+.2f}%"
@@ -65,28 +65,28 @@ def cmd_backtest(
     print()
 
     # Summary
-    print("### サマリー")
-    print(f"- 対象銘柄数: {result.get('total_stocks', 0)}")
-    print(f"- 平均リターン: {result.get('avg_return', 0) * 100:+.2f}%")
-    print(f"- 中央値リターン: {result.get('median_return', 0) * 100:+.2f}%")
-    print(f"- 勝率: {result.get('win_rate', 0) * 100:.1f}%")
+    print("### Summary")
+    print(f"- Number of stocks: {result.get('total_stocks', 0)}")
+    print(f"- Average return: {result.get('avg_return', 0) * 100:+.2f}%")
+    print(f"- Median return: {result.get('median_return', 0) * 100:+.2f}%")
+    print(f"- Win rate: {result.get('win_rate', 0) * 100:.1f}%")
 
     benchmark = result.get("benchmark", {})
     nikkei = benchmark.get("nikkei")
     sp500 = benchmark.get("sp500")
     if nikkei is not None:
-        print(f"- ベンチマーク（日経225）: {nikkei * 100:+.2f}%")
+        print(f"- Benchmark (Nikkei 225): {nikkei * 100:+.2f}%")
     else:
-        print("- ベンチマーク（日経225）: 取得不可")
+        print("- Benchmark (Nikkei 225): unavailable")
     if sp500 is not None:
-        print(f"- ベンチマーク（S&P500）: {sp500 * 100:+.2f}%")
+        print(f"- Benchmark (S&P 500): {sp500 * 100:+.2f}%")
     else:
-        print("- ベンチマーク（S&P500）: 取得不可")
+        print("- Benchmark (S&P 500): unavailable")
 
     alpha_n = result.get("alpha_nikkei")
     alpha_s = result.get("alpha_sp500")
     if alpha_n is not None:
-        print(f"- α（対日経225）: {alpha_n * 100:+.2f}%")
+        print(f"- Alpha (vs Nikkei 225): {alpha_n * 100:+.2f}%")
     if alpha_s is not None:
-        print(f"- α（対S&P500）: {alpha_s * 100:+.2f}%")
+        print(f"- Alpha (vs S&P 500): {alpha_s * 100:+.2f}%")
     print()

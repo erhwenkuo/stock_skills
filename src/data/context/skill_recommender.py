@@ -65,28 +65,28 @@ def _recommend_skill(history: dict, is_bookmarked: bool,
     # KIK-414: HOLDS relationship is authoritative for current holdings
     if is_held or _has_bought_not_sold(history):
         if _thesis_needs_review(history, 90):
-            return ("health", "テーゼ3ヶ月経過 → レビュー促し", "保有(要レビュー)")
-        return ("health", "保有銘柄 → ヘルスチェック優先", "保有")
+            return ("health", "Thesis 3 months old → prompt review", "Held (review due)")
+        return ("health", "Held stock → health check priority", "Held")
 
     if _has_exit_alert(history):
-        return ("screen_alternative", "EXIT判定 → 代替候補検索", "EXIT判定")
+        return ("screen_alternative", "EXIT judgment → find alternative", "EXIT")
 
     if is_bookmarked:
-        return ("report", "ウォッチ中 → レポート + 前回差分", "ウォッチ中")
+        return ("report", "Watching → report + previous diff", "Watching")
 
     if _screening_count(history) >= 3:
-        return ("report", "3回以上スクリーニング出現 → 注目銘柄", "注目")
+        return ("report", "3+ screening appearances → notable stock", "Notable")
 
     if _has_recent_research(history, 7):
-        return ("report_diff", "直近リサーチあり → 差分モード", "リサーチ済")
+        return ("report_diff", "Recent research → diff mode", "Researched")
 
     if _has_concern_notes(history):
-        return ("report", "懸念メモあり → 再検証", "懸念あり")
+        return ("report", "Concern memo → re-verify", "Has concern")
 
     if history.get("screens") or history.get("reports") or history.get("trades"):
-        return ("report", "過去データあり → レポート", "既知")
+        return ("report", "Past data → report", "Known")
 
-    return ("report", "未知の銘柄 → ゼロから調査", "未知")
+    return ("report", "Unknown stock → research from scratch", "Unknown")
 
 
 def _check_bookmarked(symbol: str, _graph_store=None) -> bool:

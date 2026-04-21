@@ -16,10 +16,10 @@ Example
 
     class ReportCommand(BaseSkillCommand):
         name = "stock-report"
-        description = "銘柄レポート生成"
+        description = "Stock report generation"
 
         def configure_parser(self, parser):
-            parser.add_argument("symbol", help="ティッカーシンボル")
+            parser.add_argument("symbol", help="Ticker symbol")
 
         def context_input(self, args):
             return f"report {args.symbol}"
@@ -28,7 +28,7 @@ Example
             print(f"Report for {args.symbol}")
 
         def suggestion_kwargs(self, args):
-            return {"symbol": args.symbol, "context_summary": f"レポート生成: {args.symbol}"}
+            return {"symbol": args.symbol, "context_summary": f"Report generated: {args.symbol}"}
 
     if __name__ == "__main__":
         ReportCommand().execute()

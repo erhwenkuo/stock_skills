@@ -366,7 +366,7 @@ def estimate_portfolio_return(csv_path: str, yahoo_client_module) -> dict:
             value_jpy = pos["cost_price"] * pos["shares"] * fx_rate
             position_estimates.append({
                 "symbol": symbol,
-                "name": f"現金 ({cash_currency})",
+                "name": f"Cash ({cash_currency})",
                 "price": pos["cost_price"],
                 "currency": cash_currency,
                 "optimistic": 0.0,

@@ -22,11 +22,11 @@ def cmd_what_if(
 ) -> None:
     """Run What-If simulation: add/remove stocks and compare metrics. (KIK-451)"""
     if not HAS_WHAT_IF:
-        print("Error: portfolio_simulation モジュールが見つかりません。")
+        print("Error: portfolio_simulation module not found.")
         sys.exit(1)
 
     if not add_str and not remove_str:
-        print("Error: --add または --remove のいずれかを指定してください。")
+        print("Error: Please specify either --add or --remove.")
         sys.exit(1)
 
     # 1. Parse arguments
@@ -47,7 +47,7 @@ def cmd_what_if(
         removal_symbols = [r["symbol"] for r in removals]
         print_removal_contexts(removal_symbols)
 
-    print("What-If シミュレーション実行中...\n")
+    print("Running What-If simulation...\n")
 
     # 2. Run simulation
     try:

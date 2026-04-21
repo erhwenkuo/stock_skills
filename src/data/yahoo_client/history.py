@@ -43,17 +43,17 @@ def get_price_history(symbol: str, period: str = "1y") -> Optional[pd.DataFrame]
         return result
     except (TimeoutError, socket.timeout) as e:
         print(
-            f"⚠️  Yahoo Financeへの接続がタイムアウトしました ({symbol})\n"
-            "    原因: ネットワーク接続が不安定、またはYahoo Financeが一時的に応答していません\n"
-            "    対処: ネットワーク接続を確認し、再試行してください"
+            f"⚠️  Yahoo Finance connection timed out ({symbol})\n"
+            "    Cause: unstable network or Yahoo Finance temporarily unavailable\n"
+            "    Fix: check your network connection and retry"
         )
         return None
     except Exception as e:
         if "timed out" in str(e).lower() or "timeout" in str(e).lower():
             print(
-                f"⚠️  Yahoo Financeへの接続がタイムアウトしました ({symbol})\n"
-                "    原因: ネットワーク接続が不安定、またはYahoo Financeが一時的に応答していません\n"
-                "    対処: ネットワーク接続を確認し、再試行してください"
+                f"⚠️  Yahoo Finance connection timed out ({symbol})\n"
+                "    Cause: unstable network or Yahoo Finance temporarily unavailable\n"
+                "    Fix: check your network connection and retry"
             )
         else:
             print(f"[yahoo_client] Error fetching price history for {symbol}: {e}")

@@ -127,153 +127,153 @@ DEFAULT_CSV = os.path.join(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="ポートフォリオ管理 -- 保有銘柄の一覧表示・売買記録・構造分析"
+        description="Portfolio management -- list holdings, record trades, and analyze portfolio structure"
     )
     parser.add_argument(
         "--csv",
         default=DEFAULT_CSV,
-        help=f"ポートフォリオCSVファイルのパス (デフォルト: {DEFAULT_CSV})",
+        help=f"Path to the portfolio CSV file (default: {DEFAULT_CSV})",
     )
 
-    subparsers = parser.add_subparsers(dest="command", help="実行コマンド")
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # snapshot
-    subparsers.add_parser("snapshot", help="PFスナップショット生成")
+    subparsers.add_parser("snapshot", help="Generate portfolio snapshot")
 
     # buy
-    buy_parser = subparsers.add_parser("buy", help="購入記録追加")
-    buy_parser.add_argument("--symbol", required=True, help="銘柄シンボル (例: 7203.T)")
-    buy_parser.add_argument("--shares", required=True, type=int, help="株数")
-    buy_parser.add_argument("--price", required=True, type=float, help="取得単価")
-    buy_parser.add_argument("--currency", default="JPY", help="通貨コード (デフォルト: JPY)")
-    buy_parser.add_argument("--date", default=None, help="購入日 (YYYY-MM-DD)")
-    buy_parser.add_argument("--memo", default="", help="メモ")
+    buy_parser = subparsers.add_parser("buy", help="Add a purchase record")
+    buy_parser.add_argument("--symbol", required=True, help="Stock symbol (e.g. 7203.T)")
+    buy_parser.add_argument("--shares", required=True, type=int, help="Number of shares")
+    buy_parser.add_argument("--price", required=True, type=float, help="Purchase price per share")
+    buy_parser.add_argument("--currency", default="JPY", help="Currency code (default: JPY)")
+    buy_parser.add_argument("--date", default=None, help="Purchase date (YYYY-MM-DD)")
+    buy_parser.add_argument("--memo", default="", help="Memo note")
     buy_parser.add_argument("-y", "--yes", action="store_true", default=False,
-                            help="確認をスキップして直接記録する (KIK-444)")
+                            help="Skip confirmation and record directly (KIK-444)")
 
     # sell
-    sell_parser = subparsers.add_parser("sell", help="売却記録")
-    sell_parser.add_argument("--symbol", required=True, help="銘柄シンボル (例: 7203.T)")
-    sell_parser.add_argument("--shares", required=True, type=int, help="売却株数")
+    sell_parser = subparsers.add_parser("sell", help="Record a sale")
+    sell_parser.add_argument("--symbol", required=True, help="Stock symbol (e.g. 7203.T)")
+    sell_parser.add_argument("--shares", required=True, type=int, help="Number of shares to sell")
     sell_parser.add_argument("--price", type=float, default=None,
-                             help="売却単価 (KIK-441, 例: 138.5)")
+                             help="Sale price per share (KIK-441, e.g. 138.5)")
     sell_parser.add_argument("--date", default=None,
-                             help="売却日 (KIK-441, YYYY-MM-DD, デフォルト: 今日)")
+                             help="Sale date (KIK-441, YYYY-MM-DD, default: today)")
     sell_parser.add_argument("-y", "--yes", action="store_true", default=False,
-                             help="確認をスキップして直接記録する (KIK-444)")
+                             help="Skip confirmation and record directly (KIK-444)")
 
     # review (KIK-441)
-    review_parser = subparsers.add_parser("review", help="売買パフォーマンスレビュー (KIK-441)")
+    review_parser = subparsers.add_parser("review", help="Trade performance review (KIK-441)")
     review_parser.add_argument("--year", type=int, default=None,
-                               help="集計年 (例: 2026, デフォルト: 全期間)")
+                               help="Year to aggregate (e.g. 2026, default: all periods)")
     review_parser.add_argument("--symbol", default=None,
-                               help="銘柄フィルタ (例: NVDA)")
+                               help="Symbol filter (e.g. NVDA)")
 
     # analyze
-    subparsers.add_parser("analyze", help="構造分析 (セクター/地域/通貨HHI)")
+    subparsers.add_parser("analyze", help="Structural analysis (sector/region/currency HHI)")
 
     # list
-    subparsers.add_parser("list", help="保有銘柄一覧表示")
+    subparsers.add_parser("list", help="Display holdings list")
 
     # health (KIK-356)
-    subparsers.add_parser("health", help="保有銘柄ヘルスチェック")
+    subparsers.add_parser("health", help="Holdings health check")
 
     # forecast (KIK-359)
-    subparsers.add_parser("forecast", help="推定利回り（3シナリオ）")
+    subparsers.add_parser("forecast", help="Estimated return (3 scenarios)")
 
     # rebalance (KIK-363)
-    rebalance_parser = subparsers.add_parser("rebalance", help="リバランス提案")
+    rebalance_parser = subparsers.add_parser("rebalance", help="Rebalance proposal")
     rebalance_parser.add_argument(
         "--strategy",
         choices=["defensive", "balanced", "aggressive"],
         default="balanced",
-        help="投資戦略 (デフォルト: balanced)",
+        help="Investment strategy (default: balanced)",
     )
     rebalance_parser.add_argument(
         "--reduce-sector", default=None,
-        help="削減対象セクター (例: Technology)",
+        help="Sector to reduce (e.g. Technology)",
     )
     rebalance_parser.add_argument(
         "--reduce-currency", default=None,
-        help="削減対象通貨 (例: USD)",
+        help="Currency to reduce (e.g. USD)",
     )
     rebalance_parser.add_argument(
         "--max-single-ratio", type=float, default=None,
-        help="1銘柄の上限比率 (例: 0.15)",
+        help="Maximum single-stock ratio (e.g. 0.15)",
     )
     rebalance_parser.add_argument(
         "--max-sector-hhi", type=float, default=None,
-        help="セクターHHI上限 (例: 0.25)",
+        help="Maximum sector HHI (e.g. 0.25)",
     )
     rebalance_parser.add_argument(
         "--max-region-hhi", type=float, default=None,
-        help="地域HHI上限 (例: 0.30)",
+        help="Maximum region HHI (e.g. 0.30)",
     )
     rebalance_parser.add_argument(
         "--additional-cash", type=float, default=0.0,
-        help="追加投入資金 (円, 例: 1000000)",
+        help="Additional cash to invest (JPY, e.g. 1000000)",
     )
     rebalance_parser.add_argument(
         "--min-dividend-yield", type=float, default=None,
-        help="増加候補の最低配当利回り (例: 0.03)",
+        help="Minimum dividend yield for increase candidates (e.g. 0.03)",
     )
 
     # simulate (KIK-366)
-    simulate_parser = subparsers.add_parser("simulate", help="複利シミュレーション")
+    simulate_parser = subparsers.add_parser("simulate", help="Compound interest simulation")
     simulate_parser.add_argument(
         "--years", type=int, default=10,
-        help="シミュレーション年数 (デフォルト: 10)",
+        help="Simulation period in years (default: 10)",
     )
     simulate_parser.add_argument(
         "--monthly-add", type=float, default=0.0,
-        help="月額積立額 (円, デフォルト: 0)",
+        help="Monthly contribution amount (JPY, default: 0)",
     )
     simulate_parser.add_argument(
         "--target", type=float, default=None,
-        help="目標額 (円, 例: 15000000)",
+        help="Target amount (JPY, e.g. 15000000)",
     )
     simulate_parser.add_argument(
         "--reinvest-dividends", action="store_true", default=True,
         dest="reinvest_dividends",
-        help="配当再投資する (デフォルト: ON)",
+        help="Reinvest dividends (default: ON)",
     )
     simulate_parser.add_argument(
         "--no-reinvest-dividends", action="store_false",
         dest="reinvest_dividends",
-        help="配当再投資しない",
+        help="Do not reinvest dividends",
     )
 
     # what-if (KIK-376 / KIK-451)
-    whatif_parser = subparsers.add_parser("what-if", help="What-Ifシミュレーション (追加/スワップ)")
+    whatif_parser = subparsers.add_parser("what-if", help="What-If simulation (add/swap)")
     whatif_parser.add_argument(
         "--add", required=False, default=None,
-        help="追加銘柄 (形式: SYMBOL:SHARES:PRICE,... 例: 7203.T:100:2850,AAPL:10:250)",
+        help="Stocks to add (format: SYMBOL:SHARES:PRICE,... e.g. 7203.T:100:2850,AAPL:10:250)",
     )
     whatif_parser.add_argument(
         "--remove", required=False, default=None,
-        help="売却銘柄 (形式: SYMBOL:SHARES,... 価格不要・時価で試算 例: 7203.T:100)",
+        help="Stocks to sell (format: SYMBOL:SHARES,... price not needed, calculated at market value e.g. 7203.T:100)",
     )
 
     # adjust (KIK-496)
-    adjust_parser = subparsers.add_parser("adjust", help="ポートフォリオ調整アドバイザー")
+    adjust_parser = subparsers.add_parser("adjust", help="Portfolio adjustment advisor")
     adjust_parser.add_argument(
         "--full", action="store_true", default=False,
-        help="フル分析（集中度・相関・VaR含む）",
+        help="Full analysis (including concentration, correlation, VaR)",
     )
 
     # backtest (KIK-368)
-    backtest_parser = subparsers.add_parser("backtest", help="スクリーニング履歴のバックテスト")
+    backtest_parser = subparsers.add_parser("backtest", help="Backtest of screening history")
     backtest_parser.add_argument(
         "--preset", default=None,
-        help="対象プリセット (例: value, alpha)",
+        help="Target preset (e.g. value, alpha)",
     )
     backtest_parser.add_argument(
         "--region", default=None,
-        help="対象リージョン (例: jp, us)",
+        help="Target region (e.g. jp, us)",
     )
     backtest_parser.add_argument(
         "--days", type=int, default=90,
-        help="何日前までの履歴を対象にするか (デフォルト: 90)",
+        help="Number of days of history to include (default: 90)",
     )
 
     args = parser.parse_args()
@@ -367,7 +367,7 @@ def main():
     _sym = getattr(args, "symbol", "") or ""
     print_suggestions(
         symbol=_sym,
-        context_summary=f"ポートフォリオ: {args.command}",
+        context_summary=f"Portfolio: {args.command}",
         health_data=_last_health_data,
     )
 

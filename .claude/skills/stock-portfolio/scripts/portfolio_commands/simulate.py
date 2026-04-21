@@ -16,27 +16,27 @@ def cmd_simulate(
 ) -> None:
     """Run compound interest simulation."""
     if not _pc.HAS_SIMULATOR:
-        print("Error: simulator モジュールが見つかりません。")
+        print("Error: simulator module not found.")
         sys.exit(1)
     if not _pc.HAS_RETURN_ESTIMATE:
-        print("Error: return_estimate モジュールが見つかりません。")
+        print("Error: return_estimate module not found.")
         sys.exit(1)
 
-    print("シミュレーション実行中（forecast データ取得）...\n")
+    print("Running simulation (fetching forecast data)...\n")
 
-    # 1. forecast データ取得
+    # 1. Fetch forecast data
     # Import at call time to respect mocks in tests
     from src.core.return_estimate import estimate_portfolio_return
     forecast_result = estimate_portfolio_return(csv_path, _pc.yahoo_client)
     positions = forecast_result.get("positions", [])
     if not positions:
-        print("ポートフォリオにデータがありません。")
+        print("No data in portfolio.")
         return
 
     portfolio_returns = forecast_result.get("portfolio", {})
     total_value_jpy = forecast_result.get("total_value_jpy", 0)
 
-    # 2. 加重平均配当利回り算出
+    # 2. Calculate weighted average dividend yield
     weighted_div_yield = 0.0
     if total_value_jpy > 0:
         for pos in positions:
@@ -44,7 +44,7 @@ def cmd_simulate(
             value = pos.get("value_jpy") or 0
             weighted_div_yield += dy * (value / total_value_jpy)
 
-    # 3. シミュレーション実行
+    # 3. Run simulation
     result = _pc.simulate_portfolio(
         current_value=total_value_jpy,
         returns=portfolio_returns,
@@ -55,9 +55,9 @@ def cmd_simulate(
         target=target,
     )
 
-    # 4. 出力
+    # 4. Output
     if _pc.HAS_SIMULATION_FORMATTER:
         print(_pc.format_simulation(result))
     else:
-        # Fallback: JSON 出力
+        # Fallback: JSON output
         print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))

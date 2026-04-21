@@ -1,6 +1,6 @@
 themes:
   ai:
-    description: "AI・半導体"
+    description: "AI & Semiconductors"
     industries:
       - Semiconductors
       - Semiconductor Equipment & Materials
@@ -8,54 +8,54 @@ themes:
       - Electronic Components
 
   ev:
-    description: "EV・次世代自動車"
+    description: "EV & Next-Gen Automotive"
     industries:
       - Auto Manufacturers
       - Electrical Equipment & Parts
       - Electronic Components
 
   cloud-saas:
-    description: "クラウド・SaaS"
+    description: "Cloud & SaaS"
     industries:
       - Software—Infrastructure
       - Software—Application
       - Internet Content & Information
 
   cybersecurity:
-    description: "サイバーセキュリティ"
+    description: "Cybersecurity"
     industries:
       - Software—Infrastructure
       - Internet Content & Information
 
   biotech:
-    description: "バイオテック・創薬"
+    description: "Biotech & Drug Discovery"
     industries:
       - Biotechnology
       - Drug Manufacturers—Specialty & Generic
       - Medical Devices
 
   renewable-energy:
-    description: "再生可能エネルギー"
+    description: "Renewable Energy"
     industries:
       - Solar
       - Utilities—Renewable
       - Electrical Equipment & Parts
 
   fintech:
-    description: "フィンテック"
+    description: "Fintech"
     industries:
       - Credit Services
       - Software—Application
       - Banks—Regional
 
   defense:
-    description: "防衛・航空宇宙"
+    description: "Defense & Aerospace"
     industries:
       - Aerospace & Defense
-      - Specialty Industrial Machinery  # 日本の防衛大手(三菱重工・IHI・川崎重工等)はこの分類
+      - Specialty Industrial Machinery  # Japan defense majors (Mitsubishi Heavy, IHI, Kawasaki Heavy, etc.) fall under this category
 
   healthcare:
-    description: "ヘルスケア"
+    description: "Healthcare"
     industries:
       - Healthcare Plans
       - Medical Devices

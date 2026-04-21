@@ -280,7 +280,7 @@ def _format_lesson_section(lessons: list[dict]) -> str:
     # KIK-564/570: Pre-compute conflict pairs using unified engine
     conflict_map = _find_lesson_conflict_pairs(lessons)
 
-    lines = ["", "## 投資lesson"]
+    lines = ["", "## Investment Lessons"]
     for les in lessons[:5]:
         symbol_part = f"[{les.get('symbol')}] " if les.get("symbol") else ""
         trigger = les.get("trigger", "")
@@ -292,14 +292,14 @@ def _format_lesson_section(lessons: list[dict]) -> str:
         les_id = les.get("id", "")
         detail = conflict_map.get(les_id, "")
         if detail:
-            conflict_mark = f"⚠️矛盾候補({detail}) "
+            conflict_mark = f"⚠️ Conflict candidate ({detail}) "
 
         if trigger and expected:
             lines.append(f"- {conflict_mark}{symbol_part}{trigger} → {expected}")
         elif trigger:
-            lines.append(f"- {conflict_mark}{symbol_part}トリガー: {trigger} / {content}")
+            lines.append(f"- {conflict_mark}{symbol_part}Trigger: {trigger} / {content}")
         elif expected:
-            lines.append(f"- {conflict_mark}{symbol_part}次回: {expected} / {content}")
+            lines.append(f"- {conflict_mark}{symbol_part}Next time: {expected} / {content}")
         else:
             lines.append(f"- {conflict_mark}{symbol_part}{content}")
         date_str = les.get("date", "")
@@ -308,7 +308,7 @@ def _format_lesson_section(lessons: list[dict]) -> str:
 
     if conflict_map:
         lines.append("")
-        lines.append("⚠️ 矛盾候補のlessonがあります。統合・更新を検討してください。")
+        lines.append("⚠️ Conflicting lessons detected. Consider merging or updating.")
 
     return "\n".join(lines)
 
@@ -358,8 +358,8 @@ def get_context(user_input: str) -> Optional[dict]:
                 "symbol": "",
                 "context_markdown": _format_market_context(mc),
                 "recommended_skill": "market-research",
-                "recommendation_reason": "市況照会",
-                "relationship": "市況",
+                "recommendation_reason": "Market check",
+                "relationship": "Market",
             }
             result = _merge_context(market_ctx, vector_results) or market_ctx
         else:
@@ -369,9 +369,9 @@ def get_context(user_input: str) -> Optional[dict]:
     # Portfolio query (no specific symbol)
     if _is_portfolio_query(user_input):
         mc = graph_query.get_recent_market_context()
-        ctx_lines = ["## ポートフォリオコンテキスト"]
+        ctx_lines = ["## Portfolio Context"]
         if mc:
-            ctx_lines.append(f"- 直近市況: {mc.get('date', '?')}")
+            ctx_lines.append(f"- Latest market: {mc.get('date', '?')}")
 
         # KIK-563: 1-hop traversal for holdings notes
         try:
@@ -379,7 +379,7 @@ def get_context(user_input: str) -> Optional[dict]:
             notes = get_holdings_notes()
             if notes:
                 ctx_lines.append("")
-                ctx_lines.append("## 保有銘柄の重要メモ")
+                ctx_lines.append("## Important Notes on Holdings")
                 for n in notes:
                     sym = n.get("symbol", "?")
                     ntype = n.get("type", "?")
@@ -390,12 +390,12 @@ def get_context(user_input: str) -> Optional[dict]:
         except Exception:
             pass  # graceful degradation
 
-        ctx_lines.append("\n**推奨**: health (ポートフォリオ診断)")
+        ctx_lines.append("\n**Recommended**: health (portfolio diagnosis)")
         pf_ctx = {
             "symbol": "",
             "context_markdown": "\n".join(ctx_lines),
             "recommended_skill": "health",
-            "recommendation_reason": "ポートフォリオ照会",
+            "recommendation_reason": "Portfolio check",
             "relationship": "PF",
         }
         result = _merge_context(pf_ctx, vector_results) or pf_ctx

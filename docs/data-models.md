@@ -1,48 +1,48 @@
-# データモデル定義 (KIK-524)
+# Data Model Definitions (KIK-524)
 
-`yahoo_client` が返す 2 種類の dict スキーマ。スクリーナー・レポート・ヘルスチェック等すべてのコアモジュールがこの構造に依存する。
+Two dict schemas returned by `yahoo_client`. All core modules — screeners, reports, health checks, etc. — depend on these structures.
 
 ---
 
-## stock_info dict（28 フィールド）
+## stock_info dict (28 fields)
 
-`yahoo_client.get_stock_info(symbol)` が返す基本データ。JSON キャッシュ対象。
+Basic data returned by `yahoo_client.get_stock_info(symbol)`. Subject to JSON caching.
 
-| キー | 型 | 説明 | yfinance 生キー | 正規化 |
+| Key | Type | Description | yfinance raw key | Normalization |
 |:---|:---|:---|:---|:---|
-| `symbol` | `str` | ティッカーシンボル | 引数 | — |
-| `name` | `str \| None` | 企業名 | `shortName` / `longName` | — |
-| `sector` | `str \| None` | セクター | `sector` | — |
-| `industry` | `str \| None` | 業種 | `industry` | — |
-| `currency` | `str \| None` | 通貨コード (JPY/USD 等) | `currency` | — |
-| `price` | `float \| None` | 現在株価 | `regularMarketPrice` | — |
-| `market_cap` | `float \| None` | 時価総額 | `marketCap` | — |
-| `per` | `float \| None` | PER（株価収益率） | `trailingPE` | — |
-| `forward_per` | `float \| None` | 予想PER | `forwardPE` | — |
-| `pbr` | `float \| None` | PBR（株価純資産倍率） | `priceToBook` | — |
-| `psr` | `float \| None` | PSR（株価売上高倍率） | `priceToSalesTrailing12Months` | — |
-| `roe` | `float \| None` | ROE（自己資本利益率）。比率 (0.12 = 12%) | `returnOnEquity` | — |
-| `roa` | `float \| None` | ROA（総資産利益率）。比率 | `returnOnAssets` | — |
-| `profit_margin` | `float \| None` | 純利益率。比率 | `profitMargins` | — |
-| `operating_margin` | `float \| None` | 営業利益率。比率 | `operatingMargins` | — |
-| `dividend_yield` | `float \| None` | 配当利回り（予想）。比率 (0.028 = 2.8%) | `dividendYield` | `_normalize_ratio` |
-| `dividend_yield_trailing` | `float \| None` | 配当利回り（実績）。比率 | `trailingAnnualDividendYield` | — |
-| `payout_ratio` | `float \| None` | 配当性向。比率 | `payoutRatio` | — |
-| `revenue_growth` | `float \| None` | 売上高成長率。比率 (0.15 = 15%) | `revenueGrowth` | — |
-| `earnings_growth` | `float \| None` | 利益成長率。比率 | `earningsGrowth` | — |
-| `debt_to_equity` | `float \| None` | D/Eレシオ（百分率、105.0 = 105%） | `debtToEquity` | — |
-| `current_ratio` | `float \| None` | 流動比率 | `currentRatio` | — |
-| `free_cashflow` | `float \| None` | フリーキャッシュフロー（絶対値） | `freeCashflow` | — |
-| `beta` | `float \| None` | ベータ値 | `beta` | — |
-| `fifty_two_week_high` | `float \| None` | 52週高値 | `fiftyTwoWeekHigh` | — |
-| `fifty_two_week_low` | `float \| None` | 52週安値 | `fiftyTwoWeekLow` | — |
-| `quoteType` | `str \| None` | 種別 ("EQUITY" / "ETF" 等) | `quoteType` | — |
+| `symbol` | `str` | Ticker symbol | argument | — |
+| `name` | `str \| None` | Company name | `shortName` / `longName` | — |
+| `sector` | `str \| None` | Sector | `sector` | — |
+| `industry` | `str \| None` | Industry | `industry` | — |
+| `currency` | `str \| None` | Currency code (JPY/USD, etc.) | `currency` | — |
+| `price` | `float \| None` | Current stock price | `regularMarketPrice` | — |
+| `market_cap` | `float \| None` | Market capitalization | `marketCap` | — |
+| `per` | `float \| None` | P/E ratio (trailing) | `trailingPE` | — |
+| `forward_per` | `float \| None` | Forward P/E ratio | `forwardPE` | — |
+| `pbr` | `float \| None` | P/B ratio | `priceToBook` | — |
+| `psr` | `float \| None` | P/S ratio | `priceToSalesTrailing12Months` | — |
+| `roe` | `float \| None` | ROE. Ratio (0.12 = 12%) | `returnOnEquity` | — |
+| `roa` | `float \| None` | ROA. Ratio | `returnOnAssets` | — |
+| `profit_margin` | `float \| None` | Net profit margin. Ratio | `profitMargins` | — |
+| `operating_margin` | `float \| None` | Operating margin. Ratio | `operatingMargins` | — |
+| `dividend_yield` | `float \| None` | Forward dividend yield. Ratio (0.028 = 2.8%) | `dividendYield` | `_normalize_ratio` |
+| `dividend_yield_trailing` | `float \| None` | Trailing dividend yield. Ratio | `trailingAnnualDividendYield` | — |
+| `payout_ratio` | `float \| None` | Dividend payout ratio. Ratio | `payoutRatio` | — |
+| `revenue_growth` | `float \| None` | Revenue growth rate. Ratio (0.15 = 15%) | `revenueGrowth` | — |
+| `earnings_growth` | `float \| None` | Earnings growth rate. Ratio | `earningsGrowth` | — |
+| `debt_to_equity` | `float \| None` | D/E ratio (percentage, 105.0 = 105%) | `debtToEquity` | — |
+| `current_ratio` | `float \| None` | Current ratio | `currentRatio` | — |
+| `free_cashflow` | `float \| None` | Free cash flow (absolute value) | `freeCashflow` | — |
+| `beta` | `float \| None` | Beta | `beta` | — |
+| `fifty_two_week_high` | `float \| None` | 52-week high | `fiftyTwoWeekHigh` | — |
+| `fifty_two_week_low` | `float \| None` | 52-week low | `fiftyTwoWeekLow` | — |
+| `quoteType` | `str \| None` | Type ("EQUITY" / "ETF", etc.) | `quoteType` | — |
 
-**合計: 27 キー**（`quoteType` は KIK-469 で追加）
+**Total: 27 keys** (`quoteType` added in KIK-469)
 
-### 正規化ルール (`_normalize_ratio`)
+### Normalization Rule (`_normalize_ratio`)
 
-yfinance は `dividendYield` をパーセンテージ値（例: 2.52）で返す。`_normalize_ratio()` は常に 100 で割って比率に変換する。
+yfinance returns `dividendYield` as a percentage value (e.g. 2.52). `_normalize_ratio()` always divides by 100 to convert to a ratio.
 
 ```python
 def _normalize_ratio(value):
@@ -51,11 +51,11 @@ def _normalize_ratio(value):
     return value / 100.0  # 2.52 → 0.0252
 ```
 
-`dividend_yield_trailing`（`trailingAnnualDividendYield`）は yfinance が比率で返すため正規化不要。
+`dividend_yield_trailing` (`trailingAnnualDividendYield`) is already returned as a ratio by yfinance and does not need normalization.
 
-### 異常値サニタイズ (`_sanitize_anomalies`)
+### Anomaly Sanitization (`_sanitize_anomalies`)
 
-| フィールド | 条件 | 処理 |
+| Field | Condition | Action |
 |:---|:---|:---|
 | `dividend_yield` | > 0.15 (15%) | → `None` |
 | `dividend_yield_trailing` | > 0.15 (15%) | → `None` |
@@ -63,11 +63,11 @@ def _normalize_ratio(value):
 | `per` | 0 < per < 1.0 | → `None` |
 | `roe` | < -1.0 or > 2.0 | → `None` |
 
-### エイリアス対応 (`indicators.py`)
+### Alias Support (`indicators.py`)
 
-`calculate_value_score()` 等は yfinance 生キーと正規化済みキーの両方を受け付ける:
+`calculate_value_score()` and similar functions accept both yfinance raw keys and normalized keys:
 
-| 正規化キー | yfinance 生キー |
+| Normalized key | yfinance raw key |
 |:---|:---|
 | `per` | `trailingPE` |
 | `pbr` | `priceToBook` |
@@ -77,87 +77,87 @@ def _normalize_ratio(value):
 
 ---
 
-## stock_detail dict（45+ フィールド）
+## stock_detail dict (45+ fields)
 
-`yahoo_client.get_stock_detail(symbol)` が返す詳細データ。`stock_info` の全フィールドを包含し、財務諸表データを追加。
+Detailed data returned by `yahoo_client.get_stock_detail(symbol)`. Includes all fields from `stock_info` plus financial statement data.
 
-### stock_info から継承（27 フィールド）
+### Inherited from stock_info (27 fields)
 
-上記 `stock_info dict` の全キーがそのまま含まれる。
+All keys from the `stock_info dict` above are included as-is.
 
-### 追加フィールド: 価格
+### Additional Fields: Price
 
-| キー | 型 | 説明 | ソース |
+| Key | Type | Description | Source |
 |:---|:---|:---|:---|
-| `price_history` | `list[float] \| None` | 2年分の終値リスト（時系列順） | `ticker.history(period="2y")` |
+| `price_history` | `list[float] \| None` | 2-year closing price list (chronological) | `ticker.history(period="2y")` |
 
-### 追加フィールド: バランスシート
+### Additional Fields: Balance Sheet
 
-| キー | 型 | 説明 | ソース |
+| Key | Type | Description | Source |
 |:---|:---|:---|:---|
-| `equity_ratio` | `float \| None` | 自己資本比率（純資産/総資産） | `balance_sheet` |
-| `total_assets` | `float \| None` | 総資産 | `balance_sheet` |
-| `equity_history` | `list[float]` | 純資産の推移（最新→過去、最大4期） | `balance_sheet` |
+| `equity_ratio` | `float \| None` | Equity ratio (net assets / total assets) | `balance_sheet` |
+| `total_assets` | `float \| None` | Total assets | `balance_sheet` |
+| `equity_history` | `list[float]` | Net assets trend (latest → past, max 4 periods) | `balance_sheet` |
 
-### 追加フィールド: キャッシュフロー
+### Additional Fields: Cash Flow
 
-| キー | 型 | 説明 | ソース |
+| Key | Type | Description | Source |
 |:---|:---|:---|:---|
-| `operating_cashflow` | `float \| None` | 営業CF | `cashflow` |
-| `fcf` | `float \| None` | フリーCF | `cashflow` |
-| `dividend_paid` | `float \| None` | 配当金支払い（負値=支出） | `cashflow` (KIK-375) |
-| `stock_repurchase` | `float \| None` | 自社株買い（負値=支出） | `cashflow` (KIK-375) |
-| `dividend_paid_history` | `list[float]` | 配当金支払いの推移（最新→過去、最大4期） | `cashflow` (KIK-380) |
-| `stock_repurchase_history` | `list[float]` | 自社株買いの推移（最新→過去、最大4期） | `cashflow` (KIK-380) |
-| `cashflow_fiscal_years` | `list[int]` | 各期の会計年度（例: [2025, 2024, 2023]） | `cashflow` (KIK-380) |
+| `operating_cashflow` | `float \| None` | Operating cash flow | `cashflow` |
+| `fcf` | `float \| None` | Free cash flow | `cashflow` |
+| `dividend_paid` | `float \| None` | Dividends paid (negative = outflow) | `cashflow` (KIK-375) |
+| `stock_repurchase` | `float \| None` | Stock buybacks (negative = outflow) | `cashflow` (KIK-375) |
+| `dividend_paid_history` | `list[float]` | Dividends paid trend (latest → past, max 4 periods) | `cashflow` (KIK-380) |
+| `stock_repurchase_history` | `list[float]` | Stock buyback trend (latest → past, max 4 periods) | `cashflow` (KIK-380) |
+| `cashflow_fiscal_years` | `list[int]` | Fiscal year for each period (e.g. [2025, 2024, 2023]) | `cashflow` (KIK-380) |
 
-### 追加フィールド: 損益計算書
+### Additional Fields: Income Statement
 
-| キー | 型 | 説明 | ソース |
+| Key | Type | Description | Source |
 |:---|:---|:---|:---|
-| `net_income_stmt` | `float \| None` | 当期純利益 | `income_stmt` |
-| `eps_current` | `float \| None` | 希薄化後EPS（最新期） | `income_stmt` |
-| `eps_previous` | `float \| None` | 希薄化後EPS（前期） | `income_stmt` |
-| `eps_growth` | `float \| None` | EPS成長率。比率 (0.094 = 9.4%) | 算出 |
-| `revenue_history` | `list[float]` | 売上高の推移（最新→過去、最大4期） | `income_stmt` |
-| `net_income_history` | `list[float]` | 純利益の推移（最新→過去、最大4期） | `income_stmt` |
+| `net_income_stmt` | `float \| None` | Net income | `income_stmt` |
+| `eps_current` | `float \| None` | Diluted EPS (latest period) | `income_stmt` |
+| `eps_previous` | `float \| None` | Diluted EPS (prior period) | `income_stmt` |
+| `eps_growth` | `float \| None` | EPS growth rate. Ratio (0.094 = 9.4%) | calculated |
+| `revenue_history` | `list[float]` | Revenue trend (latest → past, max 4 periods) | `income_stmt` |
+| `net_income_history` | `list[float]` | Net income trend (latest → past, max 4 periods) | `income_stmt` |
 
-### 追加フィールド: 債務・評価
+### Additional Fields: Debt & Valuation
 
-| キー | 型 | 説明 | ソース |
+| Key | Type | Description | Source |
 |:---|:---|:---|:---|
-| `total_debt` | `float \| None` | 有利子負債合計 | `ticker.info` |
+| `total_debt` | `float \| None` | Total interest-bearing debt | `ticker.info` |
 | `ebitda` | `float \| None` | EBITDA | `ticker.info` |
 
-### 追加フィールド: アナリスト (KIK-359)
+### Additional Fields: Analyst (KIK-359)
 
-| キー | 型 | 説明 | ソース |
+| Key | Type | Description | Source |
 |:---|:---|:---|:---|
-| `target_high_price` | `float \| None` | アナリスト目標株価（上限） | `ticker.info` |
-| `target_low_price` | `float \| None` | アナリスト目標株価（下限） | `ticker.info` |
-| `target_mean_price` | `float \| None` | アナリスト目標株価（平均） | `ticker.info` |
-| `number_of_analyst_opinions` | `int \| None` | アナリスト人数 | `ticker.info` |
-| `recommendation_mean` | `float \| None` | 推奨平均値（1=Strong Buy 〜 5=Strong Sell） | `ticker.info` |
-| `forward_eps` | `float \| None` | 予想EPS | `ticker.info` |
+| `target_high_price` | `float \| None` | Analyst target price (high) | `ticker.info` |
+| `target_low_price` | `float \| None` | Analyst target price (low) | `ticker.info` |
+| `target_mean_price` | `float \| None` | Analyst target price (mean) | `ticker.info` |
+| `number_of_analyst_opinions` | `int \| None` | Number of analyst opinions | `ticker.info` |
+| `recommendation_mean` | `float \| None` | Mean recommendation (1=Strong Buy ~ 5=Strong Sell) | `ticker.info` |
+| `forward_eps` | `float \| None` | Forward EPS | `ticker.info` |
 
-### 追加フィールド: ETF (KIK-469)
+### Additional Fields: ETF (KIK-469)
 
-ETF の場合のみ有意な値を持つ。個別株では `None` が多い。
+Only meaningful for ETFs. Mostly `None` for individual stocks.
 
-| キー | 型 | 説明 | ソース |
+| Key | Type | Description | Source |
 |:---|:---|:---|:---|
-| `expense_ratio` | `float \| None` | 経費率 | `ticker.info` (`annualReportExpenseRatio`) |
-| `total_assets_fund` | `float \| None` | AUM（運用資産残高） | `ticker.info` (`totalAssets`) |
-| `fund_category` | `str \| None` | ファンドカテゴリ | `ticker.info` (`category`) |
-| `fund_family` | `str \| None` | ファンドファミリー | `ticker.info` (`fundFamily`) |
+| `expense_ratio` | `float \| None` | Expense ratio | `ticker.info` (`annualReportExpenseRatio`) |
+| `total_assets_fund` | `float \| None` | AUM (assets under management) | `ticker.info` (`totalAssets`) |
+| `fund_category` | `str \| None` | Fund category | `ticker.info` (`category`) |
+| `fund_family` | `str \| None` | Fund family | `ticker.info` (`fundFamily`) |
 
 ---
 
-## 共通ユーティリティ
+## Common Utilities
 
 ### `finite_or_none(v)` (`src/core/common.py`)
 
-Core モジュールで広く使われるヘルパー。NaN/Inf を `None` に変換し、安全に数値を取得する。
+A widely used helper in Core modules. Converts NaN/Inf to `None` for safe numeric retrieval.
 
 ```python
 def finite_or_none(v):
@@ -170,15 +170,15 @@ def finite_or_none(v):
 
 ### `_safe_get(info, key)` (`yahoo_client/_normalize.py`)
 
-yfinance の info dict から安全に値を取得。NaN/Inf は `None` に変換。
+Safely retrieves a value from a yfinance info dict. Converts NaN/Inf to `None`.
 
 ---
 
-## テストフィクスチャ
+## Test Fixtures
 
-| ファイル | 内容 | 用途 |
+| File | Contents | Usage |
 |:---|:---|:---|
-| `tests/fixtures/stock_info.json` | stock_info 相当（27 フィールド、Toyota 7203.T） | `conftest.py` の `stock_info_data` フィクスチャ |
-| `tests/fixtures/stock_detail.json` | stock_detail 相当（stock_info + 追加フィールド） | `conftest.py` の `stock_detail_data` フィクスチャ |
+| `tests/fixtures/stock_info.json` | stock_info equivalent (27 fields, Toyota 7203.T) | `stock_info_data` fixture in `conftest.py` |
+| `tests/fixtures/stock_detail.json` | stock_detail equivalent (stock_info + additional fields) | `stock_detail_data` fixture in `conftest.py` |
 
-テストでは `monkeypatch` で `yahoo_client.get_stock_info` / `get_stock_detail` をモックし、これらの JSON を返す。
+Tests use `monkeypatch` to mock `yahoo_client.get_stock_info` / `get_stock_detail` and return these JSON files.

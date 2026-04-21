@@ -36,8 +36,8 @@ def compute_alert_level(
     reasons: list[str] = []
     level = ALERT_NONE
 
-    trend = trend_health.get("trend", "不明")
-    quality_label = change_quality.get("quality_label", "良好")
+    trend = trend_health.get("trend", "Unknown")
+    quality_label = change_quality.get("quality_label", "Good")
     dead_cross = trend_health.get("dead_cross", False)
     rsi_drop = trend_health.get("rsi_drop", False)
     price_above_sma50 = trend_health.get("price_above_sma50", True)
@@ -46,74 +46,74 @@ def compute_alert_level(
     days_since_cross = trend_health.get("days_since_cross")
     cross_date = trend_health.get("cross_date")
 
-    if quality_label == "対象外":
+    if quality_label == "N/A":
         # ETF: evaluate technical conditions only (no quality data)
         if not price_above_sma50:
             level = ALERT_EARLY_WARNING
             sma50_val = trend_health.get("sma50", 0)
             price_val = trend_health.get("current_price", 0)
-            reasons.append(f"SMA50を下回り（現在{price_val}、SMA50={sma50_val}）")
+            reasons.append(f"Below SMA50 (current {price_val}, SMA50={sma50_val})")
         if dead_cross:
             level = ALERT_CAUTION
-            reasons.append("デッドクロス")
+            reasons.append("Death cross")
         if rsi_drop:
             if level == ALERT_NONE:
                 level = ALERT_EARLY_WARNING
             rsi_val = trend_health.get("rsi", 0)
-            reasons.append(f"RSI急低下（{rsi_val}）")
+            reasons.append(f"RSI sharp drop ({rsi_val})")
     else:
         # --- EXIT ---
         # KIK-357: EXIT requires technical collapse AND fundamental deterioration.
         # Dead cross + good fundamentals = CAUTION (not EXIT).
-        if dead_cross and quality_label == "複数悪化":
+        if dead_cross and quality_label == "Multiple deteriorated":
             level = ALERT_EXIT
-            reasons.append("デッドクロス + 変化スコア複数悪化")
-        elif dead_cross and trend == "下降":
-            if quality_label == "良好":
+            reasons.append("Death cross + change score multiple deteriorated")
+        elif dead_cross and trend == "Downtrend":
+            if quality_label == "Good":
                 level = ALERT_CAUTION
-                reasons.append("デッドクロス（ファンダメンタル良好のためCAUTION）")
+                reasons.append("Death cross (fundamentals good → CAUTION)")
             else:
-                # quality_label is "1指標↓" — technical + fundamental confirm
+                # quality_label is "1 metric↓" — technical + fundamental confirm
                 level = ALERT_EXIT
-                reasons.append("トレンド崩壊（デッドクロス + ファンダ悪化）")
+                reasons.append("Trend breakdown (death cross + fundamental deterioration)")
 
         # --- CAUTION ---
-        elif sma50_approaching and quality_label in ("1指標↓", "複数悪化"):
+        elif sma50_approaching and quality_label in ("1 metric↓", "Multiple deteriorated"):
             level = ALERT_CAUTION
-            if quality_label == "複数悪化":
-                reasons.append("変化スコア複数悪化")
+            if quality_label == "Multiple deteriorated":
+                reasons.append("Change score multiple deteriorated")
             else:
-                reasons.append("変化スコア1指標悪化")
-            reasons.append("SMA50がSMA200に接近")
-        elif quality_label == "複数悪化":
+                reasons.append("Change score 1 metric deteriorated")
+            reasons.append("SMA50 approaching SMA200")
+        elif quality_label == "Multiple deteriorated":
             level = ALERT_CAUTION
-            reasons.append("変化スコア複数悪化")
+            reasons.append("Change score multiple deteriorated")
 
         # --- EARLY WARNING ---
         elif not price_above_sma50:
             level = ALERT_EARLY_WARNING
             sma50_val = trend_health.get("sma50", 0)
             price_val = trend_health.get("current_price", 0)
-            reasons.append(f"SMA50を下回り（現在{price_val}、SMA50={sma50_val}）")
+            reasons.append(f"Below SMA50 (current {price_val}, SMA50={sma50_val})")
         elif rsi_drop:
             level = ALERT_EARLY_WARNING
             rsi_val = trend_health.get("rsi", 0)
-            reasons.append(f"RSI急低下（{rsi_val}）")
-        elif quality_label == "1指標↓":
+            reasons.append(f"RSI sharp drop ({rsi_val})")
+        elif quality_label == "1 metric↓":
             level = ALERT_EARLY_WARNING
-            reasons.append("変化スコア1指標悪化")
+            reasons.append("Change score 1 metric deteriorated")
 
     # Recent death cross event: add date context to reasons
     if cross_signal == "death_cross" and days_since_cross is not None and days_since_cross <= 10:
-        reasons.append(f"デッドクロス発生（{days_since_cross}日前、{cross_date}）")
+        reasons.append(f"Death cross occurred ({days_since_cross} days ago, {cross_date})")
 
     # Recent golden cross: positive signal -> early warning if no other alert
     if cross_signal == "golden_cross" and days_since_cross is not None and days_since_cross <= 20:
         if level == ALERT_NONE:
             level = ALERT_EARLY_WARNING
         reasons.append(
-            f"ゴールデンクロス発生（{days_since_cross}日前、{cross_date}）"
-            "- 上昇トレンド転換の可能性"
+            f"Golden cross occurred ({days_since_cross} days ago, {cross_date})"
+            " - possible uptrend reversal"
         )
 
     # Value trap detection (KIK-381)
@@ -130,28 +130,28 @@ def compute_alert_level(
     if return_stability is not None:
         stability = return_stability.get("stability")
         if stability == "temporary":
-            reason_text = return_stability.get("reason", "一時的高還元")
-            reason_str = f"一時的高還元の可能性（{reason_text}）"
+            reason_text = return_stability.get("reason", "Temporary high return")
+            reason_str = f"Possibly temporary high return ({reason_text})"
             if reason_str not in reasons:
                 reasons.append(reason_str)
             if level == ALERT_NONE:
                 level = ALERT_EARLY_WARNING
         elif stability == "decreasing":
-            reason_text = return_stability.get("reason", "還元率減少傾向")
-            reason_str = f"株主還元率が減少傾向（{reason_text}）"
+            reason_text = return_stability.get("reason", "Return rate declining")
+            reason_str = f"Shareholder return rate declining ({reason_text})"
             if reason_str not in reasons:
                 reasons.append(reason_str)
 
     # Small-cap escalation (KIK-438): early_warning -> caution
     if is_small_cap and level == ALERT_EARLY_WARNING:
         level = ALERT_CAUTION
-        reasons.append("[小型] 小型株のため注意に引き上げ")
+        reasons.append("[Small-cap] Escalated to caution due to small-cap")
 
     level_map = {
-        ALERT_NONE: ("", "なし"),
-        ALERT_EARLY_WARNING: ("\u26a1", "早期警告"),
-        ALERT_CAUTION: ("\u26a0", "注意"),
-        ALERT_EXIT: ("\U0001f6a8", "撤退"),
+        ALERT_NONE: ("", "None"),
+        ALERT_EARLY_WARNING: ("\u26a1", "Early Warning"),
+        ALERT_CAUTION: ("\u26a0", "Caution"),
+        ALERT_EXIT: ("\U0001f6a8", "Exit"),
     }
     emoji, label = level_map[level]
 

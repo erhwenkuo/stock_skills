@@ -1,28 +1,28 @@
-# 開発パターンガイド
+# Development Patterns Guide
 
-頻出開発タスクのテンプレート集。実際のコードベースに合わせた具体例を掲載している。
-詳細ルールは [development.md](../rules/development.md) および [workflow.md](../rules/workflow.md) を参照。
+A template collection for common development tasks, with concrete examples matching the actual codebase.
+See [development.md](../rules/development.md) and [workflow.md](../rules/workflow.md) for detailed rules.
 
 ---
 
-## パターン1: 新スクリーニングプリセット追加
+## Pattern 1: Adding a New Screening Preset
 
-新しい投資戦略（例: 「低ボラティリティ株」）のスクリーニングプリセットを追加する手順。
+Steps for adding a new investment strategy preset (e.g. "low-volatility stocks").
 
-### 変更ファイル一覧（順序付き）
+### Files to Change (ordered)
 
-1. `config/screening_presets.yaml` — プリセット定義を追加
-2. `src/core/screening/screener_registry.py` — `build_default_registry()` に ScreenerSpec を登録
-3. `src/output/formatter.py` — 専用フォーマッター関数を追加（必要な場合）
-4. `.claude/rules/intent-routing.md` — preset 推定テーブルにキーワードを追加
-5. `tests/core/test_screener_registry.py` — 登録テストを追加
+1. `config/screening_presets.yaml` — add preset definition
+2. `src/core/screening/screener_registry.py` — register ScreenerSpec in `build_default_registry()`
+3. `src/output/formatter.py` — add a dedicated formatter function (if needed)
+4. `.claude/rules/intent-routing.md` — add keywords to the preset inference table
+5. `tests/core/test_screener_registry.py` — add registration test
 
 ### 1. config/screening_presets.yaml
 
 ```yaml
-# 追加例: 低ボラティリティ株プリセット
+# Example: low-volatility stock preset
 low-volatility:
-  description: "低ボラティリティ株（安定配当・β値低め）"
+  description: "Low-volatility stocks (stable dividends, low beta)"
   criteria:
     max_per: 20
     min_dividend_yield: 0.02
@@ -30,40 +30,40 @@ low-volatility:
     max_beta: 0.8
 ```
 
-### 2. screener_registry.py — ScreenerSpec 登録
+### 2. screener_registry.py — Register ScreenerSpec
 
-`build_default_registry()` 関数内に追加:
+Add inside `build_default_registry()`:
 
 ```python
-# src/core/screening/screener_registry.py の build_default_registry() 末尾に追加
+# Add at the end of build_default_registry() in src/core/screening/screener_registry.py
 
 # --- Low Volatility ---
 registry.register(ScreenerSpec(
     preset="low-volatility",
-    screener_class=QueryScreener,           # 既存スクリーナーを再利用
-    formatter=format_query_markdown,        # または専用 formatter
-    display_name="低ボラティリティ",
+    screener_class=QueryScreener,           # reuse existing screener
+    formatter=format_query_markdown,        # or a dedicated formatter
+    display_name="Low Volatility",
     category="query",
     supports_legacy=True,
     step_messages=(
-        "Step 1: 低ボラティリティ条件で絞り込み中...",
-        "Step 2: {n}銘柄が条件に合致",
+        "Step 1: Filtering by low-volatility criteria...",
+        "Step 2: {n} stocks matched",
     ),
 ))
 ```
 
-新スクリーナークラスが必要な場合は `ContrarianScreener` / `MomentumScreener` の実装を参考に:
+If a new screener class is needed, refer to the `ContrarianScreener` / `MomentumScreener` implementations:
 
 ```python
 # src/core/screening/low_volatility_screener.py
 
 class LowVolatilityScreener:
-    """低ボラティリティ株スクリーナー。
+    """Low-volatility stock screener.
 
-    パイプライン:
-      Step 1: EquityQuery でファンダメンタルズ絞り込み
-      Step 2: get_price_history() でβ値・ボラティリティを計算
-      Step 3: スコアリング＋ランキング
+    Pipeline:
+      Step 1: EquityQuery fundamentals filter
+      Step 2: Compute beta / volatility from get_price_history()
+      Step 3: Scoring + ranking
     """
 
     DEFAULT_CRITERIA = {
@@ -100,7 +100,7 @@ class LowVolatilityScreener:
                 continue
 
             hist = self.yahoo_client.get_price_history(symbol)
-            lv_result = compute_low_volatility_score(hist, normalized)  # 新関数
+            lv_result = compute_low_volatility_score(hist, normalized)  # new function
             if lv_result["lv_score"] < 30:
                 continue
 
@@ -111,18 +111,18 @@ class LowVolatilityScreener:
         return scored[:top_n]
 ```
 
-### 3. formatter.py — フォーマッター追加
+### 3. formatter.py — Add Formatter
 
 ```python
-# src/output/formatter.py に追加
+# Add to src/output/formatter.py
 
 def format_low_volatility_markdown(results: list[dict]) -> str:
-    """低ボラティリティスクリーニング結果をMarkdownテーブルに整形。"""
+    """Format low-volatility screening results as a Markdown table."""
     if not results:
-        return "低ボラティリティ条件に合致する銘柄が見つかりませんでした。"
+        return "No stocks matched the low-volatility criteria."
 
     lines = [
-        "| 順位 | 銘柄 | セクター | 株価 | PER | β値 | 配当利回り | ROE | スコア |",
+        "| Rank | Ticker | Sector | Price | P/E | Beta | Div Yield | ROE | Score |",
         "|---:|:-----|:---------|-----:|----:|----:|---------:|----:|------:|",
     ]
     for rank, row in enumerate(results, start=1):
@@ -141,7 +141,7 @@ def format_low_volatility_markdown(results: list[dict]) -> str:
     return "\n".join(lines)
 ```
 
-### テスト作成例
+### Test Example
 
 ```python
 # tests/core/test_low_volatility_screener.py
@@ -153,10 +153,10 @@ from src.core.screening.low_volatility_screener import LowVolatilityScreener
 
 
 def _make_stable_hist() -> pd.DataFrame:
-    """低ボラティリティな価格履歴を生成。"""
+    """Generate a low-volatility price history."""
     n = 250
     dates = pd.bdate_range(end="2026-02-27", periods=n)
-    prices = 1000.0 + np.random.RandomState(0).randn(n) * 5  # 振れ幅小
+    prices = 1000.0 + np.random.RandomState(0).randn(n) * 5  # small fluctuation
     volumes = np.full(n, 300_000.0)
     return pd.DataFrame({"Close": prices, "Volume": volumes}, index=dates)
 
@@ -199,8 +199,7 @@ class TestLowVolatilityScreener:
         client = _MockClient(quotes=quotes, hist=_make_stable_hist())
         screener = LowVolatilityScreener(client)
         results = screener.screen(region="jp", top_n=5)
-        # 安定銘柄はスコア >= 30 を期待
-        assert len(results) >= 0  # 結果構造の確認
+        assert len(results) >= 0  # verify result structure
 
     def test_top_n_limits_results(self):
         quotes = [_make_quote(f"{i}000.T") for i in range(10)]
@@ -211,37 +210,37 @@ class TestLowVolatilityScreener:
         assert len(results) <= 3
 ```
 
-### ドキュメント更新チェックリスト
+### Documentation Update Checklist
 
-- [ ] `config/screening_presets.yaml` — プリセット定義追加
-- [ ] `src/core/screening/screener_registry.py` — ScreenerSpec 登録
-- [ ] `src/output/formatter.py` — フォーマッター追加（専用フォーマット必要な場合）
-- [ ] `.claude/rules/intent-routing.md` — preset 推定テーブルにキーワード追加
-- [ ] `.claude/rules/screening.md` — スクリーナーエンジンの説明を更新
-- [ ] `CLAUDE.md` — アーキテクチャセクションのモジュール一覧を更新
-- [ ] `docs/skill-catalog.md` — screen-stocks スキルの対応プリセット一覧を更新
+- [ ] `config/screening_presets.yaml` — add preset definition
+- [ ] `src/core/screening/screener_registry.py` — register ScreenerSpec
+- [ ] `src/output/formatter.py` — add formatter (if custom format is needed)
+- [ ] `.claude/rules/intent-routing.md` — add keywords to preset inference table
+- [ ] `.claude/rules/screening.md` — update screener engine description
+- [ ] `CLAUDE.md` — update module list in Architecture section
+- [ ] `docs/skill-catalog.md` — update supported preset list for screen-stocks skill
 
 ---
 
-## パターン2: 新PFサブコマンド追加
+## Pattern 2: Adding a New Portfolio Subcommand
 
-ポートフォリオスキルに新サブコマンド（例: `compare` — 複数PFの比較）を追加する手順。
+Steps for adding a new subcommand (e.g. `compare` — compare multiple portfolios) to the portfolio skill.
 
-### 変更ファイル一覧（順序付き）
+### Files to Change (ordered)
 
-1. `src/core/portfolio/` — コアロジックモジュールを作成
-2. `src/output/portfolio_formatter.py` — フォーマッター関数を追加
-3. `.claude/skills/stock-portfolio/scripts/portfolio_commands/compare.py` — サブコマンドモジュール作成
-4. `.claude/skills/stock-portfolio/scripts/portfolio_commands/__init__.py` — HAS_* フラグと import 追加
-5. `.claude/skills/stock-portfolio/scripts/run_portfolio.py` — argparse サブコマンドとディスパッチ追加
-6. `.claude/rules/intent-routing.md` — 保有管理ドメインの判定テーブルに追加
+1. `src/core/portfolio/` — create core logic module
+2. `src/output/portfolio_formatter.py` — add formatter function
+3. `.claude/skills/stock-portfolio/scripts/portfolio_commands/compare.py` — create subcommand module
+4. `.claude/skills/stock-portfolio/scripts/portfolio_commands/__init__.py` — add HAS_* flag and import
+5. `.claude/skills/stock-portfolio/scripts/run_portfolio.py` — add argparse subcommand and dispatch
+6. `.claude/rules/intent-routing.md` — add to portfolio domain judgment table
 
-### 1. コアロジックモジュール
+### 1. Core Logic Module
 
 ```python
 # src/core/portfolio/compare.py
 
-"""ポートフォリオ比較ロジック (KIK-NNN)。"""
+"""Portfolio comparison logic (KIK-NNN)."""
 
 from typing import Optional
 
@@ -252,19 +251,19 @@ def compare_portfolios(
     label_a: str = "A",
     label_b: str = "B",
 ) -> dict:
-    """2つのポートフォリオを比較する。
+    """Compare two portfolios.
 
     Parameters
     ----------
     pf_a, pf_b : list[dict]
-        保有銘柄リスト。各要素は {"symbol", "shares", "current_price", ...} を含む。
+        Holdings lists. Each element contains {"symbol", "shares", "current_price", ...}.
     label_a, label_b : str
-        比較ラベル（表示用）。
+        Comparison labels (for display).
 
     Returns
     -------
     dict
-        比較結果: total_value, sector_diff, common_symbols, unique_a, unique_b
+        Comparison result: total_value, sector_diff, common_symbols, unique_a, unique_b
     """
     symbols_a = {r["symbol"] for r in pf_a}
     symbols_b = {r["symbol"] for r in pf_b}
@@ -280,43 +279,43 @@ def compare_portfolios(
     }
 ```
 
-### 2. フォーマッター追加
+### 2. Add Formatter
 
 ```python
-# src/output/portfolio_formatter.py に追加
+# Add to src/output/portfolio_formatter.py
 
 def format_compare_markdown(compare_result: dict) -> str:
-    """ポートフォリオ比較結果をMarkdownで整形。"""
+    """Format portfolio comparison result as Markdown."""
     a = compare_result["label_a"]
     b = compare_result["label_b"]
     lines = [
-        f"## ポートフォリオ比較: {a} vs {b}",
+        f"## Portfolio Comparison: {a} vs {b}",
         "",
-        f"- **{a} 総額**: ¥{compare_result['total_value_a']:,.0f}",
-        f"- **{b} 総額**: ¥{compare_result['total_value_b']:,.0f}",
+        f"- **{a} Total Value**: ¥{compare_result['total_value_a']:,.0f}",
+        f"- **{b} Total Value**: ¥{compare_result['total_value_b']:,.0f}",
         "",
-        f"**共通銘柄 ({len(compare_result['common_symbols'])}件)**: "
-        + (", ".join(compare_result["common_symbols"]) or "なし"),
-        f"**{a}のみ**: " + (", ".join(compare_result["unique_a"]) or "なし"),
-        f"**{b}のみ**: " + (", ".join(compare_result["unique_b"]) or "なし"),
+        f"**Common Stocks ({len(compare_result['common_symbols'])}): "
+        + (", ".join(compare_result["common_symbols"]) or "None"),
+        f"**{a} Only**: " + (", ".join(compare_result["unique_a"]) or "None"),
+        f"**{b} Only**: " + (", ".join(compare_result["unique_b"]) or "None"),
     ]
     return "\n".join(lines)
 ```
 
-### 3. サブコマンドモジュール
+### 3. Subcommand Module
 
 ```python
 # .claude/skills/stock-portfolio/scripts/portfolio_commands/compare.py
 
-"""compare サブコマンド: 複数ポートフォリオの比較 (KIK-NNN)。"""
+"""compare subcommand: compare multiple portfolios (KIK-NNN)."""
 
 from portfolio_commands import HAS_PORTFOLIO_MANAGER
 
 
 def cmd_compare(csv_path: str, other_csv: str) -> None:
-    """2つのポートフォリオCSVを比較して出力する。"""
+    """Compare two portfolio CSV files and print the result."""
     if not HAS_PORTFOLIO_MANAGER:
-        print("ポートフォリオマネージャーが利用できません。")
+        print("Portfolio manager is not available.")
         return
 
     try:
@@ -324,21 +323,21 @@ def cmd_compare(csv_path: str, other_csv: str) -> None:
         from src.core.portfolio.compare import compare_portfolios
         from src.output.portfolio_formatter import format_compare_markdown
     except ImportError as e:
-        print(f"モジュール読み込みエラー: {e}")
+        print(f"Module import error: {e}")
         return
 
     mgr_a = PortfolioManager(csv_path)
     mgr_b = PortfolioManager(other_csv)
-    result = compare_portfolios(mgr_a.holdings, mgr_b.holdings, "メイン", "サブ")
+    result = compare_portfolios(mgr_a.holdings, mgr_b.holdings, "Main", "Sub")
     print(format_compare_markdown(result))
 ```
 
-### 4. portfolio_commands/__init__.py への追加
+### 4. Add to portfolio_commands/__init__.py
 
 ```python
-# .claude/skills/stock-portfolio/scripts/portfolio_commands/__init__.py に追加
+# Add to .claude/skills/stock-portfolio/scripts/portfolio_commands/__init__.py
 
-# HAS_* フラグ定義（既存パターンに倣う）
+# HAS_* flag definition (follows existing pattern)
 try:
     from src.core.portfolio.compare import compare_portfolios as _
     HAS_COMPARE = True
@@ -346,25 +345,25 @@ except ImportError:
     HAS_COMPARE = False
 ```
 
-### 5. run_portfolio.py へのサブコマンド追加
+### 5. Add Subcommand to run_portfolio.py
 
 ```python
-# run_portfolio.py の argparse セクションに追加
+# Add to the argparse section of run_portfolio.py
 
-# --- compare サブコマンド ---
-compare_parser = subparsers.add_parser("compare", help="2つのPFを比較")
-compare_parser.add_argument("--other", required=True, help="比較対象CSVパス")
+# --- compare subcommand ---
+compare_parser = subparsers.add_parser("compare", help="Compare two portfolios")
+compare_parser.add_argument("--other", required=True, help="Path to comparison CSV")
 
-# --- ディスパッチ ---
+# --- dispatch ---
 elif args.command == "compare":
     if not HAS_COMPARE:
-        print("compare モジュールが利用できません。")
+        print("compare module is not available.")
     else:
         from portfolio_commands.compare import cmd_compare
         cmd_compare(csv_path, args.other)
 ```
 
-### テスト作成例
+### Test Example
 
 ```python
 # tests/core/test_portfolio_compare.py
@@ -413,42 +412,42 @@ def test_empty_portfolio():
     assert result["unique_b"] == []
 ```
 
-### ドキュメント更新チェックリスト
+### Documentation Update Checklist
 
-- [ ] `src/core/portfolio/compare.py` — コアロジック作成
-- [ ] `src/output/portfolio_formatter.py` — フォーマッター追加
-- [ ] `portfolio_commands/compare.py` — サブコマンドモジュール作成
-- [ ] `portfolio_commands/__init__.py` — HAS_COMPARE フラグ追加
-- [ ] `run_portfolio.py` — argparse + ディスパッチ追加
-- [ ] `.claude/rules/intent-routing.md` — 保有管理ドメイン判定テーブルに追加
-- [ ] `.claude/rules/portfolio.md` — 機能説明を追加
-- [ ] `CLAUDE.md` — アーキテクチャセクションを更新
-- [ ] `docs/skill-catalog.md` — stock-portfolio スキルのコマンド一覧を更新
+- [ ] `src/core/portfolio/compare.py` — create core logic
+- [ ] `src/output/portfolio_formatter.py` — add formatter
+- [ ] `portfolio_commands/compare.py` — create subcommand module
+- [ ] `portfolio_commands/__init__.py` — add HAS_COMPARE flag
+- [ ] `run_portfolio.py` — add argparse + dispatch
+- [ ] `.claude/rules/intent-routing.md` — add to portfolio domain judgment table
+- [ ] `.claude/rules/portfolio.md` — add feature description
+- [ ] `CLAUDE.md` — update Architecture section
+- [ ] `docs/skill-catalog.md` — update command list for stock-portfolio skill
 
 ---
 
-## パターン3: 新Neo4jノードタイプ追加
+## Pattern 3: Adding a New Neo4j Node Type
 
-新しいナレッジグラフノード（例: `PriceAlert` — 価格アラート）を追加する手順。
+Steps for adding a new knowledge graph node (e.g. `PriceAlert` — price alert).
 
-### 変更ファイル一覧（順序付き）
+### Files to Change (ordered)
 
-1. `src/data/graph_store/` — 適切なサブモジュールに merge 関数を追加
-2. `src/data/graph_store/__init__.py` — 公開関数として re-export
-3. `docs/neo4j-schema.md` — スキーマドキュメントを更新
-4. `scripts/get_context.py` — 必要に応じてコンテキスト取得に組み込む
-5. `tests/data/test_graph_store_*.py` — テスト追加
+1. `src/data/graph_store/` — add merge function to the appropriate submodule
+2. `src/data/graph_store/__init__.py` — re-export as a public function
+3. `docs/neo4j-schema.md` — update schema documentation
+4. `scripts/get_context.py` — incorporate into context retrieval if needed
+5. `tests/data/test_graph_store_*.py` — add tests
 
-### 1. サブモジュールに merge 関数を追加
+### 1. Add merge Function to Submodule
 
-既存のサブモジュール（`note.py`, `portfolio.py`, `stock.py`, `market.py` 等）のうち
-最も関連性の高いものに追記する。新ノード `PriceAlert` は `stock.py` に追加する例:
+Among existing submodules (`note.py`, `portfolio.py`, `stock.py`, `market.py`, etc.),
+add to the most relevant one. Example: adding `PriceAlert` to `stock.py`:
 
 ```python
-# src/data/graph_store/stock.py に追加
+# Add to src/data/graph_store/stock.py
 
 # ---------------------------------------------------------------------------
-# PriceAlert ノード (KIK-NNN)
+# PriceAlert node (KIK-NNN)
 # ---------------------------------------------------------------------------
 
 def merge_price_alert(
@@ -460,24 +459,24 @@ def merge_price_alert(
     triggered: bool = False,
     note: str = "",
 ) -> bool:
-    """PriceAlert ノードを作成/更新し、Stock との TARGETS リレーションを張る。
+    """Create/update a PriceAlert node and create a TARGETS relation to Stock.
 
     Parameters
     ----------
     alert_id : str
-        一意なアラートID（例: "alert_7203T_20260101"）。
+        Unique alert ID (e.g. "alert_7203T_20260101").
     symbol : str
-        対象銘柄シンボル（例: "7203.T"）。
+        Target ticker symbol (e.g. "7203.T").
     alert_date : str
-        アラート設定日（ISO形式: "2026-01-01"）。
+        Alert creation date (ISO format: "2026-01-01").
     target_price : float
-        目標株価。
+        Target stock price.
     direction : str
-        "above" = 上抜け / "below" = 下抜け。
+        "above" = breakout above / "below" = break below.
     triggered : bool
-        発火済みフラグ。
+        Whether the alert has fired.
     note : str
-        補足メモ。
+        Supplementary note.
 
     Returns
     -------
@@ -499,7 +498,7 @@ def merge_price_alert(
                 id=alert_id, date=alert_date, target_price=target_price,
                 direction=direction, triggered=triggered, note=note,
             )
-            # Stock との TARGETS リレーション
+            # TARGETS relation to Stock
             session.run(
                 "MATCH (a:PriceAlert {id: $alert_id}) "
                 "MERGE (s:Stock {symbol: $symbol}) "
@@ -511,14 +510,14 @@ def merge_price_alert(
         return False
 ```
 
-### 2. __init__.py に re-export 追加
+### 2. Add re-export to __init__.py
 
 ```python
-# src/data/graph_store/__init__.py の stock.py セクションに追加
+# Add to the stock.py section of src/data/graph_store/__init__.py
 
 from src.data.graph_store.stock import (  # noqa: F401
     get_stock_history,
-    merge_price_alert,   # ← 追加
+    merge_price_alert,   # ← add
     merge_report,
     merge_report_full,
     merge_screen,
@@ -528,36 +527,36 @@ from src.data.graph_store.stock import (  # noqa: F401
 )
 ```
 
-### 3. docs/neo4j-schema.md の更新例
+### 3. docs/neo4j-schema.md Update Example
 
-`docs/neo4j-schema.md` の「ノードタイプ一覧」セクションに追記:
+Add to the "Node Types" section of `docs/neo4j-schema.md`:
 
 ```markdown
-### PriceAlert（価格アラート, KIK-NNN）
+### PriceAlert (price alert, KIK-NNN)
 
-| プロパティ | 型 | 説明 |
+| Property | Type | Description |
 |:---|:---|:---|
-| id | str | 一意ID |
-| date | str | 設定日 (ISO) |
-| target_price | float | 目標株価 |
+| id | str | Unique ID |
+| date | str | Creation date (ISO) |
+| target_price | float | Target stock price |
 | direction | str | "above" / "below" |
-| triggered | bool | 発火済みフラグ |
-| note | str | 補足メモ |
+| triggered | bool | Whether the alert has fired |
+| note | str | Supplementary note |
 
-**リレーション**: `PriceAlert-[TARGETS]->Stock`
+**Relationship**: `PriceAlert-[TARGETS]->Stock`
 ```
 
-### テスト作成例
+### Test Example
 
 ```python
-# tests/data/test_graph_store_stock.py に追加（既存テストファイルを拡張）
+# Add to tests/data/test_graph_store_stock.py (extend existing test file)
 
 from unittest.mock import MagicMock, patch
 import pytest
 
 
 class TestMergePriceAlert:
-    """merge_price_alert() のテスト。"""
+    """Tests for merge_price_alert()."""
 
     def test_returns_false_when_mode_off(self):
         with patch("src.data.graph_store._common._get_mode", return_value="off"):
@@ -589,7 +588,7 @@ class TestMergePriceAlert:
                 "alert_001", "7203.T", "2026-01-01", 3000.0, "above"
             )
             assert result is True
-            assert mock_session.run.call_count == 2  # MERGE + TARGETS 関係
+            assert mock_session.run.call_count == 2  # MERGE + TARGETS relation
 
     def test_exception_returns_false(self):
         mock_session = MagicMock()
@@ -607,51 +606,51 @@ class TestMergePriceAlert:
             assert result is False
 ```
 
-### ドキュメント更新チェックリスト
+### Documentation Update Checklist
 
-- [ ] `src/data/graph_store/<submodule>.py` — merge 関数追加
-- [ ] `src/data/graph_store/__init__.py` — re-export 追加
-- [ ] `docs/neo4j-schema.md` — ノードタイプ・リレーション一覧を更新
-- [ ] `.claude/rules/graph-context.md` — 22ノードリストを更新
-- [ ] `CLAUDE.md` — Architecture セクションのノード数を更新
+- [ ] `src/data/graph_store/<submodule>.py` — add merge function
+- [ ] `src/data/graph_store/__init__.py` — add re-export
+- [ ] `docs/neo4j-schema.md` — update node type and relationship lists
+- [ ] `.claude/rules/graph-context.md` — update 22-node list
+- [ ] `CLAUDE.md` — update node count in Architecture section
 
 ---
 
-## パターン4: 新ヘルスチェック指標追加
+## Pattern 4: Adding a New Health Check Metric
 
-ポートフォリオヘルスチェックに新しい判定指標（例: 「流動性リスク」）を追加する手順。
+Steps for adding a new health check metric (e.g. "liquidity risk") to the portfolio health check.
 
-### 変更ファイル一覧（順序付き）
+### Files to Change (ordered)
 
-1. `src/core/health_check.py` — 指標計算関数と `compute_alert_level()` への統合を追加
-2. `config/thresholds.yaml` — 閾値を追加（`th()` ヘルパー経由で参照）
-3. `src/output/health_formatter.py` — フォーマッターに指標の表示列を追加
-4. `tests/core/test_health_check.py` — テスト追加
+1. `src/core/health_check.py` — add metric calculation function and integrate into `compute_alert_level()`
+2. `config/thresholds.yaml` — add threshold (referenced via `th()` helper)
+3. `src/output/health_formatter.py` — add display column for the metric
+4. `tests/core/test_health_check.py` — add tests
 
-### 1. health_check.py への指標追加
+### 1. Add Metric to health_check.py
 
 ```python
-# src/core/health_check.py に追加
+# Add to src/core/health_check.py
 
-# 閾値定数（config/thresholds.yaml から取得, KIK-446パターン）
-LIQUIDITY_MIN_VOLUME = th("health", "liquidity_min_volume", 100_000)   # 最小出来高
-LIQUIDITY_MIN_MARKET_CAP = th("health", "liquidity_min_market_cap", 30_000_000_000)  # 最小時価総額
+# Threshold constants (from config/thresholds.yaml via KIK-446 pattern)
+LIQUIDITY_MIN_VOLUME = th("health", "liquidity_min_volume", 100_000)   # min volume
+LIQUIDITY_MIN_MARKET_CAP = th("health", "liquidity_min_market_cap", 30_000_000_000)  # min market cap
 
 
 def check_liquidity_risk(
     stock_detail: dict,
     hist,  # pd.DataFrame | None
 ) -> dict:
-    """流動性リスクを評価する。
+    """Evaluate liquidity risk.
 
-    低出来高・低時価総額の銘柄を「流動性リスクあり」と判定する。
+    Flags stocks with low volume or small market cap as "liquidity risk".
 
     Parameters
     ----------
     stock_detail : dict
-        get_stock_detail() の返り値。market_cap, avg_volume を含む。
+        Return value of get_stock_detail(). Contains market_cap, avg_volume.
     hist : pd.DataFrame or None
-        価格履歴（過去30日の出来高平均を計算するため）。
+        Price history (to compute 30-day average volume).
 
     Returns
     -------
@@ -665,26 +664,26 @@ def check_liquidity_risk(
     market_cap = info.get("market_cap") or info.get("marketCap")
     avg_vol = info.get("averageVolume") or info.get("averageDailyVolume10Day")
 
-    # 過去30日の出来高平均（履歴データ優先）
+    # 30-day average volume (price history takes priority)
     volume_avg_30d: float | None = None
     if hist is not None and "Volume" in hist.columns and len(hist) >= 30:
         volume_avg_30d = float(hist["Volume"].iloc[-30:].mean())
     elif avg_vol is not None:
         volume_avg_30d = float(avg_vol)
 
-    # 出来高評価
+    # Volume assessment
     if volume_avg_30d is not None and volume_avg_30d < LIQUIDITY_MIN_VOLUME:
-        volume_label = "低出来高"
-        alerts.append(f"平均出来高 {volume_avg_30d:,.0f} 株は低水準（売買困難のリスク）")
+        volume_label = "Low volume"
+        alerts.append(f"30-day avg volume {volume_avg_30d:,.0f} shares is low (risk of illiquidity)")
     else:
-        volume_label = "十分"
+        volume_label = "Sufficient"
 
-    # 時価総額評価
+    # Market cap assessment
     if market_cap is not None and market_cap < LIQUIDITY_MIN_MARKET_CAP:
-        market_cap_label = "小規模"
-        alerts.append(f"時価総額 {market_cap/1e9:.0f}十億は小規模（流動性リスクあり）")
+        market_cap_label = "Small"
+        alerts.append(f"Market cap {market_cap/1e9:.0f}B is small (liquidity risk)")
     else:
-        market_cap_label = "適正"
+        market_cap_label = "Adequate"
 
     return {
         "liquidity_risk": bool(alerts),
@@ -695,59 +694,59 @@ def check_liquidity_risk(
     }
 ```
 
-`compute_alert_level()` 関数に流動性リスクを統合する:
+Integrate liquidity risk into `compute_alert_level()`:
 
 ```python
-# compute_alert_level() 内の既存ロジックに追加
+# Add to existing logic in compute_alert_level()
 
 def compute_alert_level(
     trend_data: dict,
     change_data: dict,
     stock_detail: dict,
     is_small_cap: bool = False,
-    liquidity_data: dict | None = None,   # ← 新パラメータ追加
+    liquidity_data: dict | None = None,   # ← new parameter
 ) -> tuple[str, list[str]]:
-    """...既存 docstring..."""
+    """...existing docstring..."""
 
-    # 既存のロジック ...
+    # existing logic ...
 
-    # 流動性リスクによるアラート引き上げ（KIK-NNN）
+    # Alert escalation due to liquidity risk (KIK-NNN)
     if liquidity_data and liquidity_data.get("liquidity_risk"):
         reasons.extend(liquidity_data.get("alerts", []))
         if alert_level == ALERT_NONE:
-            alert_level = ALERT_EARLY_WARNING  # 流動性リスクは最低 EARLY_WARNING
+            alert_level = ALERT_EARLY_WARNING  # liquidity risk → minimum EARLY_WARNING
 
     return alert_level, reasons
 ```
 
-### 2. config/thresholds.yaml への閾値追加
+### 2. Add Threshold to config/thresholds.yaml
 
 ```yaml
-# config/thresholds.yaml の health セクションに追加
+# Add to the health section of config/thresholds.yaml
 health:
-  # ... 既存閾値 ...
-  liquidity_min_volume: 100000       # 最小出来高（30日平均）
-  liquidity_min_market_cap: 30000000000  # 最小時価総額（300億円）
+  # ... existing thresholds ...
+  liquidity_min_volume: 100000           # min volume (30-day avg)
+  liquidity_min_market_cap: 30000000000  # min market cap (30B JPY)
 ```
 
-### 3. health_formatter.py — 表示カラム追加
+### 3. health_formatter.py — Add Display Column
 
 ```python
-# src/output/health_formatter.py の format_health_markdown() に追加
+# Add to format_health_markdown() in src/output/health_formatter.py
 
-# 流動性リスク列を既存テーブルに追加
+# Add liquidity risk column to existing table
 def _fmt_liquidity(liq_data: dict | None) -> str:
     if liq_data is None:
         return "-"
     if liq_data.get("liquidity_risk"):
-        return "⚠️ リスクあり"
+        return "⚠️ Risk"
     return "OK"
 ```
 
-### テスト作成例
+### Test Example
 
 ```python
-# tests/core/test_health_check.py に追加
+# Add to tests/core/test_health_check.py
 
 import pandas as pd
 import numpy as np
@@ -768,22 +767,22 @@ class TestCheckLiquidityRisk:
         detail = {"info": {"market_cap": 100_000_000_000}}
         result = check_liquidity_risk(detail, hist)
         assert result["liquidity_risk"] is False
-        assert result["volume_label"] == "十分"
+        assert result["volume_label"] == "Sufficient"
 
     def test_risk_for_low_volume(self):
-        hist = _make_hist_with_volume(50_000)  # 閾値 100,000 未満
+        hist = _make_hist_with_volume(50_000)  # below threshold of 100,000
         detail = {"info": {"market_cap": 100_000_000_000}}
         result = check_liquidity_risk(detail, hist)
         assert result["liquidity_risk"] is True
-        assert "低出来高" in result["volume_label"]
+        assert "Low volume" in result["volume_label"]
         assert len(result["alerts"]) >= 1
 
     def test_risk_for_small_market_cap(self):
         hist = _make_hist_with_volume(500_000)
-        detail = {"info": {"market_cap": 10_000_000_000}}  # 100億 < 300億
+        detail = {"info": {"market_cap": 10_000_000_000}}  # 10B < 30B
         result = check_liquidity_risk(detail, hist)
         assert result["liquidity_risk"] is True
-        assert result["market_cap_label"] == "小規模"
+        assert result["market_cap_label"] == "Small"
 
     def test_no_hist_falls_back_to_info(self):
         detail = {"info": {"market_cap": 100_000_000_000, "averageVolume": 1_000_000}}
@@ -797,33 +796,33 @@ class TestCheckLiquidityRisk:
         assert "liquidity_risk" in result
 ```
 
-### ドキュメント更新チェックリスト
+### Documentation Update Checklist
 
-- [ ] `src/core/health_check.py` — 指標関数追加 + `compute_alert_level()` への統合
-- [ ] `config/thresholds.yaml` — 閾値定義追加
-- [ ] `src/output/health_formatter.py` — 表示列追加
-- [ ] `.claude/rules/portfolio.md` — ヘルスチェックセクションに機能説明を追記
-- [ ] `.claude/rules/intent-routing.md` — 関連キーワード追加（必要な場合）
-- [ ] `CLAUDE.md` — アーキテクチャセクションを更新
-- [ ] `docs/skill-catalog.md` — stock-portfolio スキルの出力項目を更新
+- [ ] `src/core/health_check.py` — add metric function + integrate into `compute_alert_level()`
+- [ ] `config/thresholds.yaml` — add threshold definition
+- [ ] `src/output/health_formatter.py` — add display column
+- [ ] `.claude/rules/portfolio.md` — add feature description to health check section
+- [ ] `.claude/rules/intent-routing.md` — add related keywords (if needed)
+- [ ] `CLAUDE.md` — update Architecture section
+- [ ] `docs/skill-catalog.md` — update output items for stock-portfolio skill
 
 ---
 
-## 共通事項
+## Common Notes
 
-### HAS_MODULE パターン（スクリプト層）
+### HAS_MODULE Pattern (Script Layer)
 
-スクリプト層 (`run_*.py`) では必ず `try/except ImportError` で可用性フラグを定義する:
+Always define availability flags with `try/except ImportError` in script layer (`run_*.py`):
 
 ```python
-# 共通フラグ: scripts/common.py で管理 (KIK-448)
+# Shared flags: managed in scripts/common.py (KIK-448)
 try:
     from src.data.history import HistoryStore as _
     HAS_HISTORY_STORE = True
 except ImportError:
     HAS_HISTORY_STORE = False
 
-# スクリプト固有フラグ: 各スクリプト内に定義
+# Script-specific flags: defined within each script
 try:
     from src.core.portfolio.compare import compare_portfolios as _
     HAS_COMPARE = True
@@ -833,30 +832,30 @@ except ImportError:
 
 ### Graceful Degradation
 
-外部依存（Neo4j, Grok API, TEI）は常に graceful degradation を実装する:
+Always implement graceful degradation for external dependencies (Neo4j, Grok API, TEI):
 
 ```python
-# Neo4j 未接続時はスキップ（例: health_check.py パターン）
+# Skip when Neo4j is not connected (e.g. health_check.py pattern)
 try:
     from src.data import graph_store as gs
     if gs.is_available():
         gs.merge_health(...)
 except Exception:
-    pass  # Neo4j 操作は失敗しても主機能に影響させない
+    pass  # Neo4j failures should not affect the main function
 ```
 
-### 閾値の一元管理
+### Centralized Threshold Management
 
-ハードコードを避け、`config/thresholds.yaml` + `th()` ヘルパーを使用する:
+Avoid hardcoding; use `config/thresholds.yaml` + the `th()` helper:
 
 ```python
 from src.core._thresholds import th
 
-# 使用例
+# Usage
 MY_THRESHOLD = th("health", "my_threshold", default_value)
 ```
 
-### テストの自動遮断
+### Automatic Test Isolation
 
-`tests/conftest.py` の `_block_external_io` フィクスチャが Neo4j/TEI/Grok を全テストで自動モックする。
-外部通信が必要なテストは `@pytest.mark.no_auto_mock` でオプトアウトできる。
+The `_block_external_io` fixture in `tests/conftest.py` automatically mocks Neo4j/TEI/Grok in all tests.
+Tests that require external communication can opt out with `@pytest.mark.no_auto_mock`.

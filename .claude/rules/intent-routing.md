@@ -1,549 +1,549 @@
-# Intent Routing: 自然言語インターフェース
+# Intent Routing: Natural Language Interface
 
-このシステムは自然言語で話しかけるだけで、適切なスキルを自動判定して実行する。
-ユーザーはコマンド名を知る必要はない。
+This system automatically determines and executes the appropriate skill just by speaking in natural language.
+Users do not need to know command names.
 
-## 原則
+## Principles
 
-1. **ユーザーの意図を最優先で汲み取る** — キーワードマッチではなく、文脈から意図を推論する
-2. **曖昧なときは確認する** — 複数のスキルが該当しそうな場合、短く選択肢を提示する
-3. **会話の流れを引き継ぐ** — 直前に扱った銘柄やPFの状態を覚えて、省略された情報を補完する
-4. **必要なら複数スキルを連鎖する** — 1つの発言に複数の意図が含まれていれば順番に実行する
-5. **グラフコンテキストを活用する** — `graph-context.md` のルールに従い、スキル実行前に過去の経緯を取得して判断材料にする
-
----
-
-## Step 1: ドメイン判定
-
-ユーザーの発言を、まず8つのドメインのどれかに分類する。
-
-| ドメイン | 意図 | 代表的な表現 |
-|:---|:---|:---|
-| **発見** | 新しい銘柄を探したい | 探す、スクリーニング、いい株、おすすめ、割安株、高配当株 |
-| **分析** | 特定の銘柄・業界・市場を知りたい | 〇〇ってどう、調べて、分析、リサーチ、ニュース |
-| **保有管理** | 持ち株について操作・確認したい | PF、ポートフォリオ、買った、売った、損益、ヘルスチェック |
-| **リスク** | リスクや将来を評価したい | 暴落、ストレス、リスク、怖い、ヘッジ |
-| **監視** | 気になる銘柄を記録したい | ウォッチ、気になる、監視 |
-| **記録** | 投資判断をメモしたい | メモ、ノート、記録、テーゼ、学び、懸念、lesson |
-| **知識** | 過去の分析結果を検索したい | 前回、以前、履歴、常連銘柄、繰り返し、市況 |
-| **プランモード** | プランを立ててから実行したい | プランモードで、プランで、プラン立てて、計画して実行 |
-| **メタ** | システム自体について知りたい | 何ができる、機能一覧、改善、カイゼン |
+1. **Prioritize the user's intent** — Infer intent from context, not keyword matching
+2. **Ask when ambiguous** — When multiple skills could apply, briefly present options
+3. **Carry over conversation flow** — Remember the stock or portfolio state from the previous exchange and fill in omitted information
+4. **Chain multiple skills when needed** — If a single statement contains multiple intents, execute them in order and integrate results
+5. **Leverage graph context** — Follow the rules in `graph-context.md` to retrieve past context before skill execution and use it as a basis for judgment
 
 ---
 
-## Step 2: ドメイン内でスキルを選択
+## Step 1: Domain Classification
 
-### 発見ドメイン → `/screen-stocks`
+First classify the user's statement into one of 8 domains.
 
-```
-「いい日本株ある？」      → /screen-stocks japan alpha
-「米国の高配当株を探して」  → /screen-stocks us high-dividend
-「押し目の銘柄」          → /screen-stocks japan pullback
-「Xで話題の銘柄は？」     → /screen-stocks japan trending
-「長期で持てる株」        → /screen-stocks japan long-term
-「テクノロジーの割安株」   → /screen-stocks japan value --sector Technology
-「AI関連の割安株」        → /screen-stocks us --theme ai --preset value
-「半導体の成長株」        → /screen-stocks us --theme ai --preset high-growth
-「防衛関連株を探して」    → /screen-stocks us --theme defense --preset alpha
-「売られすぎの株」        → /screen-stocks japan contrarian
-「逆張りで拾えそうな株」   → /screen-stocks japan contrarian
-「過剰に売られてる銘柄」   → /screen-stocks japan contrarian
-「急騰銘柄」              → /screen-stocks japan momentum
-「ブレイクアウト検出」    → /screen-stocks japan momentum
-「モメンタム銘柄」        → /screen-stocks japan momentum
-```
-
-**KIK-452 GraphRAG コンテキスト**: スクリーニング結果の末尾に、Neo4j ナレッジグラフから取得したセクタートレンド・投資メモ・テーマ情報が構造化データとして自動表示される（Neo4j 接続時のみ）。Claude Code LLM がこの構造化データを解釈して統合サマリーを生成する（KIK-532: Grok API 呼び出しを廃止）。Neo4j 未接続の場合はこのセクションは非表示となり、スクリーニング本体の動作には影響しない。
-
-**region 推定**: 日本/JP → japan, 米国/US → us, ASEAN → asean, シンガポール → sg, 香港 → hk, 韓国 → kr, 台湾 → tw, 中国 → cn, 指定なし → japan
-
-**preset 推定**:
-
-| ユーザーの表現 | preset |
-|:---|:---|
-| いい株、おすすめ、有望 | alpha |
-| 割安、バリュー、PER低い | value |
-| 高配当、配当がいい | high-dividend |
-| 成長、グロース、純成長、高成長、成長率重視 | growth |
-| 成長バリュー、成長＋割安、成長性と割安度 | growth-value |
-| 超割安、ディープバリュー | deep-value |
-| クオリティ、高品質 | quality |
-| 押し目、調整中、下がってるけど良い株 | pullback |
-| トレンド、話題、Xで話題、SNS、バズ | trending |
-| 長期、じっくり、安定成長、バイ＆ホールド | long-term |
-| 還元、株主還元、自社株買い、バイバック、総還元 | shareholder-return |
-| 安定して還元、継続的に高還元、還元が続いてる | shareholder-return（✅/📈 銘柄を推奨） |
-| 爆発的成長、ハイグロース、利益不問の成長株、赤字成長株、PSR重視、売上急成長 | high-growth |
-| 小型成長株、マイクロキャップ、10倍株、小型グロース、テンバガー候補、小型急成長 | small-cap-growth |
-| 逆張り、売られすぎ、過剰反応、底打ち、リバウンド狙い、反発狙い | contrarian |
-| 急騰、ブレイクアウト、モメンタム、勢い、上昇トレンド強気 | momentum |
-| 市場の期待株、PER高くても成長してる株、成長プレミアム、ハイPER成長 | market-darling |
-| 指定なし | alpha |
-
-**KIK-439 関連（テーマスクリーニング）**:
-- テーマ + プリセット: `--theme <テーマ>` をプリセットと組み合わせて使用
-- 「AI株」「半導体」「AI関連」「AI銘柄」→ `--theme ai`
-- 「EV」「電気自動車」「次世代自動車」→ `--theme ev`
-- 「クラウド」「SaaS」→ `--theme cloud-saas`
-- 「サイバーセキュリティ」「セキュリティ株」→ `--theme cybersecurity`
-- 「バイオ」「創薬」「バイオテック」→ `--theme biotech`
-- 「再エネ」「太陽光」「再生可能エネルギー」→ `--theme renewable-energy`
-- 「防衛」「軍需」「航空宇宙」→ `--theme defense`
-- 「フィンテック」「金融テック」→ `--theme fintech`
-- 「ヘルスケア」「医療機器」「医療」→ `--theme healthcare`
-- 組み合わせ例: 「AI関連で割安株」→ `--theme ai --preset value`、「半導体の成長株」→ `--theme ai --preset high-growth`
-- `trending`/`pullback`/`alpha` プリセットは `--theme` 未対応（他のプリセットのみ）
-
-**KIK-440 関連（トレンドテーマ自動検出）**:
-- 「今熱いテーマは？」「トレンドテーマ」「注目セクター」 → `--auto-theme`（Grokでテーマ自動検出）
-- 「今どのセクターが熱い？」 → `--auto-theme`（テーマ一覧 + スクリーニング）
-- 「今の相場で何を買えばいい？」 → `--auto-theme`（テーマ検出 + デフォルトpreset）
-- 「トレンドテーマで割安株」 → `--auto-theme --preset value`
-- 「注目テーマの成長株」 → `--auto-theme --preset high-growth`
-- `--auto-theme` と `--theme` は排他（同時使用不可）
-- `--auto-theme` は `trending`/`pullback`/`alpha` プリセットと非対応
-- `XAI_API_KEY` 必須（Grok API でテーマ検出）
-- 違い: `trending` = X上の話題の**個別銘柄**を検出、`--auto-theme` = トレンドの**テーマ・セクター**を検出して各テーマで質の高い銘柄を探す
-
-### 分析ドメイン → `/stock-report` or `/market-research`
-
-**判定基準**: 数値分析か定性分析か
-
-| ユーザーの意図 | スキル | 判断基準 |
+| Domain | Intent | Representative Expressions |
 |:---|:---|:---|
-| バリュエーション、割安度、PER/PBR、還元率 | `/stock-report` | 数値ベースの分析 |
-| 最新ニュース、センチメント、深掘り分析 | `/market-research stock` | 定性的な深掘り |
-| 業界の動向、トレンド | `/market-research industry` | 業界名・テーマが対象 |
-| マーケット概況、相場の状況 | `/market-research market` | 市場全体が対象 |
-| 市況チェック、温度感、VIX、F&G、金利推移、イールドカーブ | 定量+定性 同時実行 | 下記KIK-567参照 |
-| ビジネスモデル、事業構造、セグメント、収益構造、何で稼いでる | `/market-research business` | 事業の仕組みが対象 |
-| 過去の分析結果、前回のレポート、以前のスクリーニング | `/graph-query` | 過去データの参照（知識ドメインへ連携） |
-| 似た銘柄、類似銘柄、関連銘柄、同じグループ | `/graph-query` | コミュニティ検索（KIK-547） |
+| **Discovery** | Want to find new stocks | Search, screening, good stocks, recommendations, undervalued stocks, high-dividend stocks |
+| **Analysis** | Want to know about a specific stock/industry/market | How is XX, look up, analyze, research, news |
+| **Portfolio Management** | Want to operate or check holdings | PF, portfolio, I bought, I sold, profit/loss, health check |
+| **Risk** | Want to evaluate risk or the future | Crash, stress, risk, worried, hedge |
+| **Monitoring** | Want to record stocks of interest | Watch, interested, monitor |
+| **Recording** | Want to memo investment decisions | Memo, note, record, thesis, lessons learned, concerns |
+| **Knowledge** | Want to search past analysis results | Last time, before, history, recurring stocks, repeated, market conditions |
+| **Plan Mode** | Want to plan before executing | Plan mode, plan it, make a plan, plan and execute |
+| **Meta** | Want to know about the system itself | What can it do, feature list, improvements, Kaizen |
 
-**迷ったとき**:
-- 「〇〇ってどう？」「〇〇を調べて」 → `/stock-report`（まず数値から）
-- 「〇〇を深掘りして」「〇〇の最新情報」「〇〇のニュース」 → `/market-research stock`
-- 「〇〇のビジネスモデル」「〇〇は何で稼いでる？」「事業構造を教えて」 → `/market-research business`
-- 「〇〇について詳しく」 → 両方実行して統合レポート
+---
 
-**KIK-567 関連（市況チェック — 定量+定性）**:
-- 「市況チェック」「相場の温度感」「VIXは？」「F&Gは？」「金利の推移」「イールドカーブ」 → 2つ同時実行:
-  1. `python3 scripts/market_dashboard.py`（定量: VIX/F&G/金利/イールドカーブ）
-  2. `/market-research market`（定性: Grokでニュース・センチメント）
-  → Claude が両方の出力を統合して回答
-- 「VIXだけ見せて」「金利の推移」 → `python3 scripts/market_dashboard.py` のみ（定量だけ）
-- 「市況ニュース」「最新の相場観」 → `/market-research market` のみ（定性だけ）
+## Step 2: Select Skill within Domain
 
-**KIK-375 関連**:
-- 「還元率」「自社株買い」「株主還元」「トータルリターン」 → `/stock-report`（株主還元セクションで表示）
+### Discovery Domain → `/screen-stocks`
 
-**KIK-380 関連**:
-- 「過去の還元率」「3年間の還元推移」「還元のトレンド」 → `/stock-report`（3年還元率履歴で表示）
+```
+"Any good Japanese stocks?"          → /screen-stocks japan alpha
+"Find US high-dividend stocks"        → /screen-stocks us high-dividend
+"Dip stocks"                         → /screen-stocks japan pullback
+"What's trending on X?"              → /screen-stocks japan trending
+"Stocks to hold long-term"           → /screen-stocks japan long-term
+"Undervalued tech stocks"            → /screen-stocks japan value --sector Technology
+"Undervalued AI stocks"              → /screen-stocks us --theme ai --preset value
+"Growth stocks in semiconductors"    → /screen-stocks us --theme ai --preset high-growth
+"Find defense stocks"                → /screen-stocks us --theme defense --preset alpha
+"Oversold stocks"                    → /screen-stocks japan contrarian
+"Stocks that look oversold"          → /screen-stocks japan contrarian
+"Excessively sold-off stocks"        → /screen-stocks japan contrarian
+"Surging stocks"                     → /screen-stocks japan momentum
+"Breakout detection"                 → /screen-stocks japan momentum
+"Momentum stocks"                    → /screen-stocks japan momentum
+```
 
-**KIK-383 関連**:
-- 「安定的に還元している株」「継続高還元」 → `/screen-stocks --preset shareholder-return`（安定度マーク付き）
-- 「一時的な高還元？」「本当に還元が続く？」 → `/stock-report`（安定度評価で表示）
-- スクリーニング結果の ⚠️ マーク銘柄は一時的高還元の可能性あり
+**KIK-452 GraphRAG Context**: At the end of screening results, sector trends, investment memos, and theme information retrieved from the Neo4j knowledge graph are automatically displayed as structured data (Neo4j connection only). The Claude Code LLM interprets this structured data to generate an integrated summary (KIK-532: Grok API calls eliminated). This section is hidden when Neo4j is not connected; the screening itself is unaffected.
 
-**KIK-469 関連（ETF対応）**:
-- 「VGKってどう？」「SPYを調べて」「このETFの経費率は？」 → `/stock-report`（ETF自動検出 → ETF専用レポート）
-- ETFの場合、PER/PBR/ROEの代わりに経費率・AUM・ファンド規模を表示
-- ヘルスチェックでもETF固有の評価（経費率ラベル・AUMラベル）を表示
+**Region inference**: Japan/JP → japan, US → us, ASEAN → asean, Singapore → sg, Hong Kong → hk, Korea → kr, Taiwan → tw, China → cn, not specified → japan
 
-### 保有管理ドメイン → `/stock-portfolio`
+**Preset inference**:
 
-**KIK-596 関連（投資判断マルチエージェント）**:
-- 入替提案、新規購入判断、売却判断、リバランス、調整アドバイスの**実行**を伴う発言には、`.claude/rules/plan-check.md` の Plan→Execute→Review フローを適用する
-- 「PF見せて」「損益は？」等の情報照会や、「買った」「売った」等の記録は対象外
-- 判定: 文末が「〜したい」「〜すべき？」「〜探して」「〜直して」等の行動要求であること
-- 最初に `python3 scripts/extract_constraints.py "<ユーザー入力>"` を実行し、lessonから制約条件を抽出してからプランを策定する
-
-**サブコマンド判定**:
-
-| ユーザーの意図 | コマンド |
+| User Expression | Preset |
 |:---|:---|
-| **現況確認**: PF見せて、損益、スナップショット | `snapshot` |
-| **売買記録**: 〇〇を買った/売った | `buy` / `sell` |
-| **一覧表示**: 銘柄一覧、リスト、CSV | `list` |
-| **構造分析**: 偏り、集中度、HHI、セクター比率、規模別構成、大型小型比率 | `analyze` |
-| **健全性**: ヘルスチェック、利確判断、損切り、まだ持つべき？、小型株比率、小型株アロケーション | `health` |
-| **将来予測**: 期待リターン、利回り、今後の見通し、forecast | `forecast` |
-| **リバランス**: バランス改善、配分調整、偏り直したい | `rebalance` |
-| **シミュレーション**: 〇年後、複利、積立、老後、目標額 | `simulate` |
-| **過去検証**: バックテスト、検証、過去の成績 | `backtest` |
-| **What-If**: 追加したら、買ったらどうなる、影響、シミュレーション追加 | `what-if` |
-| **パフォーマンスレビュー**: 売買成績、勝率、損益統計、何%取れた | `review` |
-| **調整アドバイス**: 何を売るべき？、どう直す？、具体的に何をすべき？、処方箋、調整プラン、どうしたらいい、アドバイス、改善して、直して、対策、手を打って、アクションプラン、次のアクション、問題点と対策 | `adjust` |
-| **売買→記録**: 買った理由を記録したい、投資理由をメモ | `buy` → `/investment-note save --type thesis` |
-| **損切り→学び**: 損切りの学びを記録、反省メモ | `sell` → `/investment-note save --type lesson` |
+| Good stocks, recommendations, promising | alpha |
+| Undervalued, value, low P/E | value |
+| High dividend, good dividend | high-dividend |
+| Growth, high growth, growth rate focused | growth |
+| Growth value, growth + undervalued | growth-value |
+| Super undervalued, deep value | deep-value |
+| Quality, high quality | quality |
+| Dip, correcting, good stocks that are down | pullback |
+| Trending, trending on X, SNS, buzzing | trending |
+| Long-term, steady, stable growth, buy & hold | long-term |
+| Shareholder return, buyback, total return | shareholder-return |
+| Stable steady returns, continued high returns | shareholder-return (recommend ✅/📈 stocks) |
+| Explosive growth, high-growth, loss-making growth stocks, PSR-focused, rapid revenue growth | high-growth |
+| Small-cap growth, micro-cap, 10-bagger candidates, small-cap rapid growth | small-cap-growth |
+| Contrarian, oversold, overreaction, bottoming, rebound play | contrarian |
+| Surge, breakout, momentum, strong uptrend | momentum |
+| Market darlings, growth with high P/E, growth premium, high-P/E growth | market-darling |
+| Not specified | alpha |
 
-**KIK-376 関連**:
-- 「〇〇を追加したらどうなる？」「〇〇を買ったらPFどう変わる？」「影響は？」 → `what-if`
-- 形式: `what-if --add "SYMBOL:SHARES:PRICE,..."` 例: `what-if --add "7203.T:100:2850,AAPL:10:250"`
+**KIK-439 Related (Theme Screening)**:
+- Theme + preset: use `--theme <theme>` combined with a preset
+- "AI stocks", "semiconductors", "AI-related" → `--theme ai`
+- "EV", "electric vehicles", "next-gen automotive" → `--theme ev`
+- "Cloud", "SaaS" → `--theme cloud-saas`
+- "Cybersecurity", "security stocks" → `--theme cybersecurity`
+- "Biotech", "drug discovery" → `--theme biotech`
+- "Renewable energy", "solar" → `--theme renewable-energy`
+- "Defense", "military", "aerospace" → `--theme defense`
+- "Fintech", "financial tech" → `--theme fintech`
+- "Healthcare", "medical devices" → `--theme healthcare`
+- Combination example: "undervalued AI stocks" → `--theme ai --preset value`, "semiconductor growth stocks" → `--theme ai --preset high-growth`
+- `trending`/`pullback`/`alpha` presets do not support `--theme` (other presets only)
 
-**KIK-451 関連（スワップシミュレーション）**:
-- 「〇〇を売って△△を買ったら？」「入れ替えたらどうなる？」「乗り換えシミュレーション」 → `what-if --remove --add`
-- 「〇〇を売ったら資金はいくら？」「売却シミュレーション」「〇〇を手放したらPFがどう変わる？」 → `what-if --remove`
-- 形式:
-  - スワップ: `what-if --remove "SYMBOL:SHARES,..." --add "SYMBOL:SHARES:PRICE,..."`
-  - 売却のみ: `what-if --remove "SYMBOL:SHARES,..."`（価格不要・時価で試算）
-- 例: `what-if --remove "7203.T:100" --add "9984.T:50:7500"`
-- スワップ出力: 売却代金試算 / 資金収支（差額） / 売却銘柄ヘルスチェック / 「このスワップは推奨」等の判定
+**KIK-440 Related (Automatic Trend Theme Detection)**:
+- "What themes are hot?" "trending themes" "noteworthy sectors" → `--auto-theme` (Grok auto-detects themes)
+- "Which sectors are hot now?" → `--auto-theme` (theme list + screening)
+- "What should I buy in this market?" → `--auto-theme` (theme detection + default preset)
+- "Undervalued stocks in trending themes" → `--auto-theme --preset value`
+- "Growth stocks in noteworthy themes" → `--auto-theme --preset high-growth`
+- `--auto-theme` and `--theme` are mutually exclusive
+- `--auto-theme` is incompatible with `trending`/`pullback`/`alpha` presets
+- `XAI_API_KEY` is required (Grok API for theme detection)
+- Difference: `trending` = detects trending **individual stocks** on X, `--auto-theme` = detects trending **themes/sectors** and finds quality stocks in each theme
 
-**KIK-374 関連**:
-- 「ゴールデンクロス」「デッドクロス」「クロス」 → `health`（クロスイベント検出で表示）
+### Analysis Domain → `/stock-report` or `/market-research`
 
-**KIK-381 関連**:
-- 「バリュートラップ」「割安罠」「見せかけの割安」 → `health`（バリュートラップ検出で表示）
-- `/stock-report` でも個別銘柄のバリュートラップ判定を表示
+**Decision criteria**: Quantitative vs. qualitative analysis
 
-**KIK-403 関連**:
-- 「還元安定度」「一時的高還元」「還元が続くか」 → `health`（還元安定度評価で表示）
-- ヘルスチェックで一時的高還元（⚠️）は早期警告に昇格
-- 長期適性判定に総還元率（配当+自社株買い）を使用
+| User Intent | Skill | Judgment Basis |
+|:---|:---|:---|
+| Valuation, undervaluation, P/E/P/B, return rate | `/stock-report` | Number-based analysis |
+| Latest news, sentiment, deep dive | `/market-research stock` | Qualitative deep dive |
+| Industry trends | `/market-research industry` | Industry name/theme as subject |
+| Market overview, market conditions | `/market-research market` | Overall market as subject |
+| Market check, temperature, VIX, F&G, rate trends, yield curve | Quantitative + qualitative simultaneously | See KIK-567 below |
+| Business model, business structure, segments, revenue structure, how they make money | `/market-research business` | Business mechanism as subject |
+| Past analysis results, previous reports, past screenings | `/graph-query` | Reference to past data (link to knowledge domain) |
+| Similar stocks, related stocks, same group | `/graph-query` | Community search (KIK-547) |
 
-**KIK-438 関連（小型株アロケーション）**:
-- 「小型株比率」「小型株アロケーション」「小型株の割合」「小型株多すぎ？」 → `health`（小型株比率サマリーで表示）
-- 「規模別構成」「大型小型の比率」「時価総額バランス」 → `analyze`（規模別構成テーブルで表示）
-- ヘルスチェックで小型株は `[小型]` バッジ付き + EARLY_WARNING→CAUTION自動昇格
-- PF全体の小型株比率: >25% 警告、>35% 危険
+**When uncertain**:
+- "How is XX?" "Look up XX" → `/stock-report` (start with numbers)
+- "Deep dive XX" "Latest on XX" "XX news" → `/market-research stock`
+- "XX's business model" "How does XX make money?" "Explain the business structure" → `/market-research business`
+- "Tell me more about XX" → Run both and produce an integrated report
 
-**buy/sell の自然言語変換**:
-- 「トヨタを100株 2850円で買った」→ `buy --symbol 7203.T --shares 100 --price 2850 --currency JPY`
-- 「AAPLを5株売った」→ `sell --symbol AAPL --shares 5`
-- 「NVDAを5株138ドルで売った」→ `sell --symbol NVDA --shares 5 --price 138`
-- 企業名はティッカーシンボルに変換する
+**KIK-567 Related (Market Check — Quantitative + Qualitative)**:
+- "Market check", "market temperature", "VIX?", "F&G?", "rate trends", "yield curve" → Run 2 simultaneously:
+  1. `python3 scripts/market_dashboard.py` (quantitative: VIX/F&G/rates/yield curve)
+  2. `/market-research market` (qualitative: news/sentiment via Grok)
+  → Claude integrates both outputs to answer
+- "Just show me VIX", "rate trends" → `python3 scripts/market_dashboard.py` only (quantitative only)
+- "Market news", "latest market view" → `/market-research market` only (qualitative only)
 
-**KIK-444: buy/sell 確認ステップ**:
-- `--yes` なしで実行すると確認プレビューが表示されコマンドは終了する（記録はされない）
-- 確認後「記録して」「OK」「はい」→ `buy --yes` / `sell --yes` で再実行
-- 「確認なしで記録して」「そのままいれて」→ 最初から `--yes` を付けて実行
+**KIK-375 Related**:
+- "Return rate", "buyback", "shareholder return", "total return" → `/stock-report` (displayed in shareholder return section)
 
-**KIK-441: 売却価格の確認フロー**:
-- 「売った」と言ってきた場合、価格が未指定なら確認する: 「売却単価を教えてもらえますか？実現損益を記録できます。（スキップしてもOK）」
-- 価格あり → `sell --symbol ... --shares ... --price <価格>` 実行
-- スキップ → `sell --symbol ... --shares ...` 実行（価格なし）
+**KIK-380 Related**:
+- "Past return rate", "3-year return trends", "return history" → `/stock-report` (displayed in 3-year return rate history)
 
-**KIK-441: review コマンドの自然言語変換**:
-- 「売買成績を見たい」「勝率は？」「損益統計」「何%取れた？」 → `review`
-- 「今年の成績」 → `review --year <今年>`
-- 「NVDAの売買成績」 → `review --symbol NVDA`
+**KIK-383 Related**:
+- "Stocks with stable returns", "consistently high returns" → `/screen-stocks --preset shareholder-return` (with stability marks)
+- "Temporary high return?", "Will returns really continue?" → `/stock-report` (displayed in stability assessment)
+- Stocks marked ⚠️ in screening results may have temporary high returns
 
-**KIK-568: adjust の自然言語判定**:
-- 「PFどうしたらいい？」「PFのアドバイス」「PFを改善して」「PFの対策」「手を打って」→ `adjust`（health未実行でも直接実行）
-- health との判定基準: 「改善」「対策」「アドバイス」「直す」「どうしたらいい」「どうすべき」「アクション」→ adjust優先。「チェック」「確認」「診断」「大丈夫？」→ health
+**KIK-469 Related (ETF Support)**:
+- "How is VGK?", "Look up SPY", "What's this ETF's expense ratio?" → `/stock-report` (auto-detects ETF → ETF-specific report)
+- For ETFs, expense ratio, AUM, and fund size are shown instead of P/E/P/B/ROE
+- ETF-specific assessments (expense ratio label, AUM label) are also shown in health checks
 
-**rebalance の戦略推定**:
-- 「リスクを抑えたい」→ `--strategy defensive`
-- 「攻めたい」→ `--strategy aggressive`
-- 「テック偏重を直したい」→ `--reduce-sector Technology`
+### Portfolio Management Domain → `/stock-portfolio`
 
-**simulate のパラメータ推定**:
-- 「5年後にいくら？」→ `--years 5`
-- 「月10万追加して3年後に2000万いける？」→ `--years 3 --monthly-add 100000 --target 20000000`
+**KIK-596 Related (Investment Decision Multi-Agent)**:
+- For statements involving **execution** of replacement proposals, new purchase decisions, sell decisions, rebalancing, or adjustment advice, apply the Plan→Execute→Review flow in `.claude/rules/plan-check.md`
+- Information queries like "show me the PF" or "what's the P/L?" and records like "I bought" are excluded
+- Judgment: The statement ends with an action request like "want to ~", "should ~?", "find ~", "fix ~"
+- First run `python3 scripts/extract_constraints.py "<user input>"` to extract constraint conditions from lessons, then formulate a plan
 
-### リスクドメイン → `/stress-test`
+**Subcommand determination**:
 
-```
-「暴落したらどうなる？」     → /stress-test（PFから銘柄を自動取得）
-「円安リスクは？」          → /stress-test --scenario ドル高円安
-「テック暴落に耐えられる？」  → /stress-test --scenario テック暴落
-```
-
-**PFとの連携**: ポートフォリオが存在する場合、銘柄リストを自動取得して実行する
-
-**シナリオ推定**: トリプル安、ドル高円安、米国リセッション、日銀利上げ、米中対立、インフレ再燃、テック暴落、円高ドル安 + カスタム
-
-### 監視ドメイン → `/watchlist`
-
-```
-「気になるから記録しておいて」 → /watchlist add
-「ウォッチリスト見せて」      → /watchlist list
-```
-
-### 記録ドメイン → `/investment-note`
-
-```
-「トヨタについてメモしておいて」      → /investment-note save --symbol 7203.T
-「投資テーゼを記録」                → /investment-note save --type thesis
-「学びを残す」                     → /investment-note save --type lesson
-「PF全体のメモ」「ポートフォリオの振り返り」 → /investment-note save --category portfolio --type review
-「市況メモ」「マクロの気づき」       → /investment-note save --category market --type observation
-「メモ一覧」                       → /investment-note list
-「AAPLのメモ」                    → /investment-note list --symbol AAPL
-「PFのメモ」                      → /investment-note list --category portfolio
-「メモ削除」                       → /investment-note delete --id NOTE_ID
-「日記」「投資日記」「今日の振り返り」     → /investment-note save --type journal
-「今週はトレードしない」「ノートレード」    → /investment-note save --type journal --content ...
-「雑感」「つぶやき」                     → /investment-note save --type journal
-```
-
-**タイプ推定**:
-
-| ユーザーの表現 | type |
+| User Intent | Command |
 |:---|:---|
-| テーゼ、仮説、投資理由 | thesis |
-| 気づき、観察 | observation |
-| 懸念、心配、リスク | concern |
-| 振り返り、レビュー | review |
-| 目標株価、ターゲット | target |
-| 学び、反省、教訓 | lesson |
-| 損切りライン、利確ライン、ストップロス、テイクプロフィット、exit基準 | exit-rule |
-| 日記、ジャーナル、振り返り日記、フリーメモ、雑感、つぶやき | journal |
+| **Status check**: Show PF, P/L, snapshot | `snapshot` |
+| **Trade recording**: Bought/sold XX | `buy` / `sell` |
+| **List display**: Stock list, list, CSV | `list` |
+| **Structural analysis**: Bias, concentration, HHI, sector ratio, size composition, large/small ratio | `analyze` |
+| **Health**: Health check, take profit, stop-loss, should I still hold?, small-cap ratio, small-cap allocation | `health` |
+| **Future outlook**: Expected return, yield, future prospects, forecast | `forecast` |
+| **Rebalancing**: Improve balance, allocation adjustment, fix bias | `rebalance` |
+| **Simulation**: In N years, compound interest, accumulation, retirement, target amount | `simulate` |
+| **Back-testing**: Backtest, verify, past performance | `backtest` |
+| **What-If**: What if I add, what happens if I buy, impact, add simulation | `what-if` |
+| **Performance review**: Trade performance, win rate, P/L stats, what % did I get | `review` |
+| **Adjustment advice**: What should I sell?, how to fix?, what specifically should I do?, prescription, adjustment plan, what should I do, advice, improve, fix, countermeasures, take action, action plan, next action, issues and countermeasures | `adjust` |
+| **Trade → Record**: Want to record the reason for buying, memo the investment rationale | `buy` → `/investment-note save --type thesis` |
+| **Stop-loss → Lesson**: Record the lesson from a stop-loss, reflection memo | `sell` → `/investment-note save --type lesson` |
 
-**KIK-503: target メモ保存後の Linear issue 登録促し**:
+**KIK-376 Related**:
+- "What happens if I add XX?", "How will the PF change if I buy XX?", "Impact?" → `what-if`
+- Format: `what-if --add "SYMBOL:SHARES:PRICE,..."` e.g., `what-if --add "7203.T:100:2850,AAPL:10:250"`
 
-`/investment-note save --type target` 実行後、末尾に以下の促しメッセージを表示する:
+**KIK-451 Related (Swap Simulation)**:
+- "What if I sell XX and buy YY?", "What if I switch?", "Replacement simulation" → `what-if --remove --add`
+- "How much money would I get if I sell XX?", "Sell simulation", "How would the PF change if I let go of XX?" → `what-if --remove`
+- Format:
+  - Swap: `what-if --remove "SYMBOL:SHARES,..." --add "SYMBOL:SHARES:PRICE,..."`
+  - Sell only: `what-if --remove "SYMBOL:SHARES,..."` (no price needed — calculated at market value)
+- Example: `what-if --remove "7203.T:100" --add "9984.T:50:7500"`
+- Swap output: Estimated sale proceeds / Fund balance (difference) / Health check of sold stock / Judgment like "this swap is recommended"
 
-> 📋 この予定を Linear issue にも登録しますか？（Investment Checkpoints プロジェクト）
+**KIK-374 Related**:
+- "Golden cross", "dead cross", "cross" → `health` (displayed in cross event detection)
 
-- ユーザーが「はい」「登録して」→ MCP (`mcp__claude_ai_Linear__create_issue`) で issue 作成
+**KIK-381 Related**:
+- "Value trap", "value trap?", "check if it's a value trap" → `health` (displayed in value trap detection)
+- Individual stock value trap assessment is also shown in `/stock-report`
+
+**KIK-403 Related**:
+- "Return stability", "temporary high return", "will returns continue?" → `health` (displayed in return stability assessment)
+- Temporary high returns (⚠️) in health checks are escalated to early warning
+- Long-term suitability uses total return rate (dividends + buybacks)
+
+**KIK-438 Related (Small-Cap Allocation)**:
+- "Small-cap ratio", "small-cap allocation", "small-cap proportion", "too many small caps?" → `health` (displayed in small-cap ratio summary)
+- "Size composition", "large/small ratio", "market cap balance" → `analyze` (displayed in size composition table)
+- Small caps in health check get a `[small]` badge + automatic EARLY_WARNING→CAUTION escalation
+- Portfolio-wide small-cap ratio: >25% warning, >35% critical
+
+**Natural language conversion for buy/sell**:
+- "I bought 100 shares of Toyota at 2850" → `buy --symbol 7203.T --shares 100 --price 2850 --currency JPY`
+- "I sold 5 shares of AAPL" → `sell --symbol AAPL --shares 5`
+- "I sold 5 shares of NVDA at $138" → `sell --symbol NVDA --shares 5 --price 138`
+- Convert company names to ticker symbols
+
+**KIK-444: buy/sell confirmation step**:
+- Running without `--yes` displays a confirmation preview and the command ends (no recording)
+- After confirmation "record it", "OK", "yes" → re-run with `buy --yes` / `sell --yes`
+- "Record without confirmation", "just enter it" → run with `--yes` from the start
+
+**KIK-441: Sell price confirmation flow**:
+- When the user says "I sold" and the price is not specified, ask: "Could you tell me the sale price? I can record the realized profit/loss. (It's also OK to skip.)"
+- With price → run `sell --symbol ... --shares ... --price <price>`
+- Skip → run `sell --symbol ... --shares ...` (no price)
+
+**KIK-441: Natural language conversion for the review command**:
+- "I want to see my trade performance", "What's my win rate?", "P/L stats", "What % did I get?" → `review`
+- "This year's performance" → `review --year <current year>`
+- "NVDA trade performance" → `review --symbol NVDA`
+
+**KIK-568: Natural language determination for adjust**:
+- "What should I do with the PF?", "PF advice", "Improve the PF", "PF countermeasures", "take action" → `adjust` (can be run directly even without health)
+- Decision criteria vs health: "improve", "countermeasures", "advice", "fix", "what should I do", "what should I do about it", "action" → adjust priority. "Check", "confirm", "diagnose", "is it OK?" → health
+
+**Rebalancing strategy inference**:
+- "I want to reduce risk" → `--strategy defensive`
+- "I want to be more aggressive" → `--strategy aggressive`
+- "I want to fix tech overweight" → `--reduce-sector Technology`
+
+**Simulate parameter inference**:
+- "How much in 5 years?" → `--years 5`
+- "If I add 100K per month for 3 years, can I reach 20M?" → `--years 3 --monthly-add 100000 --target 20000000`
+
+### Risk Domain → `/stress-test`
+
+```
+"What happens in a crash?"            → /stress-test (auto-retrieves stocks from PF)
+"What about yen weakness risk?"       → /stress-test --scenario USD/JPY surge
+"Can it survive a tech crash?"        → /stress-test --scenario tech crash
+```
+
+**PF integration**: When a portfolio exists, the stock list is automatically retrieved for execution
+
+**Scenario inference**: Triple meltdown, USD/JPY surge, US recession, BOJ rate hike, US-China conflict, inflation resurgence, tech crash, JPY appreciation + custom
+
+### Monitoring Domain → `/watchlist`
+
+```
+"Record it because I'm interested"    → /watchlist add
+"Show me the watchlist"               → /watchlist list
+```
+
+### Recording Domain → `/investment-note`
+
+```
+"Memo about Toyota"                           → /investment-note save --symbol 7203.T
+"Record the investment thesis"                → /investment-note save --type thesis
+"Leave a lesson"                              → /investment-note save --type lesson
+"Memo for the whole PF", "PF retrospective"   → /investment-note save --category portfolio --type review
+"Market memo", "macro insight"                → /investment-note save --category market --type observation
+"Memo list"                                   → /investment-note list
+"AAPL memos"                                  → /investment-note list --symbol AAPL
+"PF memos"                                    → /investment-note list --category portfolio
+"Delete memo"                                 → /investment-note delete --id NOTE_ID
+"Diary", "investment diary", "today's review" → /investment-note save --type journal
+"No trading this week", "no trade"            → /investment-note save --type journal --content ...
+"Thoughts", "musings"                         → /investment-note save --type journal
+```
+
+**Type inference**:
+
+| User Expression | type |
+|:---|:---|
+| Thesis, hypothesis, investment rationale | thesis |
+| Insight, observation | observation |
+| Concern, worry, risk | concern |
+| Retrospective, review | review |
+| Target price, target | target |
+| Lesson, reflection, teaching | lesson |
+| Stop-loss line, take-profit line, stop loss, take profit, exit criteria | exit-rule |
+| Diary, journal, retrospective diary, free memo, thoughts, musings | journal |
+
+**KIK-503: Prompt to register Linear issue after saving a target memo**:
+
+After running `/investment-note save --type target`, display the following prompt at the end:
+
+> 📋 Would you like to also register this plan as a Linear issue? (Investment Checkpoints project)
+
+- User says "yes" or "register" → Create issue via MCP (`mcp__claude_ai_Linear__create_issue`)
   - team: `Kikuchi`
   - project: `Investment Checkpoints`
-  - title: メモ内容から要約（例: 「7203.T 購入検討 - 目標株価 3000円」）
-  - description: メモの全文
+  - title: Summary from memo content (e.g., "7203.T Purchase Review — Target Price 3000 JPY")
+  - description: Full memo text
   - priority: 3 (Normal)
-- ユーザーが「不要」「スキップ」→ 何もしない
-- **対象は `target` タイプのみ**。thesis/concern/review/lesson/journal/observation では促さない
+- User says "not needed" or "skip" → Do nothing
+- **Only for `target` type**. Do not prompt for thesis/concern/review/lesson/journal/observation
 
-### 知識ドメイン → `/graph-query`
-
-```
-「7203.Tの前回レポートは？」        → /graph-query "7203.Tの前回レポート"
-「繰り返し候補に上がってる銘柄は？」  → /graph-query "繰り返し候補"
-「AAPLのリサーチ履歴」              → /graph-query "AAPLのリサーチ履歴"
-「最近の市況は？」                  → /graph-query "市況"
-「7203.Tの取引履歴」               → /graph-query "7203.Tの取引履歴"
-「NVDAのニュース履歴」              → /graph-query "NVDAのニュース履歴"
-「NVDAのセンチメント推移」           → /graph-query "NVDAのセンチメント推移"
-「NVDAのカタリスト」                → /graph-query "NVDAのカタリスト"
-「7203.TのPER推移」                → /graph-query "7203.TのPER推移"
-「今後のイベント」                  → /graph-query "今後のイベント"
-「マクロ指標の推移」                → /graph-query "マクロ指標の推移"
-「前回のストレステスト結果」          → /graph-query "ストレステスト履歴"
-「フォーキャストの推移」             → /graph-query "フォーキャスト推移"
-「前回の見通し」                    → /graph-query "前回の見通し"
-「アクションアイテム」               → /graph-query "アクションアイテム"
-「タスク一覧」                      → /graph-query "アクションアイテム"
-「やるべきこと」                    → /graph-query "アクションアイテム"
-「7203.Tのアクション」              → /graph-query "7203.Tのアクションアイテム"
-「7203.Tに似た銘柄は？」            → /graph-query "7203.Tのコミュニティ"
-「類似銘柄を見せて」                → /graph-query "銘柄コミュニティ"
-「同じグループの株」                → /graph-query "コミュニティ"
-「関連銘柄」                        → /graph-query "コミュニティ"
-「銘柄の共通点」                    → /graph-query "銘柄の関係性"
-「テーマの推移」                    → /graph-query "テーマトレンド履歴"
-「前回のトレンドテーマ」             → /graph-query "テーマトレンド履歴"
-「どのテーマが熱かった？」           → /graph-query "テーマトレンド履歴"
-```
-
-**判定**: 「前回」「以前」「履歴」「常連」「繰り返し」「市況コンテキスト」「ニュース」「センチメント」「カタリスト」「材料」「バリュエーション推移」「イベント」「指標」「ストレステスト結果」「フォーキャスト推移」「見通し」「アクションアイテム」「タスク」「やるべきこと」「似た銘柄」「類似銘柄」「関連銘柄」「コミュニティ」「同じグループ」「クラスタ」「テーマ推移」「テーマトレンド」「テーマ履歴」などの過去データ・関係性検索意図
-
-### プランモードドメイン → `/plan-execute` (KIK-600)
-
-「プランモードで」「プランで」「プラン立てて」等の発言があった場合、`/plan-execute` スキルを起動する。
-
-- プランモードはすべてのドメインと組み合わせ可能
-- 「PFをチェックして、プランモードで」→ /plan-execute（PFチェックのプランを設計→実行）
-- 「トヨタを調べて、プランで」→ /plan-execute（調査プランを設計→実行）
-- 「PFを改善して、プランモードで」→ /plan-execute → Plan-Checkにエスカレーション
-
-**注意**: スキルを直接指定した場合（`/stock-report 7203.T` 等）はプランニングをスキップして即実行する。
-
-### メタドメイン — システム自体への質問
-
-ユーザーがスキルの使い方やシステムの機能について聞いてきた場合、以下を参照して回答する。
-
-**「何ができるの？」「機能一覧」「使い方」**:
+### Knowledge Domain → `/graph-query`
 
 ```
-このシステムは自然言語で以下のことができます:
-
-🔍 銘柄を探す
-  「いい日本株ある？」「米国の高配当株を探して」「Xで話題の株」
-  → 14の戦略 × 60地域からスクリーニング
-
-📊 銘柄を分析する
-  「トヨタってどう？」「AAPLの還元率は？」
-  → バリュエーション・割安度・株主還元率
-  → 3年間の株主還元率推移（配当+自社株買い）
-  → バリュートラップ判定（低PER+利益減少の警告）
-
-📰 深掘りリサーチ
-  「半導体業界を調べて」「今の相場は？」
-  → Grok API で最新ニュース・Xセンチメント・業界動向
-
-💼 ポートフォリオ管理
-  「PF見せて」「トヨタ100株買った」「ヘルスチェック」
-  → 損益表示・売買記録・構造分析・健全性チェック
-  → ゴールデンクロス/デッドクロス検出
-  → バリュートラップ検出（低PER+利益減少の警告）
-  → 株主還元安定度評価（✅安定/📈増加/⚠️一時的/📉低下）
-  → 小型株アロケーション監視（[小型]バッジ・比率警告・感度引き上げ）
-  → 推定利回り・リバランス・複利シミュレーション
-
-⚡ リスク分析
-  「暴落したらどうなる？」「円安リスクは？」
-  → 8シナリオ × 相関分析 × VaR × 推奨アクション
-
-👀 ウォッチリスト
-  「気になるから記録して」「監視リスト見せて」
-
-📝 投資メモ
-  「トヨタについてメモ」「学びを記録」「メモ一覧」
-  → 投資テーゼ・懸念・学びをノートとして記録・参照
-
-🔎 知識グラフ検索
-  「前回のレポートは？」「常連銘柄は？」「最近の市況は？」
-  → 過去の分析・スクリーニング・取引履歴を自然言語で検索
+"Previous report on 7203.T?"               → /graph-query "7203.T previous report"
+"Stocks that repeatedly come up?"          → /graph-query "recurring candidates"
+"AAPL research history"                    → /graph-query "AAPL research history"
+"Recent market conditions?"                → /graph-query "market conditions"
+"7203.T trade history"                     → /graph-query "7203.T trade history"
+"NVDA news history"                        → /graph-query "NVDA news history"
+"NVDA sentiment trend"                     → /graph-query "NVDA sentiment trend"
+"NVDA catalysts"                           → /graph-query "NVDA catalysts"
+"7203.T P/E trend"                         → /graph-query "7203.T P/E trend"
+"Upcoming events"                          → /graph-query "upcoming events"
+"Macro indicator trends"                   → /graph-query "macro indicator trends"
+"Previous stress test results"             → /graph-query "stress test history"
+"Forecast trend"                           → /graph-query "forecast trend"
+"Previous outlook"                         → /graph-query "previous outlook"
+"Action items"                             → /graph-query "action items"
+"Task list"                                → /graph-query "action items"
+"What should I do?"                        → /graph-query "action items"
+"7203.T actions"                           → /graph-query "7203.T action items"
+"Stocks similar to 7203.T?"               → /graph-query "7203.T community"
+"Show me similar stocks"                   → /graph-query "stock community"
+"Stocks in the same group"                 → /graph-query "community"
+"Related stocks"                           → /graph-query "community"
+"What do these stocks have in common?"     → /graph-query "stock relationships"
+"Theme trends"                             → /graph-query "theme trend history"
+"Previous trending themes"                 → /graph-query "theme trend history"
+"Which themes were hot?"                   → /graph-query "theme trend history"
 ```
 
-**「改善点ある？」「カイゼン」「システムの弱点」**:
+**Trigger**: "previous", "before", "history", "recurring", "repeated", "market context", "news", "sentiment", "catalyst", "material", "valuation trends", "events", "indicators", "stress test results", "forecast trends", "outlook", "action items", "tasks", "what to do", "similar stocks", "related stocks", "community", "same group", "cluster", "theme trend", "theme history", etc.
 
-以下の観点でシステムを分析し、改善提案を出力する:
-1. 全 SKILL.md ファイルを読み込み、カバー範囲と実装状況を確認
-2. `src/core/` のモジュール一覧と、各スキルからの利用状況を照合
-3. テストカバレッジの薄い箇所を特定
-4. intent-routing のキーワード漏れを検出
-5. Linear の未完了 issue を確認
-6. 改善提案をカテゴリ（新機能/UX改善/バグ修正/ドキュメント）× 優先度（High/Medium/Low）で整理
+### Plan Mode Domain → `/plan-execute` (KIK-600)
 
-提案に同意があれば Linear issue を作成する。
+When the user says "in plan mode", "plan it", "make a plan", etc., activate the `/plan-execute` skill.
+
+- Plan mode can be combined with all domains
+- "Check the PF, in plan mode" → /plan-execute (design and execute PF check plan)
+- "Look up Toyota, plan mode" → /plan-execute (design and execute research plan)
+- "Improve the PF, plan mode" → /plan-execute → escalate to Plan-Check
+
+**Note**: When a skill is directly specified (e.g., `/stock-report 7203.T`), skip planning and execute immediately.
+
+### Meta Domain — Questions About the System Itself
+
+When the user asks about how to use skills or the system's features, refer to the following to answer.
+
+**"What can it do?", "Feature list", "How to use"**:
+
+```
+This system can do the following in natural language:
+
+🔍 Find Stocks
+  "Any good Japanese stocks?" "Find US high-dividend stocks" "Trending stocks"
+  → Screening across 14 strategies × 60 regions
+
+📊 Analyze Stocks
+  "How is Toyota?" "What's AAPL's return rate?"
+  → Valuation, undervaluation, shareholder return rate
+  → 3-year shareholder return history (dividends + buybacks)
+  → Value trap assessment (low P/E + declining earnings warning)
+
+📰 Deep Research
+  "Look up the semiconductor industry" "What's the market like now?"
+  → Latest news, X sentiment, industry trends via Grok API
+
+💼 Portfolio Management
+  "Show me the PF" "I bought 100 Toyota shares" "Health check"
+  → P/L display, trade recording, structural analysis, health check
+  → Golden Cross/Dead Cross detection
+  → Value trap detection (low P/E + declining earnings warning)
+  → Shareholder return stability assessment (✅stable/📈increasing/⚠️temporary/📉declining)
+  → Small-cap allocation monitoring ([small] badge, ratio warning, sensitivity escalation)
+  → Estimated yield, rebalancing, compound interest simulation
+
+⚡ Risk Analysis
+  "What happens in a crash?" "What about yen weakness risk?"
+  → 8 scenarios × correlation analysis × VaR × recommended actions
+
+👀 Watchlist
+  "Record it because I'm interested" "Show me the monitoring list"
+
+📝 Investment Memos
+  "Memo about Toyota" "Record the lesson" "Memo list"
+  → Record and reference investment theses, concerns, and lessons as notes
+
+🔎 Knowledge Graph Search
+  "What was the previous report?" "Recurring stocks?" "Recent market conditions?"
+  → Search past analysis, screenings, and trade history in natural language
+```
+
+**"Any improvements?", "Kaizen", "System weaknesses"**:
+
+Analyze the system from the following perspectives and output improvement proposals:
+1. Read all SKILL.md files, confirm coverage and implementation status
+2. Cross-reference `src/core/` module list with usage from each skill
+3. Identify areas with thin test coverage
+4. Detect missing keywords in intent-routing
+5. Check incomplete Linear issues
+6. Organize proposals by category (new features/UX improvements/bug fixes/documentation) × priority (High/Medium/Low)
+
+Create a Linear issue if the proposal is agreed upon.
 
 ---
 
-## コンテキスト引き継ぎルール
+## Context Carry-Over Rules
 
-直前の会話で特定の銘柄や操作結果が出ている場合、省略された情報を補完する。
+When a specific stock or operation result appears in the previous conversation, fill in omitted information.
 
-| 直前のアクション | ユーザーの発言 | 推論 |
+| Previous Action | User Statement | Inference |
 |:---|:---|:---|
-| `/stock-report 7203.T` を実行 | 「ウォッチリストに入れて」 | → `/watchlist add <list> 7203.T` |
-| `/stock-report 7203.T` を実行 | 「もっと詳しく」 | → `/market-research stock 7203.T` |
-| `/stock-report 7203.T` を実行 | 「ストレステストして」 | → `/stress-test --portfolio 7203.T` |
-| `/screen-stocks` の結果表示後 | 「1位の銘柄を調べて」 | → `/stock-report <1位のシンボル>` |
-| `/stock-portfolio health` で EXIT | 「代わりを探して」 | → `/screen-stocks`（同セクター/リージョンで） |
-| `/stock-portfolio forecast` 実行後 | 「シミュレーションも見たい」 | → `/stock-portfolio simulate` |
-| `/stock-portfolio health` でバリュートラップ検出 | 「詳しく見たい」 | → `/stock-report <該当銘柄>` |
-| `/screen-stocks shareholder-return` で ⚠️ 表示 | 「⚠️の銘柄を詳しく」 | → `/stock-report <該当銘柄>` |
-| `/screen-stocks shareholder-return` 結果表示後 | 「安定してるやつだけ見たい」 | → 結果から ✅/📈 のみフィルタ |
-| `/stock-portfolio buy` で購入記録 | 「メモしておいて」「投資理由を記録」 | → `/investment-note save --symbol <銘柄> --type thesis --content ...` |
-| `/stock-portfolio health` で EXIT 判定 | 「学びを記録」「反省メモ」 | → `/investment-note save --symbol <銘柄> --type lesson --content ...` |
-| `/stock-portfolio health` で EXIT 判定 | 「具体的にどうすれば？」「処方箋出して」「どうしたらいい」「改善して」「アドバイス」 | → `/stock-portfolio adjust` |
-| `/stock-portfolio health` で EXIT 判定 | 「売って乗り換えたい」「代替を買ったらどうなる？」 | → `what-if --remove "<EXIT銘柄>:SHARES" --add "<代替>:SHARES:PRICE"` |
-| `what-if --remove` 実行後 | 「代替を探して」「乗り換え先を調べて」 | → `/screen-stocks`（同セクターで） |
-| `/graph-query` で過去レポート表示 | 「最新も見たい」「今はどう？」 | → `/stock-report <銘柄>` |
-| `/investment-note list` でメモ表示 | 「この銘柄を調べて」 | → `/stock-report <銘柄>` |
-| `/stock-report` でレポート生成 | 「懸念をメモしておいて」 | → `/investment-note save --symbol <銘柄> --type concern --content ...` |
-| `/screen-stocks` の結果表示後 | 「前にも出てきた？」「繰り返し候補？」 | → `/graph-query "よく出る銘柄"` |
-| `/stock-report 7203.T` を実行 | 「似た銘柄は？」「同じグループの株」 | → `/graph-query "7203.Tのコミュニティ"` |
-| `/stock-portfolio health` でコミュニティ集中警告 | 「どう直す？」「分散化したい」 | → コミュニティメンバー確認 → 別コミュニティの代替候補を提案 |
+| Ran `/stock-report 7203.T` | "Add to watchlist" | → `/watchlist add <list> 7203.T` |
+| Ran `/stock-report 7203.T` | "Tell me more" | → `/market-research stock 7203.T` |
+| Ran `/stock-report 7203.T` | "Run a stress test" | → `/stress-test --portfolio 7203.T` |
+| After `/screen-stocks` result | "Look up the #1 stock" | → `/stock-report <#1 symbol>` |
+| EXIT in `/stock-portfolio health` | "Find an alternative" | → `/screen-stocks` (same sector/region) |
+| After `/stock-portfolio forecast` | "I want to see the simulation too" | → `/stock-portfolio simulate` |
+| Value trap detected in `/stock-portfolio health` | "I want to see more detail" | → `/stock-report <relevant stock>` |
+| ⚠️ in `/screen-stocks shareholder-return` result | "Tell me more about the ⚠️ stock" | → `/stock-report <relevant stock>` |
+| After `/screen-stocks shareholder-return` result | "I only want to see stable ones" | → Filter ✅/📈 from results |
+| After purchase recorded with `/stock-portfolio buy` | "Memo it", "record the investment rationale" | → `/investment-note save --symbol <stock> --type thesis --content ...` |
+| EXIT judgment in `/stock-portfolio health` | "Record the lesson", "reflection memo" | → `/investment-note save --symbol <stock> --type lesson --content ...` |
+| EXIT judgment in `/stock-portfolio health` | "What specifically should I do?", "Give me a prescription", "What should I do", "Improve it", "Advice" | → `/stock-portfolio adjust` |
+| EXIT judgment in `/stock-portfolio health` | "I want to sell and switch", "What happens if I buy the alternative?" | → `what-if --remove "<EXIT stock>:SHARES" --add "<alternative>:SHARES:PRICE"` |
+| After `what-if --remove` | "Find an alternative", "Look for a replacement" | → `/screen-stocks` (same sector) |
+| Past report shown via `/graph-query` | "I want to see the latest too", "How is it now?" | → `/stock-report <stock>` |
+| Memos shown via `/investment-note list` | "Look up this stock" | → `/stock-report <stock>` |
+| Report generated with `/stock-report` | "Memo the concerns" | → `/investment-note save --symbol <stock> --type concern --content ...` |
+| After `/screen-stocks` results | "Has it come up before?", "Is it a recurring candidate?" | → `/graph-query "frequently appearing stocks"` |
+| Ran `/stock-report 7203.T` | "Similar stocks?", "Stocks in the same group" | → `/graph-query "7203.T community"` |
+| Community concentration warning in `/stock-portfolio health` | "How to fix?", "I want to diversify" | → Confirm community members → propose alternative candidates from a different community |
 
 ---
 
-## 複合意図の自動連鎖
+## Multi-Intent Auto-Chaining
 
-1つの発言に複数の意図が含まれる場合、適切な順序で実行して結果を統合する。
+When a single statement contains multiple intents, execute them in an appropriate order and integrate the results.
 
-**パターンは固定しない** — 以下は代表例であり、ユーザーの意図に応じて柔軟に組み合わせる。
+**Patterns are not fixed** — the following are representative examples; combine flexibly based on user intent.
 
-### 診断 → 対策
+### Diagnose → Countermeasure
 ```
-「PFのリスクを確認して、やばい銘柄があれば代わりを探して」
+"Check PF risks, if there are problematic stocks find alternatives"
 → 1. /stock-portfolio health
-→ 2. EXIT 銘柄があれば /screen-stocks で代替候補を検索
-→ 3. 代替候補が見つかったら what-if --remove "<EXIT銘柄>:SHARES" --add "<代替>:SHARES:PRICE" を必ず実行してから提案（KIK-450）
+→ 2. If EXIT stocks exist, search for alternatives with /screen-stocks
+→ 3. If alternative candidates found, run what-if --remove "<EXIT stock>:SHARES" --add "<alternative>:SHARES:PRICE" before proposing (KIK-450)
 ```
 
-### 売買 → 確認
+### Trade → Confirm
 ```
-「トヨタ100株買った、バランス見て」
+"I bought 100 Toyota shares, check the balance"
 → 1. /stock-portfolio buy
 → 2. /stock-portfolio analyze
 ```
 
-### 全体診断
+### Full Diagnosis
 ```
-「総合的にPFチェックして」
-→ 1. /stock-portfolio snapshot（現況）
-→ 2. /stock-portfolio health（健全性）
-→ 3. /stock-portfolio forecast（見通し）
-→ 4. 問題があれば /stock-portfolio rebalance で改善案
+"Do a comprehensive PF check"
+→ 1. /stock-portfolio snapshot (current status)
+→ 2. /stock-portfolio health (health)
+→ 3. /stock-portfolio forecast (outlook)
+→ 4. If issues found, improvement plan with /stock-portfolio rebalance
 ```
 
-### リサーチ → 投資判断
+### Research → Investment Decision
 ```
-「半導体業界を調べて、有望な銘柄を探して」
-→ 1. /market-research industry 半導体
+"Look up the semiconductor industry and find promising stocks"
+→ 1. /market-research industry semiconductors
 → 2. /screen-stocks --sector Technology
 ```
 
-### 市場確認 → PF判断
+### Market Check → PF Judgment
 ```
-「今の相場状況を確認して、PF大丈夫か見て」
+"Check the current market, see if the PF is OK"
 → 1. /market-research market
 → 2. /stock-portfolio health
-→ 3. 市場環境を踏まえた判断を補足
+→ 3. Supplement with judgment informed by market environment
 ```
 
-### 見通し → 将来予測
+### Outlook → Future Projection
 ```
-「PFの見通しを確認して、5年後のシミュレーションも」
+"Check the PF outlook and simulate 5 years out"
 → 1. /stock-portfolio forecast
 → 2. /stock-portfolio simulate --years 5
 ```
 
-### 売買 → 記録
+### Trade → Record
 ```
-「トヨタ100株買った、理由もメモして」
+"I bought 100 Toyota shares, also memo the reason"
 → 1. /stock-portfolio buy --symbol 7203.T --shares 100 --price ...
 → 2. /investment-note save --symbol 7203.T --type thesis --content ...
 ```
 
-### リサーチ → 記録
+### Research → Record
 ```
-「トヨタを調べて、気になる点をメモして」
+"Look up Toyota and memo what I'm concerned about"
 → 1. /stock-report 7203.T
 → 2. /investment-note save --symbol 7203.T --type observation --content ...
 ```
 
-### 知識グラフ → 最新分析
+### Knowledge Graph → Latest Analysis
 ```
-「前に調べた銘柄の最新状況を確認して」
-→ 1. /graph-query "前に調べた銘柄"
-→ 2. 結果の銘柄に /stock-report を実行
+"Check the latest status of the stocks I looked up before"
+→ 1. /graph-query "stocks I looked up before"
+→ 2. Run /stock-report on the resulting stocks
 ```
 
 ---
 
-## 曖昧な場合の対応
+## Handling Ambiguous Cases
 
-意図が不明確な場合は、選択肢を短く提示して確認する。
-
-```
-ユーザー: 「配当について」
-
-→ どちらの意味ですか？
-  1. 高配当銘柄を探す（スクリーニング）
-  2. 特定銘柄の配当・還元率を確認する（レポート）
-  3. PFの配当利回りを確認する（フォーキャスト）
-```
+When intent is unclear, briefly present options and confirm.
 
 ```
-ユーザー: 「バリュートラップじゃないか確認して」
+User: "About dividends"
 
-→ 対象による:
-  1. 保有銘柄全体 → /stock-portfolio health（バリュートラップ検出付き）
-  2. 特定の銘柄 → /stock-report（個別バリュートラップ判定）
+→ Which meaning?
+  1. Find high-dividend stocks (screening)
+  2. Check dividends/return rate for a specific stock (report)
+  3. Check portfolio dividend yield (forecast)
 ```
 
 ```
-ユーザー: 「メモを見せて」
+User: "Check if it's a value trap"
 
-→ どちらの意味ですか？
-  1. 特定銘柄のメモ → /investment-note list --symbol <銘柄>
-  2. 全メモ一覧 → /investment-note list
-  3. 過去の分析記録 → /graph-query "過去のレポート"
+→ Depends on the target:
+  1. All holdings → /stock-portfolio health (with value trap detection)
+  2. A specific stock → /stock-report (individual value trap assessment)
 ```
 
-ただし、文脈から明らかに判断できる場合は確認せずに実行する。
+```
+User: "Show me the memos"
+
+→ Which meaning?
+  1. Memos for a specific stock → /investment-note list --symbol <stock>
+  2. All memos → /investment-note list
+  3. Past analysis records → /graph-query "past reports"
+```
+
+However, when the answer is obvious from context, execute without asking for confirmation.

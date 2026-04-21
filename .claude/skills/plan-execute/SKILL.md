@@ -1,263 +1,263 @@
 ---
 name: plan-execute
-description: プランモード — Orchestrator がワークフロー設計・実行・自律ループ・レビューを統括する。「プランモードで」と言われたときに起動。
+description: Plan Mode — Orchestrator oversees workflow design, execution, autonomous loop, and review. Activated when told "in plan mode."
 user_invocable: true
 ---
 
-# Plan-Execute スキル v2 (KIK-609)
+# Plan-Execute Skill v2 (KIK-609)
 
-Orchestrator が中心となり、7名のエージェント体制でワークフロー設計→実行→自律ループ→レビューを行う。
+The Orchestrator leads a 7-agent team to carry out workflow design → execution → autonomous loop → review.
 
-## トリガー
+## Trigger
 
-「プランモードで」「プランで」「プラン立てて」「プランモードで実行」等の発言。
+Phrases such as "in plan mode," "plan it," "make a plan," "execute in plan mode," etc.
 
-## エージェント構成（7名）
+## Agent Configuration (7 agents)
 
-| エージェント | タイプ | 役割 | 参加条件 |
+| Agent | Type | Role | Participation |
 |:---|:---|:---|:---|
-| **Orchestrator** | 親+ファシリテーター | プラン策定・実行指示・結果評価・自律ループ判断・レビュー統合 | 常時 |
-| **Context Analyst** | 実行補助 | 金融市場の歴史的文脈 + マクロ環境を一体で事前分析（LLMの知識活用） | 投資判断時 |
-| **Strategist** | Plan | ワークフロー設計。Growth/Value/Macro/Contrarian の4視点で選択肢を設計 | 常時 |
-| **Lesson Checker** | Plan | 過去のlesson（制約条件）がワークフローに反映されているかチェック | 常時 |
-| **Devil's Advocate** | Plan | 盲点・バイアス・見落とし・逆張り視点を指摘 | 常時 |
-| **Quantitative Reviewer** | Review | 定量チェック + Gate Keeper機能（数値整合性・税コスト・通貨配分・単元株・制約充足・全ステップ実行確認） | 常時 |
-| **Qualitative + Risk Reviewer** | Review | 定性チェック（テーゼ整合・conviction尊重・カタリスト）+ リスク（地政学・マクロ・市場過熱・PF構造・銘柄固有） | 常時 |
+| **Orchestrator** | Parent + Facilitator | Plan formulation, execution instructions, result evaluation, autonomous loop judgment, review integration | Always |
+| **Context Analyst** | Execution support | Pre-analyzes historical context of financial markets + macro environment as a unit (leverages LLM knowledge) | On investment decisions |
+| **Strategist** | Plan | Workflow design. Designs options from 4 perspectives: Growth / Value / Macro / Contrarian | Always |
+| **Lesson Checker** | Plan | Checks whether past lessons (constraints) are reflected in the workflow | Always |
+| **Devil's Advocate** | Plan | Points out blind spots, biases, oversights, and contrarian perspectives | Always |
+| **Quantitative Reviewer** | Review | Quantitative checks + Gate Keeper function (numerical consistency, tax costs, currency allocation, lot size, constraint satisfaction, confirmation that all steps were executed) | Always |
+| **Qualitative + Risk Reviewer** | Review | Qualitative checks (thesis alignment, respecting conviction, catalysts) + risk (geopolitical, macro, market overheating, PF structure, stock-specific) | Always |
 
-### Orchestrator ルール
+### Orchestrator Rules
 
-- **定量根拠義務**: エージェントの指摘を却下する場合、必ず定量根拠を明示する。「感覚的に小さい」「影響は限定的」は禁止。PF比率・閾値との比較を数値で示すこと
-- **自律進行**: Phase間の移行はユーザー確認なしで進行。確認は Phase 6 のアクション実行承認のみ
-- **プログレス表示**: 各Phase開始時にユーザーに1行の進捗を表示する:
+- **Quantitative basis requirement**: When rejecting an agent's input, always provide quantitative justification. "Feels small" or "impact is limited" are prohibited. Show PF ratios and comparisons against thresholds as numbers.
+- **Autonomous progression**: Phase transitions proceed without user confirmation. Confirmation is only required for action execution approval in Phase 6.
+- **Progress display**: Display a one-line progress update to the user at the start of each Phase:
   ```
-  [1/6] コンテキスト取得中...
-  [2/6] ワークフロー設計中...
-  [3/6] 分析実行中...
-  [4/6] 結果評価中（自律ループ）...
-  [5/6] レビュー中...
-  [6/6] 最終レポート作成中...
+  [1/6] Retrieving context...
+  [2/6] Designing workflow...
+  [3/6] Executing analysis...
+  [4/6] Evaluating results (autonomous loop)...
+  [5/6] Reviewing...
+  [6/6] Generating final report...
   ```
 
-## 動作フロー
+## Execution Flow
 
 ### Phase 1: Pre-Plan
 
-1. `python3 scripts/get_context.py "<ユーザー入力>"` でグラフコンテキストを取得
-2. `python3 scripts/extract_constraints.py "<ユーザー入力>"` でlesson制約を取得（投資判断の可能性がある場合）
-3. `config/user_profile.yaml` からユーザー前提設定を参照（ファイルがない場合はデフォルト値）
-4. 投資判断を伴う場合 → **Context Analyst** に金融市場の歴史的文脈を取得させる
-5. **直近イベントスキャン**: 保有銘柄の決算日・材料を WebSearch または yfinance で事前確認。決算7日以内の銘柄がある場合、Phase 2 の Strategist に「決算タイミングを考慮した設計」を指示。
-6. **対象銘柄の個別コンテキスト取得**: PF全体クエリだけでなく、アクション対象になりそうな銘柄ごとに `get_context.py` を実行し、過去のメモ・テーゼ・lesson を取得。
+1. Run `python3 scripts/get_context.py "<user input>"` to retrieve graph context
+2. Run `python3 scripts/extract_constraints.py "<user input>"` to get lesson constraints (when an investment decision is possible)
+3. Reference user assumptions from `config/user_profile.yaml` (use defaults if file does not exist)
+4. If an investment decision is involved → have **Context Analyst** retrieve historical context of financial markets
+5. **Recent event scan**: Pre-check earnings dates and catalysts for held stocks via WebSearch or yfinance. If any stock has earnings within 7 days, instruct Phase 2 Strategist to "design workflow considering earnings timing."
+6. **Individual context retrieval for target stocks**: In addition to the full PF query, run `get_context.py` for each stock likely to be an action target to retrieve past memos, theses, and lessons.
 
-#### Context Analyst の観点
+#### Context Analyst Perspectives
 
-| カテゴリ | 例 |
+| Category | Examples |
 |:---|:---|
-| 市場サイクル | 「2022年FRB利上げでグロース-30%」「利上げ停止後12ヶ月で+15%」 |
-| テーマの歴史 | 「AIテーマは2023年開始、2024年バブル懸念、2025年実需で再評価」 |
-| バブルパターン | 「ITバブル(2000年)のPER100超 vs 現在のAI半導体PER100超」 |
-| 地政学の前例 | 「2018年米中貿易戦争でAMZN-20%」「2022年ロシアウクライナでエネルギー急騰」 |
-| F&Gの歴史 | 「F&G80超が1ヶ月持続後の調整は平均-8%、回復45日」 |
-| 金利サイクル | 「利上げ停止→最初の利下げまでの期間、株式は歴史的に好調」 |
+| Market cycle | "Fed rate hikes in 2022 caused growth stocks -30%"; "15 months after hike pause: +15%" |
+| Theme history | "AI theme started in 2023, bubble concerns in 2024, re-evaluated on real demand in 2025" |
+| Bubble patterns | "Dot-com bubble (2000) P/E >100 vs. current AI semiconductor P/E >100" |
+| Geopolitical precedents | "2018 US-China trade war: AMZN -20%"; "2022 Russia-Ukraine: energy surge" |
+| F&G history | "Average correction after F&G >80 sustained for 1 month: -8%, recovery 45 days" |
+| Rate cycle | "Between rate hike pause and first cut, equities historically perform well" |
 
-### Phase 2: Plan（3名並列）
+### Phase 2: Plan (3 agents in parallel)
 
-Strategist + Lesson Checker + Devil's Advocate を並列起動。
+Launch Strategist + Lesson Checker + Devil's Advocate in parallel.
 
-#### Strategist の4視点
+#### Strategist's 4 Perspectives
 
-Strategist は以下の4視点でワークフローを設計する（独立エージェントではなく1名で4視点を内包）:
+The Strategist designs the workflow from 4 perspectives (not separate agents — one agent with 4 perspectives):
 
-- **Growth視点**: EPS成長率、テーマの初動、Forward PER
-- **Value視点**: PER/PBR、割安度スコア、配当利回り
-- **Macro視点**: 金利サイクル、F&G、セクターローテーション
-- **Contrarian視点**: コンセンサスに流されていないか、見落としはないか
+- **Growth perspective**: EPS growth rate, theme early-stage signals, Forward PER
+- **Value perspective**: P/E, P/B, undervaluation score, dividend yield
+- **Macro perspective**: Rate cycle, F&G, sector rotation
+- **Contrarian perspective**: Is the analysis being swept along by consensus? Any oversights?
 
-#### Strategist の追加必須観点
+#### Strategist's Additional Required Perspectives
 
-- **キャッシュ等価物の棚卸し**: PF内のMMF・短期債ETF（SHV等）について「保有継続（利回り確保）vs 現金化（柔軟性向上）」を検討。キャッシュ温存戦略時は特に重要
-- **ETFアクション候補**: GLDM/JEPI/SHV等のETFについても、アクション対象として検討する（ヘルスチェックで「問題なし」でも戦略的に不要なら売却候補）
-- **PF全銘柄の役割分類**: リスク資産/安全資産/キャッシュ等価物に分類し、アクション対象外の銘柄にも「ホールド理由」を明記
+- **Cash-equivalent inventory**: For MMFs and short-term bond ETFs (SHV, etc.) in the PF, consider "continue holding (secure yield) vs. liquidate (improve flexibility)." Especially important in cash-preservation strategies.
+- **ETF action candidates**: ETFs like GLDM/JEPI/SHV are also considered as action targets (even if health check shows "no issues," they can be sell candidates if not needed strategically).
+- **Role classification of all PF holdings**: Classify as risk assets / safe assets / cash equivalents and explicitly state "reason to hold" for stocks not targeted for action.
 
-Orchestrator は3名の結果を統合し、Lesson Checker が FAIL の場合はワークフローを修正（最大2回）。
+The Orchestrator integrates results from the 3 agents and revises the workflow if Lesson Checker returns FAIL (up to 2 times).
 
 ### Phase 3: Execute
 
-プランに従ってスキル/スクリプトを順次実行する。
+Execute skills/scripts sequentially according to the plan.
 
-### Phase 4: 結果評価 + 自律ループ
+### Phase 4: Result Evaluation + Autonomous Loop
 
-Orchestrator が実行結果を評価し、必要に応じて追加実行・プラン修正を自律的に行う。
+The Orchestrator evaluates execution results and autonomously performs additional execution and plan revisions as needed.
 
-| 評価結果 | アクション |
+| Evaluation Result | Action |
 |:---|:---|
-| 問題なし | Phase 5（Review）へ進む |
-| 情報不足を検出 | 追加スクリプトをピンポイント実行 → Phase 4に戻る |
-| 新事実が判明（決算日等） | プランを修正 → Phase 3に戻る |
-| アクション候補を検出 | what-if を自動実行して数値付き提案を生成 → Phase 4に戻る |
+| No issues | Proceed to Phase 5 (Review) |
+| Information gap detected | Run additional scripts pinpoint → return to Phase 4 |
+| New fact revealed (earnings date, etc.) | Revise plan → return to Phase 3 |
+| Action candidate detected | Auto-run what-if and generate numerical proposal → return to Phase 4 |
 
-#### 自律ループの具体例
+#### Autonomous Loop Examples
 
-**例1: 決算日判明**
-Phase 3で health 実行 → Phase 4で「NFLX決算が今日と判明」
-→ Orchestrator: 「NFLX利確をプランから除外」→ Phase 3に戻り修正プランで再実行
+**Example 1: Earnings date discovered**
+Phase 3 runs health → Phase 4 reveals "NFLX earnings are today"
+→ Orchestrator: "Remove NFLX take-profit from plan" → return to Phase 3 and re-execute with revised plan
 
-**例2: 含み益集中検出**
-Phase 3で health 実行 → Phase 4で「AMZN含み益68%集中を検出」
-→ Orchestrator: what-if --remove "AMZN:5" と "AMZN:7" を自動実行 → 比較表生成 → Phase 5へ
+**Example 2: Unrealized gain concentration detected**
+Phase 3 runs health → Phase 4 detects "AMZN unrealized gains 68% concentrated"
+→ Orchestrator: auto-runs what-if --remove "AMZN:5" and "AMZN:7" → generates comparison table → proceed to Phase 5
 
-**例3: テーマギャップ検出**
-Phase 3で health 実行 → Phase 4で「AIテーマのみ、他テーマ0%」
-→ Orchestrator: テーマ別候補スクリーニングを追加実行 → Phase 5へ
+**Example 3: Theme gap detected**
+Phase 3 runs health → Phase 4 detects "AI theme only, all other themes at 0%"
+→ Orchestrator: adds theme-specific candidate screening → proceed to Phase 5
 
-#### 自律ループの制限
-- 最大2回まで追加実行/プラン修正
-- 3回目は打ち切りしてPhase 5へ進む
+#### Autonomous Loop Limits
+- Additional execution / plan revision: up to 2 times
+- On the 3rd attempt, cut off and proceed to Phase 5
 
-#### 自律調査ルール（厳守）
+#### Autonomous Research Rules (strictly observed)
 
-- 新事実検出時（決算結果・急騰急落・ニュース等）→ **WebSearch で即座に調査**。ユーザーに「確認しますか？」と聞かない
-- 情報収集・追加分析の要否をユーザーに確認しない
-- ユーザーへの確認は Phase 6（最終まとめ）でアクション実行の承認を得る時のみ
-- Phase 1→2→3→4→5→6 はユーザー確認なしで自律進行
-- ユーザーに中断権はある（いつでも「止めて」で停止）
+- When a new fact is detected (earnings result, surge/plunge, news) → **immediately research via WebSearch**. Do not ask the user "Should I check this?"
+- Do not ask the user whether to collect information or conduct additional analysis
+- Only ask the user for confirmation in Phase 6 (final summary) to obtain approval for action execution
+- Phase 1→2→3→4→5→6 proceeds autonomously without user confirmation
+- Users retain the right to interrupt (say "stop" at any time)
 
-#### 情報収集の優先順位
+#### Information Collection Priority
 
-| 優先度 | 手段 | 所要時間 | 用途 |
+| Priority | Method | Time | Use Case |
 |:---|:---|:---|:---|
-| 1st | WebSearch | 数秒 | 決算結果・ニュース・速報の即時確認 |
-| 2nd | yfinance | 数秒 | 株価・財務データ・決算日の取得 |
-| 3rd | run_research.py | 30-60秒 | Grok API での深掘りリサーチ（詳細が必要な場合のみ） |
+| 1st | WebSearch | Seconds | Immediate confirmation of earnings results, news, breaking news |
+| 2nd | yfinance | Seconds | Stock prices, financial data, earnings date retrieval |
+| 3rd | run_research.py | 30-60s | Deep research via Grok API (only when detail is needed) |
 
-### Phase 5: Review（2名並列）
+### Phase 5: Review (2 agents in parallel)
 
-Quantitative Reviewer + Qualitative/Risk Reviewer を並列起動。
+Launch Quantitative Reviewer + Qualitative/Risk Reviewer in parallel.
 
-#### Quantitative Reviewer のチェックリスト（Gate Keeper機能含む）
+#### Quantitative Reviewer Checklist (including Gate Keeper function)
 
-| チェック | 判定 |
+| Check | Verdict |
 |:---|:---|
-| Orchestratorの全ステップが実行されたか | PASS/FAIL |
-| 問題検出時にアクション提案があるか | PASS/FAIL |
-| 提案に株数・金額・税コストが含まれているか | PASS/FAIL |
-| 単元株が正しいか（日本株100株単位、SGX100株単位等） | PASS/FAIL |
-| 通貨配分60%上限を超えていないか | PASS/FAIL |
-| user_profileの前提が参照されているか | PASS/FAIL |
-| 数値の整合性（what-if資金収支、HHI変化等） | PASS/FAIL |
-| 税コスト計算が正確か（購入時為替レート考慮） | PASS/FAIL |
+| Were all Orchestrator steps executed? | PASS/FAIL |
+| Is there an action proposal when an issue is detected? | PASS/FAIL |
+| Does the proposal include share count, amount, and tax cost? | PASS/FAIL |
+| Are lot sizes correct? (Japan: 100 shares, SGX: 100 shares, etc.) | PASS/FAIL |
+| Does currency allocation stay within 60% limit? | PASS/FAIL |
+| Are user_profile assumptions referenced? | PASS/FAIL |
+| Numerical consistency (what-if fund balance, HHI changes, etc.)? | PASS/FAIL |
+| Is tax cost calculation accurate (including purchase FX rate)? | PASS/FAIL |
 
-#### Qualitative + Risk Reviewer の観点
+#### Qualitative + Risk Reviewer Perspectives
 
-**定性チェック:**
-- テーゼとの整合性（利確理由がテーゼ崩壊に基づいているか、テクニカルだけか）
-- lesson/conviction尊重（ユーザーが確信を持って購入した銘柄を数値だけで否定していないか）
-- カタリスト検証（決算日、材料、テーマ動向を確認しているか）
-- テーマの妥当性（推奨テーマが市場環境と整合しているか）
+**Qualitative checks:**
+- Thesis alignment (is the take-profit reason based on thesis breakdown, or purely technical?)
+- Respecting lesson/conviction (is the analysis rejecting a stock the user bought with conviction based on numbers alone?)
+- Catalyst verification (have earnings dates, catalysts, and theme trends been confirmed?)
+- Theme validity (does the recommended theme align with the market environment?)
 
-**リスクチェック:**
-- 地政学リスク（米中対立、台湾有事、中東情勢、制裁 → PF銘柄のサプライチェーン影響）
-- マクロリスク（金利、為替、インフレ、リセッション確率）
-- 市場リスク（F&G過熱、VIX急騰、決算シーズン）
-- PF構造リスク（通貨集中、セクター集中、テーマ集中、含み益集中）
-- 銘柄固有リスク（流動性、規制、カントリーリスク）
+**Risk checks:**
+- Geopolitical risk (US-China tensions, Taiwan conflict, Middle East situation, sanctions → supply chain impact on PF stocks)
+- Macro risk (interest rates, FX, inflation, recession probability)
+- Market risk (F&G overheating, VIX spike, earnings season)
+- PF structural risk (currency concentration, sector concentration, theme concentration, unrealized gain concentration)
+- Stock-specific risk (liquidity, regulation, country risk)
 
-#### レビューFAIL時の対応
-- FAIL → Orchestrator が不足分を特定し、**不足分のみ**再実行（全やり直しではない）
-- 例: Quantitative FAIL（税コスト未反映）、Qualitative PASS → 税コスト計算のみ追加 → Quantitative のみ再レビュー
+#### Handling Review FAIL
+- FAIL → Orchestrator identifies deficiencies and re-executes **only the deficient parts** (not a full redo)
+- Example: Quantitative FAIL (tax cost not reflected), Qualitative PASS → add only tax cost calculation → re-review Quantitative only
 
-### Phase 6: 最終まとめ
+### Phase 6: Final Summary
 
-全 PASS → Orchestrator が以下の8セクション構成で最終レポートを提示。
+All PASS → Orchestrator presents the final report in the following 8-section structure.
 
-#### 必須8セクション
+#### Required 8 Sections
 
-1. **エグゼクティブサマリー**（1-2行の結論）
-2. **PF現状スコアカード**（テーブル1つ: 総額/銘柄数/損益率/F&G/VIX/USD比率）
-3. **要アクション**（優先度順、各アクションに株数・金額・税コスト・出口戦略をセットで）
-4. **候補銘柄リスト**（「今は買わない」場合でも提示。最低投資額・テーマ・地域・PER付き）
-5. **「何もしない」との比較**（各アクションの期待値 vs ホールドの期待値）
-6. **リスクマップ**（高/中/低の3段階。地政学・マクロ・市場・PF構造・銘柄固有）
-7. **未解決事項**（Review で WARN 付きだった項目）
-8. **次回チェックポイント**（いつ何を確認すべきか）
+1. **Executive Summary** (1-2 line conclusion)
+2. **PF Current Scorecard** (one table: total value / number of stocks / P/L ratio / F&G / VIX / USD ratio)
+3. **Required Actions** (in priority order; each action includes share count, amount, tax cost, and exit strategy)
+4. **Candidate Stock List** (presented even if "not buying now." Includes minimum investment, theme, region, P/E)
+5. **Comparison with "Do Nothing"** (expected value of each action vs. expected value of hold)
+6. **Risk Map** (3 levels: high/medium/low. Geopolitical / macro / market / PF structure / stock-specific)
+7. **Unresolved Items** (items flagged with WARN in Review)
+8. **Next Checkpoint** (what to check and when)
 
-## Phase間の出力スキーマ
+## Inter-Phase Output Schema
 
-各Phaseは以下の必須フィールドを次Phaseに渡す:
+Each Phase passes the following required fields to the next Phase:
 
-| Phase | 必須出力 |
+| Phase | Required Output |
 |:---|:---|
 | Phase 1 | context, constraints[], user_profile, upcoming_events[] |
 | Phase 2 | workflow_steps[], lesson_check: PASS/FAIL, devils_advocate_concerns[] |
 | Phase 3 | health_results, screening_candidates[], what_if_results[], market_data |
 | Phase 4 | revised_plan?, additional_findings[], action_proposals[], autonomous_research[] |
 | Phase 5 | quantitative: PASS/FAIL + reasons[], qualitative: PASS/FAIL + reasons[] |
-| Phase 6 | 必須8セクションレポート |
+| Phase 6 | Required 8-section report |
 
-### リトライルール
+### Retry Rules
 
-| フェーズ | 最大回数 | 超過時 |
+| Phase | Max Count | On Exceeding |
 |:---|:---|:---|
-| Phase 2 Lesson Checker FAIL | 2回 | WARN付きで続行 |
-| Phase 4 自律ループ | 2回 | Phase 5に進む |
-| Phase 5 レビューFAIL | 2回 | WARN付きで出力 |
+| Phase 2 Lesson Checker FAIL | 2 times | Continue with WARN |
+| Phase 4 Autonomous Loop | 2 times | Proceed to Phase 5 |
+| Phase 5 Review FAIL | 2 times | Output with WARN |
 
-3回目のFAILは打ち切り: 「⚠️ 以下の点が未解決ですが結果を提示します」
+3rd FAIL is cut off: "⚠️ The following items are unresolved but results are presented"
 
-## 問題検出→自動提案トリガー（Phase 4で適用）
+## Issue Detection → Auto-Proposal Triggers (applied in Phase 4)
 
-| 検出内容 | 自動提案内容 |
+| Detection | Auto-Proposal |
 |:---|:---|
-| 含み益が1銘柄にPF含み益の50%超集中 | 部分利確の具体案（株数・売却代金・税コスト試算） |
-| RSI 70超 + デッドクロス同時発生 | 利確検討の具体案（何株売るか、税引後手取りはいくらか） |
-| 株主還元率が3年以上連続減少 | 売却の具体案（全売却 or 入替先候補をスクリーニング） |
-| ヘルスチェックでEXIT判定 | 売却 + 同セクター/テーマで代替候補3銘柄をスクリーニング |
-| テーマギャップ | テーマ別の候補銘柄上位3を提示（最低投資額付き） |
-| F&G 80超 + 新規買い増し提案 | 「市場過熱中」の警告を付与。キャッシュ温存との比較を提示 |
+| Unrealized gains concentrated in 1 stock at >50% of PF unrealized gains | Specific partial take-profit plan (share count, sale proceeds, estimated tax cost) |
+| RSI >70 + dead cross occurring simultaneously | Specific take-profit review plan (how many shares to sell, net after-tax proceeds) |
+| Shareholder return rate declining for 3+ consecutive years | Specific sell plan (full sell or replacement candidate screening) |
+| EXIT judgment in health check | Sell + screen 3 replacement candidates in same sector/theme |
+| Theme gap | Present top 3 candidates by theme (with minimum investment amount) |
+| F&G >80 + new buy-add proposal | Attach "market overheating" warning. Present comparison with cash-preservation strategy |
 
-## 提案時の制約
+## Proposal Constraints
 
-- 単元株バリデーション: 日本株は100株単位、SGXは100株単位で提案
-- 通貨配分チェック: USD 60%上限。入替先がUSD建ての場合は警告
-- user_profile.yaml: 手数料・税コストを自動計算（ファイルがない場合はデフォルト値）
-- F&G 80超: 新規買い増しには「市場過熱中」警告を付与
+- Lot size validation: Japan stocks in 100-share lots, SGX in 100-share lots
+- Currency allocation check: USD 60% cap. Warn if replacement is USD-denominated
+- user_profile.yaml: Auto-calculate fees and tax costs (use defaults if file does not exist)
+- F&G >80: Attach "market overheating" warning to new buy-add proposals
 
-### 提案の必須項目
+### Required Elements for Each Proposal
 
-全てのアクション提案には以下をセットで含める:
-- **出口戦略**: 損切りライン / 利確目標 / 見直し条件
-- **再エントリー基準**: 利確後に買い戻す条件（該当する場合）
-- **時間制限**: 「N週間以内に変化がなければ見直し」
-- **候補銘柄リスト**: 売却後の再投資先候補（「今は買わない」場合でも提示）
+All action proposals must include the following together:
+- **Exit strategy**: Stop-loss line / take-profit target / review conditions
+- **Re-entry criteria**: Conditions for buying back after take-profit (if applicable)
+- **Time limit**: "Review if no change within N weeks"
+- **Candidate stock list**: Reinvestment candidates after sale (present even when "not buying now")
 
-候補銘柄リストには以下を含める:
-- PFギャップ（地域・テーマ・通貨）から逆算した候補上位3-5銘柄
-- 各候補の最低投資額・テーマ・地域・PER・配当利回り
-- PFへの改善効果（通貨配分変化、地域分散改善度）
-- キャッシュ温存を推奨する場合は再投入トリガー条件（F&G、RSI、VIX等）
+Candidate stock list must include:
+- Top 3–5 candidates derived by reverse-engineering PF gaps (region, theme, currency)
+- Each candidate's minimum investment, theme, region, P/E, dividend yield
+- Improvement effect on PF (currency allocation change, regional diversification improvement)
+- When cash preservation is recommended: re-entry trigger conditions (F&G, RSI, VIX, etc.)
 
-## エスカレーション判定基準
+## Escalation Criteria
 
-以下のいずれかに該当する場合、Context Analyst を召集し、Plan Phase で3名並列を実行:
-- ユーザーの意図が売買・入替・リバランス・調整を含む
-- extract_constraints.py が action_type として swap_proposal / new_buy / sell / rebalance / adjust を返す
-- プラン内に what-if / adjust / rebalance コマンドが含まれる
-- Phase 4の自律ループでアクション提案が生成された場合
+Convene Context Analyst and run the full 3-agent parallel Plan Phase when any of the following apply:
+- User's intent involves buying, selling, replacement, rebalancing, or adjustment
+- `extract_constraints.py` returns action_type: swap_proposal / new_buy / sell / rebalance / adjust
+- The plan contains what-if / adjust / rebalance commands
+- An action proposal is generated during Phase 4's autonomous loop
 
-情報照会のみ（snapshot, analyze, health 等）の場合は Context Analyst 不要、Plan Phase も軽量版（Strategist のみ）で実行可能。
+For information queries only (snapshot, analyze, health, etc.), Context Analyst is not needed and Plan Phase can run in lightweight mode (Strategist only).
 
-## 利用可能なスキル/スクリプト一覧
+## Available Skills / Scripts
 
-| スキル | スクリプト | 用途 |
+| Skill | Script | Purpose |
 |:---|:---|:---|
-| screen-stocks | run_screen.py | スクリーニング |
-| stock-report | generate_report.py | 個別銘柄レポート |
-| stock-portfolio | run_portfolio.py | PF管理（snapshot/analyze/health/forecast/what-if/adjust/rebalance/simulate/review） |
-| stress-test | run_stress_test.py | ストレステスト |
-| market-research | run_research.py | 市場・業界・銘柄リサーチ |
-| watchlist | manage_watchlist.py | ウォッチリスト |
-| investment-note | manage_note.py | 投資メモ |
-| graph-query | run_graph_query.py | ナレッジグラフ検索 |
-| — | market_dashboard.py | 市況ダッシュボード |
-| — | get_context.py | グラフコンテキスト取得 |
-| — | extract_constraints.py | lesson制約抽出 |
+| screen-stocks | run_screen.py | Screening |
+| stock-report | generate_report.py | Individual stock report |
+| stock-portfolio | run_portfolio.py | PF management (snapshot/analyze/health/forecast/what-if/adjust/rebalance/simulate/review) |
+| stress-test | run_stress_test.py | Stress test |
+| market-research | run_research.py | Market / industry / stock research |
+| watchlist | manage_watchlist.py | Watchlist |
+| investment-note | manage_note.py | Investment memos |
+| graph-query | run_graph_query.py | Knowledge graph search |
+| — | market_dashboard.py | Market conditions dashboard |
+| — | get_context.py | Graph context retrieval |
+| — | extract_constraints.py | Lesson constraint extraction |

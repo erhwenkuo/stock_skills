@@ -53,7 +53,7 @@ def format_adjustment_plan(plan: AdjustmentPlan) -> str:
     lines.append(f"Market Regime: {', '.join(regime_parts)}\n")
 
     if not plan.actions:
-        lines.append("**調整不要** — 全ポジション健全です。\n")
+        lines.append("**No adjustment needed** — All positions are healthy.\n")
         return "\n".join(lines)
 
     # Group by urgency
@@ -81,7 +81,7 @@ def format_adjustment_plan(plan: AdjustmentPlan) -> str:
             reasons_str = "; ".join(a.reasons)
             rules_str = ", ".join(a.rule_ids)
             lot = get_lot_size(a.target)
-            lot_str = f"{lot}株" if lot > 1 else "1"
+            lot_str = f"{lot} shares" if lot > 1 else "1"
             lines.append(f"| {action_str} | {a.target} | {lot_str} | {reasons_str} | {rules_str} |")
 
         lines.append("")

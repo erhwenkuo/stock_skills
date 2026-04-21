@@ -1,85 +1,85 @@
 ---
 name: investment-note
-description: 投資メモの管理。投資テーゼ・懸念・学びなどをノートとして記録・参照・削除。
+description: Investment note management. Record, retrieve, and delete investment theses, concerns, and lessons.
 argument-hint: "[save|list|delete] [--symbol SYMBOL] [--category CATEGORY] [--type TYPE] [--content TEXT] [--id NOTE_ID]"
 allowed-tools: Bash(python3 *)
 ---
 
-# 投資メモ管理スキル
+# Investment Note Management Skill
 
-$ARGUMENTS を解析し、以下のコマンドを実行してください。
+Parse $ARGUMENTS and execute the following commands.
 
-## 実行コマンド
+## Execution Command
 
 ```bash
 python3 /Users/kikuchihiroyuki/stock-skills/.claude/skills/investment-note/scripts/manage_note.py $ARGUMENTS
 ```
 
-結果をそのまま表示してください。
+Display the result as-is.
 
-## コマンド一覧
+## Command Reference
 
-### save -- メモ保存
-
-```bash
-# 銘柄メモ（従来通り）
-python3 .../manage_note.py save --symbol 7203.T --type thesis --content "EV普及で部品需要増"
-
-# PF全体メモ（KIK-429: symbolオプション化）
-python3 .../manage_note.py save --category portfolio --type review --content "セクター偏重を改善"
-
-# 市況メモ
-python3 .../manage_note.py save --category market --type observation --content "日銀利上げ観測"
-```
-
-`--symbol` と `--category` のいずれかは必須（`journal` タイプを除く）。`--symbol` 指定時はカテゴリは自動で `stock`。
+### save — Save a note
 
 ```bash
-# 投資日記 / フリーメモ（KIK-473: symbol/category 不要）
-python3 .../manage_note.py save --type journal --content "NVDAが急騰。AI需要の強さを感じた"
-# → 本文中のティッカーシンボル（NVDA）を自動検出し Neo4j に紐付け
+# Stock note (standard)
+python3 .../manage_note.py save --symbol 7203.T --type thesis --content "EV adoption increases parts demand"
+
+# Portfolio-wide note (KIK-429: symbol made optional)
+python3 .../manage_note.py save --category portfolio --type review --content "Reduced sector overweight"
+
+# Market note
+python3 .../manage_note.py save --category market --type observation --content "BOJ rate hike speculation"
 ```
 
-### list -- メモ一覧
+Either `--symbol` or `--category` is required (except for `journal` type). When `--symbol` is specified, category is automatically set to `stock`.
+
+```bash
+# Investment journal / free memo (KIK-473: symbol/category not required)
+python3 .../manage_note.py save --type journal --content "NVDA surged. Felt the strength of AI demand"
+# → Auto-detects ticker symbols (NVDA) in the body and links to Neo4j
+```
+
+### list — List notes
 
 ```bash
 python3 .../manage_note.py list [--symbol 7203.T] [--type concern] [--category portfolio]
 ```
 
-### delete -- メモ削除
+### delete — Delete a note
 
 ```bash
 python3 .../manage_note.py delete --id note_2025-02-17_7203_T_abc12345
 ```
 
-## ノートタイプ
+## Note Types
 
-| タイプ | 意味 | 使い方例 |
+| Type | Meaning | Usage Example |
 |:---|:---|:---|
-| thesis | 投資テーゼ | 「EV普及で部品需要増」 |
-| observation | 気づき | 「3回連続スクリーニング上位」 |
-| concern | 懸念 | 「中国市場の減速リスク」 |
-| review | 振り返り | 「3ヶ月保有、テーゼ通り推移」 |
-| target | 目標・出口 | 「PER 15 で利確」 |
-| lesson | 学び | 「バリュートラップだった」 |
-| journal | 投資日記・フリーメモ | 「NVDAが急騰。AI需要を感じた」（KIK-473: symbol/category不要、本文から銘柄自動検出） |
+| thesis | Investment thesis | "EV adoption increases parts demand" |
+| observation | Observation | "Appeared in top 3 screenings in a row" |
+| concern | Concern | "China market slowdown risk" |
+| review | Review | "3-month hold, thesis on track" |
+| target | Target / exit | "Take profit at P/E 15" |
+| lesson | Lesson learned | "It was a value trap" |
+| journal | Investment journal / free memo | "NVDA surged. Felt AI demand" (KIK-473: symbol/category not required, auto-detects tickers from body) |
 
-## カテゴリ (KIK-429)
+## Categories (KIK-429)
 
-| カテゴリ | 意味 | 使い方 |
+| Category | Meaning | Usage |
 |:---|:---|:---|
-| stock | 個別銘柄メモ | `--symbol` 指定時に自動設定 |
-| portfolio | PF全体メモ | `--category portfolio`（PF振り返り、リバランス理由等） |
-| market | 市況メモ | `--category market`（マクロ動向、金利等） |
-| general | 汎用メモ | `--category general`（未分類、デフォルト） |
+| stock | Individual stock note | Auto-set when `--symbol` is specified |
+| portfolio | Portfolio-wide note | `--category portfolio` (PF review, rebalancing rationale, etc.) |
+| market | Market note | `--category market` (macro trends, interest rates, etc.) |
+| general | General note | `--category general` (uncategorized, default) |
 
-## 自然言語ルーティング
+## Natural Language Routing
 
-自然言語→スキル判定は [.claude/rules/intent-routing.md](../../rules/intent-routing.md) を参照。
+For natural language → skill selection, see [.claude/rules/intent-routing.md](../../rules/intent-routing.md).
 
-## 前提知識統合ルール (KIK-466)
+## Knowledge Integration Rules (KIK-466)
 
-get_context.py の出力がある場合、メモ操作と統合:
+When `get_context.py` output is available, integrate with note operations:
 
-- **save**: 保存対象銘柄の直近状態（最新レポート・ヘルスチェック結果）を参照し、メモ内容の文脈を補強
-- **list**: メモ一覧表示時、対象銘柄の現在の保有状態（保有中/売却済み/ウォッチ中）を付記
+- **save**: Reference the latest status of the target stock (latest report, health check results) to enrich the note context
+- **list**: When displaying the note list, append the current holding status (holding/sold/watching) of each target stock

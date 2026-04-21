@@ -19,35 +19,35 @@ from portfolio_commands import (
 
 def cmd_analyze(csv_path: str) -> None:
     """Structural analysis -- sector/region/currency HHI."""
-    print("データ取得中...\n")
+    print("Fetching data...\n")
 
     if HAS_PORTFOLIO_MANAGER:
         # Use portfolio_manager's structure analysis (includes FX + concentration)
         conc = pm_get_structure_analysis(csv_path, yahoo_client)
 
         if not conc.get("sector_breakdown") and not conc.get("region_breakdown"):
-            print("ポートフォリオにデータがありません。")
+            print("No data available in portfolio.")
             return
 
         if HAS_PORTFOLIO_FORMATTER:
             print(format_structure_analysis(conc))
         else:
             # Fallback text output
-            print("## ポートフォリオ構造分析\n")
-            print(f"- セクターHHI: {conc.get('sector_hhi', 0):.4f}")
-            print(f"- 地域HHI:   {conc.get('region_hhi', 0):.4f}")
-            print(f"- 通貨HHI:   {conc.get('currency_hhi', 0):.4f}")
-            print(f"- 最大集中軸:  {conc.get('max_hhi_axis', '-')}")
-            print(f"- リスクレベル: {conc.get('risk_level', '-')}")
+            print("## Portfolio Structure Analysis\n")
+            print(f"- Sector HHI:    {conc.get('sector_hhi', 0):.4f}")
+            print(f"- Region HHI:    {conc.get('region_hhi', 0):.4f}")
+            print(f"- Currency HHI:  {conc.get('currency_hhi', 0):.4f}")
+            print(f"- Max Concentration Axis: {conc.get('max_hhi_axis', '-')}")
+            print(f"- Risk Level:    {conc.get('risk_level', '-')}")
             print()
             for axis_name, key in [
-                ("セクター", "sector_breakdown"),
-                ("地域", "region_breakdown"),
-                ("通貨", "currency_breakdown"),
+                ("Sector", "sector_breakdown"),
+                ("Region", "region_breakdown"),
+                ("Currency", "currency_breakdown"),
             ]:
                 breakdown = conc.get(key, {})
                 if breakdown:
-                    print(f"### {axis_name}別構成")
+                    print(f"### By {axis_name}")
                     for label, w in sorted(breakdown.items(), key=lambda x: -x[1]):
                         print(f"  - {label}: {w * 100:.1f}%")
                     print()
@@ -62,14 +62,14 @@ def cmd_analyze(csv_path: str) -> None:
                 else:
                     avg = sr_data.get("weighted_avg_rate")
                     if avg is not None:
-                        print(f"\n加重平均 総株主還元率: {avg * 100:.2f}%")
+                        print(f"\nWeighted Average Total Shareholder Return Rate: {avg * 100:.2f}%")
 
         return
 
     # Fallback: no portfolio_manager available
     holdings = _fallback_load_csv(csv_path)
     if not holdings:
-        print("ポートフォリオにデータがありません。")
+        print("No data available in portfolio.")
         return
 
     # Build portfolio data with stock info
@@ -81,7 +81,7 @@ def cmd_analyze(csv_path: str) -> None:
             continue
         info = yahoo_client.get_stock_info(symbol)
         if info is None:
-            print(f"Warning: {symbol} のデータ取得に失敗しました。スキップします。")
+            print(f"Warning: Failed to fetch data for {symbol}. Skipping.")
             continue
 
         stock = dict(info)
@@ -92,7 +92,7 @@ def cmd_analyze(csv_path: str) -> None:
         portfolio_data.append(stock)
 
     if not portfolio_data:
-        print("有効なデータを取得できた銘柄がありません。")
+        print("No valid data could be retrieved for any holdings.")
         return
 
     total_mv = sum(s.get("market_value", 0) for s in portfolio_data)
@@ -105,11 +105,11 @@ def cmd_analyze(csv_path: str) -> None:
     if HAS_CONCENTRATION:
         conc = analyze_concentration(portfolio_data, weights)
     else:
-        conc = {"sector_hhi": 0.0, "region_hhi": 0.0, "currency_hhi": 0.0, "risk_level": "不明"}
+        conc = {"sector_hhi": 0.0, "region_hhi": 0.0, "currency_hhi": 0.0, "risk_level": "Unknown"}
 
-    print("## ポートフォリオ構造分析\n")
-    print(f"- セクターHHI: {conc.get('sector_hhi', 0):.4f}")
-    print(f"- 地域HHI:   {conc.get('region_hhi', 0):.4f}")
-    print(f"- 通貨HHI:   {conc.get('currency_hhi', 0):.4f}")
-    print(f"- リスクレベル: {conc.get('risk_level', '-')}")
+    print("## Portfolio Structure Analysis\n")
+    print(f"- Sector HHI:    {conc.get('sector_hhi', 0):.4f}")
+    print(f"- Region HHI:    {conc.get('region_hhi', 0):.4f}")
+    print(f"- Currency HHI:  {conc.get('currency_hhi', 0):.4f}")
+    print(f"- Risk Level:    {conc.get('risk_level', '-')}")
     print()

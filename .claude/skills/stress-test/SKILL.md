@@ -1,129 +1,129 @@
 ---
 name: stress-test
-description: "ポートフォリオのストレステスト。保有銘柄リストを受け取り、ショック感応度・シナリオ分析・因果連鎖を通じてPFの弱点を特定する。"
-argument-hint: "[銘柄リスト] [--scenario SCENARIO]  例: 7203.T,AAPL,D05.SI --scenario トリプル安"
+description: "Portfolio stress test. Receives a list of holdings and identifies portfolio weaknesses through shock sensitivity, scenario analysis, and causal chain analysis."
+argument-hint: "[symbol list] [--scenario SCENARIO]  e.g.: 7203.T,AAPL,D05.SI --scenario triple-meltdown"
 allowed-tools: Bash(python3 *)
 ---
 
-# ポートフォリオ ストレステスト スキル
+# Portfolio Stress Test Skill
 
-$ARGUMENTS を解析してポートフォリオ銘柄リストとシナリオを判定し、以下のコマンドを実行してください。
+Parse $ARGUMENTS to determine the portfolio symbol list and scenario, then run the following command.
 
-## 実行コマンド
+## Execution Command
 
 ```bash
 python3 /Users/kikuchihiroyuki/stock-skills/.claude/skills/stress-test/scripts/run_stress_test.py --portfolio <symbols> [--scenario <scenario>] [--weights <weights>]
 ```
 
-## 自然言語ルーティング
+## Natural Language Routing
 
-自然言語→スキル判定は [.claude/rules/intent-routing.md](../../rules/intent-routing.md) を参照。
+For natural language → skill selection, see [.claude/rules/intent-routing.md](../../rules/intent-routing.md).
 
-## 引数の解釈ルール
+## Argument Parsing Rules
 
-### portfolio（銘柄リスト・必須）
-ユーザーの入力からカンマ区切りの銘柄リストを抽出する。スペース区切りで指定された場合もカンマ区切りに変換する。
+### portfolio (symbol list — required)
+Extract a comma-separated symbol list from user input. Convert space-separated input to comma-separated.
 
-| ユーザー入力例 | --portfolio 値 |
+| User Input Example | --portfolio Value |
 |:-------------|:-------------|
 | `7203.T,AAPL,D05.SI` | `7203.T,AAPL,D05.SI` |
 | `7203.T AAPL D05.SI` | `7203.T,AAPL,D05.SI` |
-| `トヨタ アップル` | 対応するティッカーに変換してから指定 |
+| `Toyota Apple` | Convert to corresponding tickers first |
 
-### weights（保有比率・省略可）
-カンマ区切りの比率リスト。銘柄数と同じ数だけ指定する。省略時は等分（各銘柄 1/N）。
+### weights (holding ratios — optional)
+Comma-separated ratio list matching the number of symbols. Defaults to equal weights (1/N per symbol).
 
-| ユーザー入力例 | --weights 値 |
+| User Input Example | --weights Value |
 |:-------------|:------------|
 | `0.5,0.3,0.2` | `0.5,0.3,0.2` |
-| `50%,30%,20%` | `0.5,0.3,0.2`（パーセントをデシマルに変換） |
-| 省略 | 各銘柄 1/N で等分 |
+| `50%,30%,20%` | `0.5,0.3,0.2` (convert percentages to decimals) |
+| omitted | Equal weight 1/N per symbol |
 
-## シナリオ一覧
+## Scenario List
 
-| シナリオ | 概要 |
+| Scenario | Description |
 |:--------|:-----|
-| トリプル安 | 株式・為替・債券が同時下落。全資産クラスにストレス |
-| ドル高円安 | 円が急落。輸入コスト増加、海外資産は円建て評価上昇 |
-| 米国リセッション | 米国景気後退。グローバル需要減退、リスクオフ |
-| 日銀利上げ | 日本の金利上昇。銀行株上昇、成長株・REIT下落 |
-| 米中対立 | 貿易摩擦激化。サプライチェーン分断、半導体・製造業に打撃 |
-| インフレ再燃 | 物価再上昇。実質購買力低下、金利引き上げ観測 |
-| テック暴落 | NASDAQ -30%。AI期待剥落、テック株直撃、質への逃避 |
-| 円高ドル安 | USD/JPY -20円。外貨資産の円建て評価下落、輸出企業に打撃 |
-| カスタム | ユーザー指定のシナリオを自然言語で解釈 |
+| triple-meltdown | Equities, FX, and bonds fall simultaneously. Stress across all asset classes |
+| usd-jpy-surge | Sharp JPY depreciation. Rising import costs; overseas assets appreciate in JPY terms |
+| us-recession | US economic downturn. Global demand contraction, risk-off |
+| boj-rate-hike | Rising Japanese interest rates. Banks up, growth stocks and REITs down |
+| us-china-conflict | Escalating trade friction. Supply chain disruption; hit to semiconductors and manufacturing |
+| inflation-resurgence | Rising prices again. Real purchasing power declines; rate hike expectations |
+| tech-crash | NASDAQ -30%. AI expectations collapse; tech stocks hit hard, flight to quality |
+| jpy-appreciation | USD/JPY -20 yen. Foreign asset JPY-denominated values fall; hit to exporters |
+| custom | User-specified scenario interpreted from natural language |
 
-## 出力形式（10ステップ パイプライン）
+## Output Format (10-Step Pipeline)
 
-結果は以下のステップで構造化して表示してください。
+Present results in the following structured steps.
 
-### Step 1: ポートフォリオ概要
-- 銘柄一覧（シンボル・名称・セクター・比率）
-- 総時価総額（推定）
+### Step 1: Portfolio Overview
+- Symbol list (symbol, name, sector, weight)
+- Total market cap (estimated)
 
-### Step 2: 集中度分析
-- セクターHHI / 地域HHI / 通貨HHI
-- 最大集中軸の特定
-- リスクレベル判定（分散 / やや集中 / 危険な集中）
+### Step 2: Concentration Analysis
+- Sector HHI / Region HHI / Currency HHI
+- Identify highest concentration axis
+- Risk level judgment (diversified / somewhat concentrated / dangerously concentrated)
 
-### Step 3: ショック感応度スコア
-- 各銘柄のベータ・財務健全性・バリュエーション耐性の評価
-- 銘柄別ショック感応度スコア（0-100）
+### Step 3: Shock Sensitivity Scores
+- Assessment of each stock's beta, financial health, and valuation resilience
+- Per-symbol shock sensitivity score (0–100)
 
-### Step 4: シナリオ定義
-- 適用シナリオ名と概要
-- マクロ変数の変化（金利・為替・株式市場の想定変動）
+### Step 4: Scenario Definition
+- Applied scenario name and description
+- Macro variable changes (assumed movements in interest rates, FX, equities)
 
-### Step 5: 銘柄別インパクト推定
-- 各銘柄の推定損失率
-- 集中度倍率の適用
-- ポートフォリオ加重インパクト
+### Step 5: Per-Symbol Impact Estimates
+- Estimated loss rate per symbol
+- Application of concentration multiplier
+- Portfolio-weighted impact
 
-### Step 6: ポートフォリオ全体インパクト
-- PF全体の推定損失率
-- 最大損失銘柄
+### Step 6: Portfolio-Wide Impact
+- Estimated portfolio-wide loss rate
+- Largest loss contributor
 
-### Step 6b: 相関分析（KIK-352）
-- 銘柄間相関行列（ピアソン相関、過去1年日次リターン）
-- 高相関ペア（|r| >= 0.7）の検出
-- ファクター分解: 各銘柄をマクロ変数（USD/JPY, 日経225, S&P500, 原油, 米10年金利）で回帰
-- **LLM解釈**: ファクター回帰で説明しきれない残差相関について、業界知識で原因を推測して補足する（例: サプライチェーン依存、同一顧客基盤等）。「確定要因（統計）」と「推定要因（推測）」を明確に分離して表示すること
+### Step 6b: Correlation Analysis (KIK-352)
+- Cross-symbol correlation matrix (Pearson correlation, 1-year daily returns)
+- High-correlation pairs detection (|r| >= 0.7)
+- Factor decomposition: regress each symbol against macro variables (USD/JPY, Nikkei 225, S&P 500, crude oil, US 10-year yield)
+- **LLM interpretation**: For residual correlations not explained by factor regression, use domain knowledge to infer causes (e.g., supply chain dependencies, shared customer base). Clearly separate "confirmed factors (statistical)" from "inferred factors (estimated)"
 
-### Step 6c: VaR（過去データベースのリスク指標）（KIK-352）
-- 過去1年の日次リターンからポートフォリオの加重リターンを算出
-- 95% VaR / 99% VaR（日次・月次）
-- ストレステストのシナリオ分析（テールリスク）との違いを説明すること
+### Step 6c: VaR (Historical Data-Based Risk Metrics) (KIK-352)
+- Calculate portfolio weighted returns from 1-year daily return history
+- 95% VaR / 99% VaR (daily and monthly)
+- Explain the difference from the scenario analysis (tail risk) in the stress test
 
-### Step 7: 因果連鎖分析
-- シナリオ発生時の連鎖的影響の説明
-- セクター間波及パス
+### Step 7: Causal Chain Analysis
+- Explanation of cascading effects when the scenario occurs
+- Cross-sector propagation paths
 
-### Step 8: 総合判定 + 推奨アクション（KIK-352）
-- リスク軽減のための具体的提案（ルールベース自動生成 + Claude補足）
-- 集中度・相関・VaR・ストレステスト結果を統合した推奨
-- ヘッジ候補銘柄・セクター
-- **LLM補完**: ルールベースの推奨に加えて、ポートフォリオにないセクターの候補提示、相関の定性的原因を踏まえた分散先の提案をClaudeが補足すること
+### Step 8: Overall Assessment + Recommended Actions (KIK-352)
+- Specific risk mitigation proposals (rule-based auto-generated + Claude supplement)
+- Recommendations integrating concentration, correlation, VaR, and stress test results
+- Hedge candidates (symbols and sectors)
+- **LLM supplement**: In addition to rule-based recommendations, Claude should suggest sectors not in the portfolio and propose diversification targets informed by qualitative correlation causes
 
-## 実行例
+## Execution Examples
 
 ```bash
-# 基本的なストレステスト（シナリオ自動判定）
+# Basic stress test (scenario auto-detected)
 python3 .../run_stress_test.py --portfolio 7203.T,AAPL,D05.SI
 
-# トリプル安シナリオ
-python3 .../run_stress_test.py --portfolio 7203.T,9984.T,6758.T --scenario トリプル安
+# Triple meltdown scenario
+python3 .../run_stress_test.py --portfolio 7203.T,9984.T,6758.T --scenario triple-meltdown
 
-# 比率指定
+# With weight specification
 python3 .../run_stress_test.py --portfolio 7203.T,AAPL,D05.SI --weights 0.5,0.3,0.2
 
-# カスタムシナリオ
-python3 .../run_stress_test.py --portfolio 7203.T,AAPL --scenario "半導体サプライチェーン崩壊"
+# Custom scenario
+python3 .../run_stress_test.py --portfolio 7203.T,AAPL --scenario "semiconductor supply chain collapse"
 ```
 
-## 前提知識統合ルール (KIK-466)
+## Knowledge Integration Rules (KIK-466)
 
-get_context.py の出力に以下がある場合、ストレステスト結果と統合して回答する:
+When `get_context.py` output contains the following, integrate with stress test results:
 
-- **前回ストレステスト（StressTest）**: 前回シナリオ・結果と比較。「前回テック暴落シナリオ: -18% → 今回: -15%（改善: テック比率低下のため）」
-- **懸念メモ**: 懸念銘柄がストレステストで大ダメージなら「懸念メモと一致 → 対策を検討」
-- **投資メモ**: ヘッジ戦略メモがあれば参照。「前回の教訓メモ: 円高ヘッジ不足 → 今回もドル高シナリオに弱い」
+- **Previous stress test (StressTest)**: Compare with previous scenario and result. "Previous tech crash scenario: -18% → Current: -15% (improved: lower tech weighting)"
+- **Concern notes**: If a flagged symbol takes heavy damage in the stress test, "concern note matches → consider countermeasures"
+- **Investment notes**: Reference hedge strategy notes if available. "Previous lesson note: insufficient JPY hedge → still weak in USD surge scenario"

@@ -23,10 +23,10 @@ _RE_US_SYMBOL = re.compile(_B_L + r"([A-Z]{2,5})" + _B_R)
 # Keyword → trigger mapping
 _TRIGGER_MAP: list[tuple[list[str], str, int, str]] = [
     # (keywords, trigger_type, linear_priority, title_format)
-    (["撤退", "EXIT", "exit"], "exit", 2, "[Action] {symbol} 売却検討"),
-    (["決算", "earnings", "Earnings"], "earnings", 2, "[Action] {symbol} 決算前チェック"),
-    (["テーゼ", "thesis", "投資テーゼ"], "thesis_review", 3, "[Action] {symbol} テーゼ見直し"),
-    (["懸念", "concern", "リスク確認"], "concern", 3, "[Action] {symbol} 懸念再確認"),
+    (["撤退", "EXIT", "exit"], "exit", 2, "[Action] {symbol} Consider selling"),
+    (["決算", "earnings", "Earnings"], "earnings", 2, "[Action] {symbol} Pre-earnings check"),
+    (["テーゼ", "thesis", "投資テーゼ"], "thesis_review", 3, "[Action] {symbol} Thesis review"),
+    (["懸念", "concern", "リスク確認"], "concern", 3, "[Action] {symbol} Confirm concern"),
 ]
 
 
@@ -77,7 +77,7 @@ def detect_action_items(
 
         # Extract symbol from suggestion (heuristic: first word of title after emoji)
         symbol = _extract_symbol_from_suggestion(s)
-        title = title_fmt.format(symbol=symbol or "銘柄")
+        title = title_fmt.format(symbol=symbol or "stock")
         action_id = f"action_{today}_{trigger_type}_{symbol or 'unknown'}"
 
         if action_id in seen_keys:
@@ -112,8 +112,8 @@ def detect_action_items(
             seen_keys.add(action_id)
             items.append({
                 "trigger_type": "exit",
-                "title": f"[Action] {symbol} 売却検討",
-                "description": alert.get("message", "EXIT判定"),
+                "title": f"[Action] {symbol} Consider selling",
+                "description": alert.get("message", "EXIT judgment"),
                 "symbol": symbol,
                 "priority": 2,
                 "urgency": "high",

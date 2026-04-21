@@ -1,23 +1,23 @@
 ---
 name: watchlist
-description: ウォッチリストの管理。銘柄の追加・削除・一覧表示。
-argument-hint: "[show|add|remove|list] [name] [symbols...]  例: show my-list, add my-list 7203.T AAPL"
+description: Watchlist management. Add, remove, and list stocks.
+argument-hint: "[show|add|remove|list] [name] [symbols...]  e.g.: show my-list, add my-list 7203.T AAPL"
 allowed-tools: Bash(python3 *)
 ---
 
-# ウォッチリスト管理スキル
+# Watchlist Management Skill
 
-$ARGUMENTS を解析し、以下のコマンドを実行してください。
+Parse $ARGUMENTS and execute the following command.
 
 ```bash
 python3 /Users/kikuchihiroyuki/stock-skills/.claude/skills/watchlist/scripts/manage_watchlist.py $ARGUMENTS
 ```
 
-結果をそのまま表示してください。
+Display the result as-is.
 
-## 前提知識統合ルール (KIK-466)
+## Knowledge Integration Rules (KIK-466)
 
-get_context.py の出力がある場合、ウォッチリスト操作と統合:
+When `get_context.py` output is available, integrate with watchlist operations:
 
-- **add**: 追加銘柄の過去経緯（スクリーニング出現・レポート履歴）があれば要約を付記
-- **list**: 各銘柄の最新状態（鮮度ラベル・直近アクション）をコンテキストから補足
+- **add**: If the stock being added has a past history (screening appearances, report history), append a summary
+- **list**: Supplement each stock's latest status (freshness label, most recent action) from context

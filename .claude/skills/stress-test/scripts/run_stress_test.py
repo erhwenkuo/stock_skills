@@ -137,8 +137,8 @@ def load_portfolio(
 
 def _fallback_print_portfolio_summary(portfolio: list[dict]) -> None:
     """Print Step 1 -- Portfolio summary."""
-    print("## Step 1: ポートフォリオ概要\n")
-    print("| 銘柄 | 名称 | セクター | 地域 | 通貨 | 比率 | 株価 | Beta |")
+    print("## Step 1: Portfolio Overview\n")
+    print("| Symbol | Name | Sector | Region | Currency | Weight | Price | Beta |")
     print("|:-----|:-----|:---------|:-----|:-----|-----:|-----:|-----:|")
     for s in portfolio:
         symbol = s.get("symbol", "-")
@@ -155,22 +155,22 @@ def _fallback_print_portfolio_summary(portfolio: list[dict]) -> None:
 
 def _fallback_print_concentration(conc: dict) -> None:
     """Print Step 2 -- Concentration analysis."""
-    print("## Step 2: 集中度分析\n")
-    print(f"- セクターHHI: {conc['sector_hhi']:.4f}")
-    print(f"- 地域HHI:   {conc['region_hhi']:.4f}")
-    print(f"- 通貨HHI:   {conc['currency_hhi']:.4f}")
-    print(f"- 最大集中軸:  {conc['max_hhi_axis']}（HHI = {conc['max_hhi']:.4f}）")
-    print(f"- 集中度倍率:  {conc['concentration_multiplier']:.2f}x")
-    print(f"- リスクレベル: {conc['risk_level']}")
+    print("## Step 2: Concentration Analysis\n")
+    print(f"- Sector HHI: {conc['sector_hhi']:.4f}")
+    print(f"- Region HHI: {conc['region_hhi']:.4f}")
+    print(f"- Currency HHI: {conc['currency_hhi']:.4f}")
+    print(f"- Max concentration axis: {conc['max_hhi_axis']} (HHI = {conc['max_hhi']:.4f})")
+    print(f"- Concentration multiplier: {conc['concentration_multiplier']:.2f}x")
+    print(f"- Risk level: {conc['risk_level']}")
     print()
 
     # Breakdowns
-    for axis_name, key in [("セクター", "sector_breakdown"),
-                            ("地域", "region_breakdown"),
-                            ("通貨", "currency_breakdown")]:
+    for axis_name, key in [("Sector", "sector_breakdown"),
+                            ("Region", "region_breakdown"),
+                            ("Currency", "currency_breakdown")]:
         breakdown = conc.get(key, {})
         if breakdown:
-            print(f"### {axis_name}別構成")
+            print(f"### {axis_name} Breakdown")
             for label, w in sorted(breakdown.items(), key=lambda x: -x[1]):
                 print(f"  - {label}: {w * 100:.1f}%")
             print()
@@ -178,8 +178,8 @@ def _fallback_print_concentration(conc: dict) -> None:
 
 def _fallback_print_shock_sensitivity(portfolio: list[dict]) -> None:
     """Print Step 3 -- Shock sensitivity (basic fallback)."""
-    print("## Step 3: ショック感応度（簡易版）\n")
-    print("| 銘柄 | Beta | 年間Vol | D/E | 感応度 |")
+    print("## Step 3: Shock Sensitivity (simplified)\n")
+    print("| Symbol | Beta | Annual Vol | D/E | Sensitivity |")
     print("|:-----|-----:|-------:|----:|-------:|")
     for s in portfolio:
         symbol = s.get("symbol", "-")
@@ -210,28 +210,28 @@ def _fallback_print_shock_sensitivity(portfolio: list[dict]) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="ポートフォリオ ストレステスト"
+        description="Portfolio stress test"
     )
     parser.add_argument(
         "--portfolio",
         required=True,
-        help="カンマ区切りの銘柄リスト (例: 7203.T,AAPL,D05.SI)",
+        help="Comma-separated list of ticker symbols (e.g., 7203.T,AAPL,D05.SI)",
     )
     parser.add_argument(
         "--weights",
         default=None,
-        help="カンマ区切りの保有比率 (例: 0.5,0.3,0.2)。省略時は等分",
+        help="Comma-separated portfolio weights (e.g., 0.5,0.3,0.2). Equal-weight if omitted",
     )
     parser.add_argument(
         "--scenario",
         default=None,
-        help="シナリオ名 (例: トリプル安, ドル高円安, 米国リセッション)",
+        help="Scenario name (e.g., triple_decline, usd_jpy_surge, us_recession)",
     )
     parser.add_argument(
         "--base-shock",
         type=float,
         default=-0.20,
-        help="ベースショック率 (デフォルト: -0.20 = -20%%)",
+        help="Base shock rate (default: -0.20 = -20%%)",
     )
 
     args = parser.parse_args()
@@ -244,7 +244,7 @@ def main():
     # ------------------------------------------------------------------
     symbols = [s.strip() for s in args.portfolio.split(",") if s.strip()]
     if not symbols:
-        print("Error: --portfolio に有効な銘柄が指定されていません。")
+        print("Error: No valid symbols specified in --portfolio.")
         sys.exit(1)
 
     # ------------------------------------------------------------------
@@ -257,12 +257,12 @@ def main():
             if any(w > 1.0 for w in weights):
                 weights = [w / 100.0 for w in weights]
         except ValueError:
-            print("Error: --weights のフォーマットが不正です。カンマ区切りの数値を指定してください。")
+            print("Error: Invalid --weights format. Please provide comma-separated numbers.")
             sys.exit(1)
 
         if len(weights) != len(symbols):
             print(
-                f"Error: --weights の数 ({len(weights)}) が --portfolio の銘柄数 ({len(symbols)}) と一致しません。"
+                f"Error: --weights count ({len(weights)}) does not match --portfolio symbol count ({len(symbols)})."
             )
             sys.exit(1)
 
@@ -279,27 +279,27 @@ def main():
     # Step 1: Load portfolio data
     # ------------------------------------------------------------------
     print("=" * 60)
-    print("ポートフォリオ ストレステスト")
+    print("Portfolio Stress Test")
     print("=" * 60)
     print()
-    print(f"対象銘柄: {', '.join(symbols)}")
-    print(f"シナリオ: {args.scenario or '(自動判定)'}")
-    print(f"ベースショック: {args.base_shock * 100:.0f}%")
+    print(f"Target symbols: {', '.join(symbols)}")
+    print(f"Scenario: {args.scenario or '(auto-detect)'}")
+    print(f"Base shock: {args.base_shock * 100:.0f}%")
     print()
 
-    print("データ取得中...")
+    print("Fetching data...")
     portfolio = load_portfolio(symbols, weights)
 
     if not portfolio:
-        print("Error: 有効なデータを取得できた銘柄がありません。")
+        print("Error: No valid data could be fetched for any symbol.")
         sys.exit(1)
 
     # Recalculate weights for successfully loaded stocks only
     loaded_symbols = [s["symbol"] for s in portfolio]
     if len(portfolio) < len(symbols):
         print(
-            f"Warning: {len(symbols) - len(portfolio)} 銘柄のデータ取得に失敗しました。"
-            f" 残り {len(portfolio)} 銘柄で分析を実行します。"
+            f"Warning: Failed to fetch data for {len(symbols) - len(portfolio)} symbol(s)."
+            f" Running analysis with remaining {len(portfolio)} symbol(s)."
         )
         # Re-normalise weights
         total_w = sum(s["weight"] for s in portfolio)
@@ -308,7 +308,7 @@ def main():
                 s["weight"] = s["weight"] / total_w
 
     final_weights = [s["weight"] for s in portfolio]
-    print(f"取得完了: {len(portfolio)} 銘柄\n")
+    print(f"Fetch complete: {len(portfolio)} symbol(s)\n")
 
     # ------------------------------------------------------------------
     # Step 1 output: Portfolio summary
@@ -326,8 +326,8 @@ def main():
     # ------------------------------------------------------------------
     sensitivities = []
     if analyze_stock_sensitivity is not None:
-        print("## Step 3: ショック感応度スコア\n")
-        print("| 銘柄 | ファンダ | テクニカル | 象限 | 統合ショック |")
+        print("## Step 3: Shock Sensitivity Score\n")
+        print("| Symbol | Fundamental | Technical | Quadrant | Composite Shock |")
         print("|:-----|-------:|--------:|:-----|----------:|")
         for s in portfolio:
             hist = None
@@ -363,7 +363,7 @@ def main():
         if args.scenario:
             scenario_def = resolve_scenario(args.scenario)
         if scenario_def is None and args.scenario:
-            print(f"Warning: シナリオ '{args.scenario}' が見つかりません。デフォルト(トリプル安)を使用します。")
+            print(f"Warning: Scenario '{args.scenario}' not found. Using default (triple_decline).")
             scenario_def = resolve_scenario("triple_decline")
         elif scenario_def is None:
             scenario_def = resolve_scenario("triple_decline")
@@ -375,15 +375,15 @@ def main():
             scenario=scenario_def,
         )
     else:
-        print("## Step 4-7: シナリオ分析\n")
+        print("## Step 4-7: Scenario Analysis\n")
         print(
-            f"(scenario_analysis モジュールが未実装のため、"
-            f"Claudeが以下の情報を元にシナリオ分析を実施してください)\n"
+            f"(scenario_analysis module not yet implemented — "
+            f"please use Claude to perform scenario analysis based on the information below)\n"
         )
-        print(f"- シナリオ: {args.scenario or '(PF構成から自動判定)'}")
-        print(f"- ベースショック: {args.base_shock * 100:.0f}%")
-        print(f"- 集中度倍率: {conc['concentration_multiplier']:.2f}x")
-        print(f"- 最大集中軸: {conc['max_hhi_axis']}")
+        print(f"- Scenario: {args.scenario or '(auto-detect from portfolio composition)'}")
+        print(f"- Base shock: {args.base_shock * 100:.0f}%")
+        print(f"- Concentration multiplier: {conc['concentration_multiplier']:.2f}x")
+        print(f"- Max concentration axis: {conc['max_hhi_axis']}")
         print()
 
     # ------------------------------------------------------------------
@@ -417,7 +417,7 @@ def main():
     recommendations = None
 
     if compute_correlation_matrix is not None and len(portfolio) >= 2:
-        print("相関分析中...")
+        print("Running correlation analysis...")
         corr_result = compute_correlation_matrix(portfolio)
         high_pairs = find_high_correlation_pairs(corr_result)
 
@@ -436,7 +436,7 @@ def main():
                 factor_results = decompose_factors(portfolio, factor_histories)
 
     if compute_var is not None:
-        print("VaR算出中...")
+        print("Computing VaR...")
         # total_value is only meaningful when called from portfolio_bridge
         # (with actual holding amounts). --portfolio direct invocation has no
         # real portfolio value, so we pass None to suppress absolute amounts.
@@ -452,7 +452,7 @@ def main():
         )
 
     if generate_recommendations is not None:
-        print("推奨アクション生成中...")
+        print("Generating recommendations...")
         recommendations = generate_recommendations(
             concentration=conc,
             correlation_pairs=high_pairs,
@@ -494,22 +494,22 @@ def main():
         print(report)
     elif scenario_result is not None:
         # scenario available but no formatter -- print raw
-        print("## Step 4-7: シナリオ分析結果\n")
-        print(f"シナリオ: {scenario_result.get('scenario_name', '-')}")
-        print(f"PF影響率: {scenario_result.get('portfolio_impact', 0)*100:.1f}%")
-        print(f"判定: {scenario_result.get('judgment', '-')}")
+        print("## Step 4-7: Scenario Analysis Results\n")
+        print(f"Scenario: {scenario_result.get('scenario_name', '-')}")
+        print(f"Portfolio impact: {scenario_result.get('portfolio_impact', 0)*100:.1f}%")
+        print(f"Judgment: {scenario_result.get('judgment', '-')}")
         print()
     else:
-        print("## Step 8: 推奨アクション\n")
+        print("## Step 8: Recommended Actions\n")
         print(
-            "(stress_formatter モジュールが未実装のため、"
-            "上記の分析結果を元にClaudeが推奨アクションを生成してください)\n"
+            "(stress_formatter module not yet implemented — "
+            "please use Claude to generate recommended actions based on the analysis results above)\n"
         )
 
     # ------------------------------------------------------------------
     # Raw data dump for Claude's analysis
     # ------------------------------------------------------------------
-    print("\n---\n## 分析用生データ (JSON)\n")
+    print("\n---\n## Raw Analysis Data (JSON)\n")
     raw_data = {
         "portfolio": [
             {
@@ -578,7 +578,7 @@ def main():
             pass  # graceful degradation
 
     # Proactive suggestions (KIK-465)
-    print_suggestions(context_summary=f"ストレステスト完了: {args.portfolio}")
+    print_suggestions(context_summary=f"Stress test complete: {args.portfolio}")
 
 
 if __name__ == "__main__":

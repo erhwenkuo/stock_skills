@@ -7,13 +7,13 @@ import yfinance as yf
 
 MACRO_TICKERS = {
     "S&P500": "^GSPC",
-    "日経平均": "^N225",
+    "Nikkei 225": "^N225",
     "VIX": "^VIX",
-    "米10年債": "^TNX",
+    "US 10Y Yield": "^TNX",
     "USD/JPY": "JPY=X",
     "EUR/USD": "EURUSD=X",
-    "原油(WTI)": "CL=F",
-    "金": "GC=F",
+    "Crude Oil (WTI)": "CL=F",
+    "Gold": "GC=F",
 }
 
 # Tickers where change is expressed as point difference, not percentage

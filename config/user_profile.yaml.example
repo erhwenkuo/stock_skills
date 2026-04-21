@@ -1,22 +1,22 @@
 broker:
-  name: 楽天証券
-  account_type: 一般口座  # 一般口座 / 特定口座源泉あり / 特定口座源泉なし / NISA
+  name: Rakuten Securities
+  account_type: general  # general / specific-withholding / specific-no-withholding / NISA
 
 fees:
   us_stock:
-    rate: 0.00495       # 約定代金×0.495%
+    rate: 0.00495       # 0.495% of trade amount
     min_usd: 0
     max_usd: 22
-    sec_fee: 0.0000206  # 売却時のみ
+    sec_fee: 0.0000206  # On sell orders only
   jp_stock:
-    rate: 0             # ゼロコース等
+    rate: 0             # Zero-commission plan etc.
   asean_stock:
-    rate: 0.011         # 約定代金×1.1%
+    rate: 0.011         # 1.1% of trade amount
   fx:
-    realtime_spread: 0  # リアルタイム為替: 0銭
-    scheduled_spread: 0 # 定時為替: 0銭
+    realtime_spread: 0  # Real-time FX: 0 pips
+    scheduled_spread: 0 # Scheduled FX: 0 pips
 
 tax:
-  capital_gains_rate: 0.20315  # 所得税15.315% + 住民税5%
-  needs_filing: true           # 一般口座→true
-  realized_losses_ytd: 0       # 今年の確定損失額（損益通算用、手動更新）
+  capital_gains_rate: 0.20315  # Income tax 15.315% + resident tax 5%
+  needs_filing: true           # true for general accounts
+  realized_losses_ytd: 0       # Realized losses this year (for loss offset, update manually)

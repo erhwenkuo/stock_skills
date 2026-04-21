@@ -5,33 +5,33 @@ paths:
   - "tests/fixtures/**"
 ---
 
-# テスト開発ルール
+# Test Development Rules
 
-## テスト実行
+## Running Tests
 
 ```bash
-python3 -m pytest tests/ -q                       # 全件実行（約1191テスト, ~1秒）
-python3 -m pytest tests/core/test_indicators.py -v # 特定モジュール
-python3 -m pytest tests/ -k "test_value_score"     # キーワード指定
+python3 -m pytest tests/ -q                       # Run all tests (~1191 tests, ~1 second)
+python3 -m pytest tests/core/test_indicators.py -v # Specific module
+python3 -m pytest tests/ -k "test_value_score"     # Keyword filter
 ```
 
-## テスト構造
+## Test Structure
 
-- `tests/core/` — コアロジックのユニットテスト
-- `tests/data/` — データ取得層のテスト
-- `tests/output/` — フォーマッター層のテスト
-- `tests/conftest.py` — 共通フィクスチャ
-- `tests/fixtures/` — JSON/CSV テストデータ（Toyota 7203.T ベース）
+- `tests/core/` — Unit tests for core logic
+- `tests/data/` — Tests for the data retrieval layer
+- `tests/output/` — Tests for the formatter layer
+- `tests/conftest.py` — Shared fixtures
+- `tests/fixtures/` — JSON/CSV test data (Toyota 7203.T based)
 
-## モック方法
+## Mocking
 
-- `mock_yahoo_client` フィクスチャ: monkeypatch で yahoo_client モジュール関数をモック
-- `return_value` を設定して使用
-- yahoo_client はクラスではなくモジュール関数なので monkeypatch が容易
+- `mock_yahoo_client` fixture: Mocks yahoo_client module functions via monkeypatch
+- Set `return_value` before use
+- yahoo_client uses module functions (not classes), making monkeypatch straightforward
 
-## テスト作成の注意点
+## Test Writing Guidelines
 
-- 各テストは独立して実行可能であること（外部 API 依存なし）
-- yahoo_client の呼び出しは必ずモックする
-- テストデータは `tests/fixtures/` の既存データを再利用
-- 新しいモジュールには対応するテストファイルを作成
+- Each test must be independently runnable (no external API dependencies)
+- Always mock yahoo_client calls
+- Reuse existing data from `tests/fixtures/`
+- Create a corresponding test file for each new module

@@ -101,9 +101,9 @@ def _print_recurring_picks(results):
         # Only show symbols that appeared 2+ times (current run counts as new)
         recurring = {s: c for s, c in freq.items() if c >= 2}
         if recurring:
-            print("**再出現銘柄** (過去のスクリーニングにも登場):")
+            print("**Recurring Stocks** (also appeared in previous screenings):")
             for sym, cnt in sorted(recurring.items(), key=lambda x: -x[1]):
-                print(f"  - {sym}: 過去{cnt}回出現")
+                print(f"  - {sym}: appeared {cnt} time(s) previously")
             print()
     except Exception:
         pass
@@ -136,7 +136,7 @@ def _save_history(preset, region_code, results, sector=None, theme=None):
         try:
             save_screening(preset=preset, region=region_code, results=results, sector=sector, theme=theme)
         except Exception as e:
-            print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
+            print(f"Warning: failed to save history: {e}", file=sys.stderr)
 
 
 def _run_single_region(spec, region_code, args):
@@ -152,13 +152,13 @@ def _run_single_region(spec, region_code, args):
     # Momentum has special display name with submode
     if spec.preset == "momentum":
         submode = getattr(args, "submode", None) or "surge"
-        submode_labels = {"stable": "安定上昇", "surge": "急騰ブレイクアウト"}
+        submode_labels = {"stable": "Steady Uptrend", "surge": "Surge Breakout"}
         label = submode_labels.get(submode, submode)
-        display = f"モメンタム（{label}）"
+        display = f"Momentum ({label})"
     else:
         display = spec.display_name
 
-    print(f"\n## {region_name} - {display}{sector_label}{theme_label} スクリーニング結果\n")
+    print(f"\n## {region_name} - {display}{sector_label}{theme_label} Screening Results\n")
 
     # Step messages
     step1, step2_tmpl = spec.step_messages
@@ -176,7 +176,7 @@ def _run_single_region(spec, region_code, args):
     if step2_tmpl:
         print(f"{step2_tmpl.format(n=len(results))}\n")
     if excluded:
-        print(f"※ 直近売却済み {excluded}銘柄を除外\n")
+        print(f"* Recently sold {excluded} stock(s) excluded\n")
 
     # Extra warnings (e.g. small-cap liquidity)
     for warning in spec.extra_warnings:
@@ -209,8 +209,8 @@ def run_trending_mode(args):
     region_name = _region_config.display_name(first_region)
     theme_label = f" [{args.theme}]" if args.theme else ""
 
-    print(f"\n## {region_name} - Xトレンド銘柄{theme_label} スクリーニング結果\n")
-    print("Step 1: X (Twitter) でトレンド銘柄を検索中...")
+    print(f"\n## {region_name} - X Trending Stocks{theme_label} Screening Results\n")
+    print("Step 1: Searching for trending stocks on X (Twitter)...")
 
     from src.core.screening.screener import TrendingScreener
     screener = TrendingScreener(yahoo_client, gc)
@@ -219,9 +219,9 @@ def run_trending_mode(args):
     )
 
     results, excluded = _annotate(results)
-    print(f"Step 2: {len(results)}銘柄のファンダメンタルズを取得・スコアリング完了\n")
+    print(f"Step 2: Fundamentals fetched and scored for {len(results)} stock(s)\n")
     if excluded:
-        print(f"※ 直近売却済み {excluded}銘柄を除外\n")
+        print(f"* Recently sold {excluded} stock(s) excluded\n")
     print(format_trending_markdown(results, market_context))
 
     _print_recurring_picks(results)
@@ -247,14 +247,14 @@ def run_auto_theme_mode(args):
     first_region = regions[0]
     region_name = _region_config.display_name(first_region)
 
-    print(f"\n## {region_name} - トレンドテーマ自動検出 + スクリーニング\n")
-    print("Step 1: Grok でトレンドテーマを検出中...")
+    print(f"\n## {region_name} - Auto-Detected Trend Themes + Screening\n")
+    print("Step 1: Detecting trending themes with Grok...")
 
     grok_result = gc.get_trending_themes(region=region_key, timeout=60)
     all_themes = grok_result.get("themes", [])
 
     if not all_themes:
-        print("トレンドテーマを検出できませんでした。")
+        print("No trending themes detected.")
         return
 
     # Validate against themes.yaml
@@ -274,7 +274,7 @@ def run_auto_theme_mode(args):
     print(format_auto_theme_header(active_themes, skipped_themes))
 
     if not active_themes:
-        print("有効なテーマが見つかりませんでした（すべて未対応テーマ）。")
+        print("No valid themes found (all detected themes are unsupported).")
         return
 
     # Save theme trends to Neo4j (KIK-603)
@@ -299,7 +299,7 @@ def run_auto_theme_mode(args):
 
     for theme_info in active_themes:
         theme_key = theme_info["theme"]
-        print(f"\n### テーマ: {theme_key}\n")
+        print(f"\n### Theme: {theme_key}\n")
 
         for region_code in regions:
             rname = _region_config.display_name(region_code)
@@ -310,9 +310,9 @@ def run_auto_theme_mode(args):
                 args=args,
             )
             results, excluded = _annotate(results)
-            print(f"{rname}: {len(results)}銘柄")
+            print(f"{rname}: {len(results)} stock(s)")
             if excluded:
-                print(f"※ 直近売却済み {excluded}銘柄を除外")
+                print(f"* Recently sold {excluded} stock(s) excluded")
             if results:
                 print(spec.formatter(results))
 
@@ -359,10 +359,10 @@ def run_query_mode(args):
                 with_pullback=True,
             )
             results, excluded = _annotate(results)
-            pullback_label = " + 押し目フィルタ"
-            print(f"\n## {region_name} - {args.preset}{sector_label}{theme_label}{pullback_label} スクリーニング結果 (EquityQuery)\n")
+            pullback_label = " + Pullback Filter"
+            print(f"\n## {region_name} - {args.preset}{sector_label}{theme_label}{pullback_label} Screening Results (EquityQuery)\n")
             if excluded:
-                print(f"※ 直近売却済み {excluded}銘柄を除外\n")
+                print(f"* Recently sold {excluded} stock(s) excluded\n")
             print(format_pullback_markdown(results))
             _print_recurring_picks(results)
             _print_graphrag_context(results)
@@ -378,9 +378,9 @@ def run_query_mode(args):
 def run_legacy_mode(args):
     """Run screening using the original ValueScreener."""
     print(
-        "⚠️  [DEPRECATED] --mode legacy は非推奨です。"
-        " QueryScreener (デフォルト) を使用してください。"
-        " --mode legacy は将来削除予定です。"
+        "⚠️  [DEPRECATED] --mode legacy is deprecated."
+        " Please use QueryScreener (default)."
+        " --mode legacy will be removed in a future release."
     )
     # Map region to legacy market names
     region_to_market = {
@@ -412,16 +412,16 @@ def run_legacy_mode(args):
         screener = ValueScreener(client, market)
         results = screener.screen(preset=args.preset, top_n=args.top)
         results, excluded = _annotate(results)
-        print(f"\n## {market.name} - {args.preset} スクリーニング結果\n")
+        print(f"\n## {market.name} - {args.preset} Screening Results\n")
         if excluded:
-            print(f"※ 直近売却済み {excluded}銘柄を除外\n")
+            print(f"* Recently sold {excluded} stock(s) excluded\n")
         print(format_markdown(results))
         _save_history(args.preset, market_name, results)
         print()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="割安株スクリーニング")
+    parser = argparse.ArgumentParser(description="Undervalued stock screening")
 
     # --region is the primary argument; --market is kept for backward compatibility
     parser.add_argument(
@@ -459,14 +459,14 @@ def main():
         "--auto-theme",
         action="store_true",
         default=False,
-        help="Grok APIでトレンドテーマを自動検出し、各テーマでスクリーニングを実行。XAI_API_KEY必須。",
+        help="Auto-detect trending themes with Grok API and screen each theme. XAI_API_KEY required.",
     )
     parser.add_argument("--top", type=int, default=20)
     parser.add_argument(
         "--with-pullback",
         action="store_true",
         default=False,
-        help="任意プリセットにテクニカル押し目フィルタを追加適用",
+        help="Apply technical pullback filter on top of any preset.",
     )
     parser.add_argument(
         "--mode",
@@ -519,12 +519,12 @@ def main():
 
     # Validate --auto-theme (KIK-440)
     if args.auto_theme and args.theme:
-        print("Error: --auto-theme と --theme は同時に使用できません。")
+        print("Error: --auto-theme and --theme cannot be used together.")
         sys.exit(1)
     if args.auto_theme:
         spec = _registry.get(args.preset)
         if not spec.supports_theme:
-            print(f"Warning: --auto-theme は --preset {args.preset} と併用できません。--auto-theme を無視します。")
+            print(f"Warning: --auto-theme cannot be used with --preset {args.preset}. Ignoring --auto-theme.")
             args.auto_theme = False
 
     # Legacy mode check — use registry (KIK-514)
@@ -543,7 +543,7 @@ def main():
         run_legacy_mode(args)
 
     # Proactive suggestions (KIK-465)
-    print_suggestions(context_summary=f"スクリーニング完了: {args.preset} {args.region}")
+    print_suggestions(context_summary=f"Screening complete: {args.preset} {args.region}")
 
 
 if __name__ == "__main__":

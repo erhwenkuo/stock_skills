@@ -36,7 +36,7 @@ def check_change_quality(stock_detail: dict) -> dict:
             "passed_count": 0,
             "indicators": {},
             "earnings_penalty": 0,
-            "quality_label": "対象外",
+            "quality_label": "N/A",
             "is_etf": True,
             "etf_health": etf_health,
         }
@@ -48,11 +48,11 @@ def check_change_quality(stock_detail: dict) -> dict:
     passed_count = result["passed_count"]
 
     if passed_count >= 3:
-        quality_label = "良好"
+        quality_label = "Good"
     elif passed_count == 2:
-        quality_label = "1指標↓"
+        quality_label = "1 metric↓"
     else:
-        quality_label = "複数悪化"
+        quality_label = "Multiple deteriorated"
 
     return {
         "change_score": result["change_score"],

@@ -7,29 +7,29 @@ from src.output._format_helpers import fmt_float as _fmt_float
 def _render_stock_table(lines: list[str], positions: list[dict]) -> None:
     """Render the stock health check table (individual stocks)."""
     lines.append(
-        "| 銘柄 | 損益 | トレンド "
-        "| 変化の質 | アラート "
-        "| 長期適性 | 還元安定度 | 逆張り |"
+        "| Symbol | P&L | Trend "
+        "| Change Quality | Alert "
+        "| LT Suitability | Return Stability | Contrarian |"
     )
     lines.append("|:-----|-----:|:-------|:--------|:------------|:--------|:--------|:-------|")
 
     for pos in positions:
         symbol = pos.get("symbol", "-")
         if pos.get("is_small_cap"):
-            symbol += " [小型]"
+            symbol += " [small]"
         pnl_pct = pos.get("pnl_pct", 0)
         pnl_str = _fmt_pct_sign(pnl_pct) if pnl_pct is not None else "-"
 
-        trend = pos.get("trend_health", {}).get("trend", "不明")
+        trend = pos.get("trend_health", {}).get("trend", "Unknown")
         quality = pos.get("change_quality", {}).get("quality_label", "-")
         alert = pos.get("alert", {})
         alert_emoji = alert.get("emoji", "")
-        alert_label = alert.get("label", "なし")
+        alert_label = alert.get("label", "None")
 
         if alert_emoji:
             alert_str = f"{alert_emoji} {alert_label}"
         else:
-            alert_str = "なし"
+            alert_str = "None"
 
         # Value trap indicator (KIK-381)
         vt = pos.get("value_trap", {})
@@ -64,8 +64,8 @@ def _render_stock_table(lines: list[str], positions: list[dict]) -> None:
 def _render_etf_table(lines: list[str], positions: list[dict]) -> None:
     """Render the ETF health check table (KIK-469 Phase 2)."""
     lines.append(
-        "| 銘柄 | 損益 | トレンド "
-        "| 経費率 | AUM | ETFスコア | アラート |"
+        "| Symbol | P&L | Trend "
+        "| Expense Ratio | AUM | ETF Score | Alert |"
     )
     lines.append("|:-----|-----:|:-------|:--------|:------|----------:|:--------|")
 
@@ -73,7 +73,7 @@ def _render_etf_table(lines: list[str], positions: list[dict]) -> None:
         symbol = pos.get("symbol", "-")
         pnl_pct = pos.get("pnl_pct", 0)
         pnl_str = _fmt_pct_sign(pnl_pct) if pnl_pct is not None else "-"
-        trend = pos.get("trend_health", {}).get("trend", "不明")
+        trend = pos.get("trend_health", {}).get("trend", "Unknown")
 
         change_q = pos.get("change_quality", {})
         etf_health = change_q.get("etf_health") or pos.get("long_term", {}).get("etf_health")
@@ -89,8 +89,8 @@ def _render_etf_table(lines: list[str], positions: list[dict]) -> None:
 
         alert = pos.get("alert", {})
         alert_emoji = alert.get("emoji", "")
-        alert_label = alert.get("label", "なし")
-        alert_str = f"{alert_emoji} {alert_label}" if alert_emoji else "なし"
+        alert_label = alert.get("label", "None")
+        alert_str = f"{alert_emoji} {alert_label}" if alert_emoji else "None"
 
         lines.append(
             f"| {symbol} | {pnl_str} | {trend} | {expense} "
@@ -120,9 +120,9 @@ def format_health_check(health_data: dict) -> str:
     summary = health_data.get("summary", {})
 
     if not positions:
-        lines.append("## 保有銘柄ヘルスチェック")
+        lines.append("## Portfolio Health Check")
         lines.append("")
-        lines.append("保有銘柄がありません。")
+        lines.append("No holdings found.")
         return "\n".join(lines)
 
     # --- Compact summary (KIK-442) ---
@@ -139,14 +139,14 @@ def format_health_check(health_data: dict) -> str:
         suffix = " ..." if len(syms) > max_shown else ""
         return "  → " + ", ".join(shown) + suffix
 
-    lines.append("## 📊 ヘルスチェック サマリー（" + str(total) + "銘柄）")
+    lines.append("## 📊 Health Check Summary (" + str(total) + " stocks)")
     lines.append("")
-    lines.append(f"🔴 撤退検討  : {len(exit_syms)}銘柄{_syms_str(exit_syms)}")
-    lines.append(f"⚠️  注意      : {len(caution_syms)}銘柄{_syms_str(caution_syms)}")
-    lines.append(f"⏰ 早期警告  : {len(early_syms)}銘柄{_syms_str(early_syms)}")
-    lines.append(f"✅ 異常なし  : {healthy_count}銘柄")
+    lines.append(f"🔴 Exit candidates: {len(exit_syms)}{_syms_str(exit_syms)}")
+    lines.append(f"⚠️  Caution:         {len(caution_syms)}{_syms_str(caution_syms)}")
+    lines.append(f"⏰ Early warning:   {len(early_syms)}{_syms_str(early_syms)}")
+    lines.append(f"✅ Healthy:         {healthy_count}")
     lines.append("")
-    lines.append("─── 詳細 ────────────────────────────────")
+    lines.append("─── Details ────────────────────────────────")
     lines.append("")
 
     # KIK-469 Phase 2: Split tables by stock/ETF
@@ -155,25 +155,25 @@ def format_health_check(health_data: dict) -> str:
 
     if stock_positions is None:
         # Backward compat: old format without partition keys
-        lines.append("## 保有銘柄ヘルスチェック")
+        lines.append("## Portfolio Health Check")
         lines.append("")
         _render_stock_table(lines, positions)
     else:
         has_both = bool(stock_positions) and bool(etf_positions)
         if stock_positions:
             if has_both:
-                lines.append("## 個別株ヘルスチェック")
+                lines.append("## Individual Stock Health Check")
                 lines.append("")
             else:
-                lines.append("## 保有銘柄ヘルスチェック")
+                lines.append("## Portfolio Health Check")
                 lines.append("")
             _render_stock_table(lines, stock_positions)
         if etf_positions:
             if has_both:
-                lines.append("## ETFヘルスチェック")
+                lines.append("## ETF Health Check")
                 lines.append("")
             else:
-                lines.append("## 保有銘柄ヘルスチェック")
+                lines.append("## Portfolio Health Check")
                 lines.append("")
             _render_etf_table(lines, etf_positions)
 
@@ -184,11 +184,11 @@ def format_health_check(health_data: dict) -> str:
     caution = summary.get("caution", 0)
     exit_count = summary.get("exit", 0)
     lines.append(
-        f"**{total}銘柄**: "
-        f"健全 {healthy} / "
-        f"⚡早期警告 {early} / "
-        f"⚠注意 {caution} / "
-        f"🚨撤退 {exit_count}"
+        f"**{total} stocks**: "
+        f"Healthy {healthy} / "
+        f"⚡Early warning {early} / "
+        f"⚠Caution {caution} / "
+        f"🚨Exit {exit_count}"
     )
     lines.append("")
 
@@ -207,10 +207,10 @@ def format_health_check(health_data: dict) -> str:
             pct = int(w["weight"] * 100)
             members_str = ", ".join(w["members"])
             lines.append(
-                f"⚠️ コミュニティ集中: {w['community']} に"
-                f" {w['count']}銘柄（{pct}%）— {w['message']}"
+                f"⚠️ Community concentration: {w['community']} has"
+                f" {w['count']} stocks ({pct}%) — {w['message']}"
             )
-            lines.append(f"  対象: {members_str}")
+            lines.append(f"  Members: {members_str}")
         lines.append("")
 
     # Theme exposure analysis (KIK-604)
@@ -220,12 +220,12 @@ def format_health_check(health_data: dict) -> str:
         gap = theme_exposure.get("gap", [])
 
         if pf_themes or gap:
-            lines.append("## 📊 テーマ構成分析")
+            lines.append("## 📊 Theme Composition Analysis")
             lines.append("")
 
         if pf_themes:
-            lines.append("### PFテーマ構成")
-            lines.append("| テーマ | 銘柄数 | ウェイト | 銘柄 |")
+            lines.append("### Portfolio Theme Composition")
+            lines.append("| Theme | Count | Weight | Symbols |")
             lines.append("|:---|:---|:---|:---|")
             for theme_name, data in pf_themes.items():
                 count = len(data["symbols"])
@@ -235,12 +235,12 @@ def format_health_check(health_data: dict) -> str:
             lines.append("")
 
         if gap:
-            lines.append("### テーマギャップ（トレンドテーマ x PF未保有）")
+            lines.append("### Theme Gaps (Trending Themes \u00d7 Not in Portfolio)")
             for g in gap:
                 theme = g["theme"]
                 stock_count = g.get("stock_count", 0)
                 lines.append(
-                    f"- {theme}: 関連銘柄 {stock_count} -- PFに該当銘柄なし"
+                    f"- {theme}: {stock_count} related stocks -- not in portfolio"
                 )
             lines.append("")
 
@@ -253,21 +253,21 @@ def format_health_check(health_data: dict) -> str:
             hit = p["exit_rule_hit"]
             if hit["type"] == "stop_loss":
                 emoji = "\U0001f534"  # red circle
-                label = "損切りライン到達"
+                label = "Stop-loss reached"
             else:
                 emoji = "\U0001f7e2"  # green circle
-                label = "利確ライン到達"
+                label = "Take-profit reached"
             pnl = p.get("pnl_pct", 0)
             lines.append(
-                f"{emoji} {sym}: {label}（{hit['threshold']}、現在 {pnl:+.1f}%）"
+                f"{emoji} {sym}: {label} ({hit['threshold']}, current {pnl:+.1f}%)"
             )
             if hit.get("reason"):
-                lines.append(f"  理由: {hit['reason']}")
+                lines.append(f"  Reason: {hit['reason']}")
         lines.append("")
 
     # Alert details
     if alerts:
-        lines.append("## アラート詳細")
+        lines.append("## Alert Details")
         lines.append("")
 
         for pos in alerts:
@@ -280,54 +280,54 @@ def format_health_check(health_data: dict) -> str:
             change_q = pos.get("change_quality", {})
             change_score = change_q.get("change_score", 0)
 
-            lines.append(f"### {emoji} {symbol}（{label}）")
+            lines.append(f"### {emoji} {symbol} ({label})")
             lines.append("")
 
             for reason in reasons:
                 lines.append(f"- {reason}")
 
             # Additional context
-            trend = trend_h.get("trend", "不明")
+            trend = trend_h.get("trend", "Unknown")
             rsi = trend_h.get("rsi", float("nan"))
             sma50 = trend_h.get("sma50", float("nan"))
             sma200 = trend_h.get("sma200", float("nan"))
             quality_label = change_q.get("quality_label", "-")
 
             lines.append(
-                f"- トレンド: {trend}"
-                f"（SMA50={_fmt_float(sma50)}, "
+                f"- Trend: {trend}"
+                f" (SMA50={_fmt_float(sma50)}, "
                 f"SMA200={_fmt_float(sma200)}, "
-                f"RSI={_fmt_float(rsi)}）"
+                f"RSI={_fmt_float(rsi)})"
             )
 
             # ETF-specific context (KIK-469)
             etf_h = change_q.get("etf_health")
             if change_q.get("is_etf") and etf_h:
                 lines.append(f"- ETF: {etf_h.get('fund_category', '-')} / {etf_h.get('fund_family', '-')}")
-                lines.append(f"- 経費率: {etf_h.get('expense_label', '-')} / AUM: {etf_h.get('aum_label', '-')}")
+                lines.append(f"- Expense ratio: {etf_h.get('expense_label', '-')} / AUM: {etf_h.get('aum_label', '-')}")
                 for etf_alert in etf_h.get("alerts", []):
                     lines.append(f"- {etf_alert}")
             else:
                 lines.append(
-                    f"- 変化の質: {quality_label}"
-                    f"（変化スコア {change_score:.0f}/100）"
+                    f"- Change quality: {quality_label}"
+                    f" (change score {change_score:.0f}/100)"
                 )
 
             # Long-term suitability context (KIK-371)
             lt = pos.get("long_term", {})
             lt_label = lt.get("label", "-")
             lt_summary = lt.get("summary", "")
-            if lt_label not in ("対象外", "-"):
+            if lt_label not in ("N/A", "-"):
                 lines.append(
-                    f"- 長期適性: {lt_label}"
-                    f"（{lt_summary}）"
+                    f"- Long-term suitability: {lt_label}"
+                    f" ({lt_summary})"
                 )
 
             # Value trap warning (KIK-381)
             vt = pos.get("value_trap")
             if vt and vt.get("is_trap"):
                 lines.append(
-                    f"- \U0001fa64 **バリュートラップ兆候**: "
+                    f"- \U0001fa64 **Value trap signs**: "
                     f"{', '.join(vt['reasons'])}"
                 )
 
@@ -339,25 +339,25 @@ def format_health_check(health_data: dict) -> str:
                 avg_pct = (rs.get("avg_rate") or 0) * 100
                 if stability == "temporary":
                     lines.append(
-                        f"- ⚠️ **一時的高還元**: "
+                        f"- ⚠️ **Temporarily high returns**: "
                         f"{rs.get('reason', '')}"
-                        f"（直近 {latest_pct:.1f}%、"
-                        f"平均 {avg_pct:.1f}%）"
+                        f" (latest {latest_pct:.1f}%, "
+                        f"avg {avg_pct:.1f}%)"
                     )
                 elif stability == "decreasing":
                     lines.append(
-                        f"- 📉 **株主還元減少傾向**: "
+                        f"- 📉 **Shareholder return declining**: "
                         f"{rs.get('reason', '')}"
                     )
                 elif stability in ("stable", "increasing"):
                     lines.append(
                         f"- {rs.get('label', '')} "
-                        f"（直近 {latest_pct:.1f}%）"
+                        f"(latest {latest_pct:.1f}%)"
                     )
                 elif stability and stability.startswith("single_"):
                     lines.append(
                         f"- {rs.get('label', '')} "
-                        f"（{rs.get('reason', '')}）"
+                        f"({rs.get('reason', '')})"
                     )
 
             # Contrarian signal for alerted stocks (KIK-504, KIK-533)
@@ -369,36 +369,33 @@ def format_health_check(health_data: dict) -> str:
                 ct_val = ct.get("valuation", {}).get("score", 0)
                 ct_fund = ct.get("fundamental", {}).get("score", 0)
                 lines.append(
-                    f"- 逆張りスコア: {ct_score:.0f}/100 (グレード{ct_grade}) "
-                    f"[テク{ct_tech:.0f} バリュ{ct_val:.0f} ファンダ{ct_fund:.0f}]"
+                    f"- Contrarian score: {ct_score:.0f}/100 (grade {ct_grade}) "
+                    f"[Tech {ct_tech:.0f} Value {ct_val:.0f} Fund {ct_fund:.0f}]"
                 )
                 if ct_grade in ("A", "B"):
                     lines.append(
-                        "  → **逆張り買い候補**: "
-                        "割安かつテクニカル的に売られすぎの可能性"
+                        "  → **Contrarian buy candidate**: "
+                        "Potentially undervalued and technically oversold"
                     )
                 elif ct_grade == "C":
                     lines.append(
-                        "  → 弱い逆張りシグナル: "
-                        "一部条件が整っている"
+                        "  → Weak contrarian signal: "
+                        "Some conditions are met"
                     )
 
             # Action suggestion based on alert level
             level = alert.get("level", "none")
             if level == "early_warning":
                 lines.append(
-                    "→ 一時的な調整の"
-                    "可能性。ウォッチ強化"
+                    "→ Possible temporary pullback. Increase monitoring"
                 )
             elif level == "caution":
                 lines.append(
-                    "→ ポジション縮小"
-                    "を検討"
+                    "→ Consider reducing position"
                 )
             elif level == "exit":
                 lines.append(
-                    "→ 投資仮説が崩壊。"
-                    "exitを検討"
+                    "→ Investment thesis has collapsed. Consider exiting"
                 )
 
             lines.append("")

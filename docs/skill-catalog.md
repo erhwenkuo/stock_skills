@@ -1,6 +1,6 @@
 # Skill Catalog
 
-8つの Claude Code Skills の一覧。すべて `.claude/skills/<name>/SKILL.md` で定義され、`scripts/*.py` で実装。
+A catalog of 8 Claude Code Skills. All defined in `.claude/skills/<name>/SKILL.md` and implemented in `scripts/*.py`.
 
 ---
 
@@ -9,32 +9,32 @@
 <!-- BEGIN AUTO-GENERATED OVERVIEW -->
 | Skill | Description |
 |:---|:---|
-| graph-query | 知識グラフへの自然言語クエリ。過去のレポート・スクリーニング・取引・リサーチ・市況を検索。 |
-| investment-note | 投資メモの管理。投資テーゼ・懸念・学びなどをノートとして記録・参照・削除。 |
-| market-research | 銘柄・業界・マーケット・ビジネスモデルの深掘りリサーチ。Grok API (X/Web検索) と yfinance を統合して多角的な分析レポートを生成する。 |
-| plan-execute | プランモード — ワークフロー設計後にスキルを実行する。「プランモードで」と言われたときに起動。 |
-| screen-stocks | 割安株スクリーニング。EquityQuery で銘柄リスト不要のスクリーニング。PER/PBR/配当利回り/ROE等で日本株・米国株・ASEAN株・香港株... |
-| stock-portfolio | ポートフォリオ管理。保有銘柄の一覧表示・売買記録・構造分析。ストレステストの入力データ基盤。 |
-| stock-report | 個別銘柄・ETFの詳細レポート。ティッカーシンボルを指定して財務分析レポートを生成する。個別株はバリュエーション・割安度判定・株主還元率を表示。ETFは経... |
-| stress-test | ポートフォリオのストレステスト。保有銘柄リストを受け取り、ショック感応度・シナリオ分析・因果連鎖を通じてPFの弱点を特定する。 |
-| watchlist | ウォッチリストの管理。銘柄の追加・削除・一覧表示。 |
+| graph-query | Natural language queries to the knowledge graph. Search past reports, screenings, trades, research, and market context. |
+| investment-note | Investment note management. Record, retrieve, and delete investment theses, concerns, and lessons. |
+| market-research | Deep research on stocks, industries, markets, and business models. Integrates Grok API (X/Web search) and yfinance for multi-angle analysis reports. |
+| plan-execute | Plan mode — design a workflow then execute skills. Activated when "plan mode" is requested. |
+| screen-stocks | Undervalued stock screening. EquityQuery-based screening without a pre-defined ticker list. Screens Japanese, US, ASEAN, Hong Kong... stocks by P/E, P/B, dividend yield, ROE, etc. |
+| stock-portfolio | Portfolio management. List holdings, record trades, structural analysis. Foundation for stress test input data. |
+| stock-report | Detailed report for individual stocks and ETFs. Generates a financial analysis report from a ticker symbol. Individual stocks show valuation, undervaluation score, and shareholder return rate. ETFs show expense ratio, AUM, and fund size. |
+| stress-test | Portfolio stress test. Receives a list of holdings and identifies portfolio weaknesses through shock sensitivity, scenario analysis, and causal chains. |
+| watchlist | Watchlist management. Add, remove, and list stocks. |
 <!-- END AUTO-GENERATED OVERVIEW -->
 
 ---
 
 ## 1. screen-stocks
 
-割安株スクリーニング。EquityQuery 方式で銘柄リスト不要のスクリーニングを実行。
+Undervalued stock screening. Executes EquityQuery-based screening without a pre-defined ticker list.
 
 **Script**: `.claude/skills/screen-stocks/scripts/run_screen.py`
 
 **Options**:
-- `--region`: 対象地域 (japan, us, asean, sg, hk, kr, tw, cn, etc.)
-- `--preset`: 戦略プリセット (alpha, value, high-dividend, growth, growth-value, deep-value, quality, pullback, trending, long-term, shareholder-return, high-growth, small-cap-growth, contrarian, momentum)
-- `--sector`: セクター絞り込み (e.g. Technology)
-- `--top N`: 上位N件表示
-- `--with-pullback`: 押し目分析を付加
-- `--theme`: trending プリセットのテーマ指定
+- `--region`: Target region (japan, us, asean, sg, hk, kr, tw, cn, etc.)
+- `--preset`: Strategy preset (alpha, value, high-dividend, growth, growth-value, deep-value, quality, pullback, trending, long-term, shareholder-return, high-growth, small-cap-growth, contrarian, momentum)
+- `--sector`: Sector filter (e.g. Technology)
+- `--top N`: Show top N results
+- `--with-pullback`: Add pullback analysis
+- `--theme`: Theme filter for trending preset
 
 **Examples**:
 ```bash
@@ -46,13 +46,13 @@ python3 run_screen.py --region japan --preset momentum --top 10
 python3 run_screen.py --region japan --preset contrarian --top 10
 ```
 
-**Output**: Markdown テーブル (銘柄/名前/スコア/PER/PBR/配当利回り/ROE)。contrarian プリセット (KIK-504) は3軸スコア（テクニカル/バリュエーション/ファンダ乖離）付き、momentum プリセット (KIK-506) はモメンタム4軸スコア（RSI/MACD/ROC/出来高）付き。直近売却済み銘柄は自動除外(KIK-418)、懸念/学びメモがある銘柄にはマーカー表示(KIK-419)。
+**Output**: Markdown table (ticker / name / score / P/E / P/B / dividend yield / ROE). The contrarian preset (KIK-504) includes a 3-axis score (technical / valuation / fundamental divergence); the momentum preset (KIK-506) includes a 4-axis momentum score (RSI / MACD / ROC / volume). Recently sold tickers are automatically excluded (KIK-418); tickers with concern/lesson notes are marked (KIK-419).
 
 **Annotation Markers** (KIK-418/419):
-- ⚠️ = 懸念メモあり (concern)
-- 📝 = 学びメモあり (lesson)
-- 👀 = 様子見 (observation に「見送り」「待ち」等キーワード)
-- 直近90日以内の売却銘柄は結果から自動除外
+- ⚠️ = Has concern note
+- 📝 = Has lesson note
+- 👀 = On watch (observation note with keywords like "pass" or "wait")
+- Tickers sold within the last 90 days are automatically excluded from results
 
 **Core Dependencies**: `src/core/screening/screener.py`, `indicators.py`, `filters.py`, `query_builder.py`, `alpha.py`, `technicals.py`, `contrarian.py`, `contrarian_screener.py`, `momentum.py`, `momentum_screener.py`, `src/data/screen_annotator.py`
 
@@ -60,11 +60,11 @@ python3 run_screen.py --region japan --preset contrarian --top 10
 
 ## 2. stock-report
 
-個別銘柄の詳細バリュエーションレポート。
+Detailed valuation report for an individual stock.
 
 **Script**: `.claude/skills/stock-report/scripts/generate_report.py`
 
-**Input**: ティッカーシンボル (e.g. 7203.T, AAPL)
+**Input**: Ticker symbol (e.g. 7203.T, AAPL)
 
 **Examples**:
 ```bash
@@ -72,7 +72,7 @@ python3 generate_report.py 7203.T
 python3 generate_report.py AAPL
 ```
 
-**Output**: Markdown レポート (基本情報/バリュエーション/割安度判定/逆張りシグナル/株主還元率/3年還元推移/バリュートラップ判定)
+**Output**: Markdown report (basic info / valuation / undervaluation score / contrarian signals / shareholder return rate / 3-year return history / value trap detection)
 
 **Core Dependencies**: `src/core/screening/indicators.py`, `src/core/value_trap.py`, `src/core/screening/contrarian.py`, `src/data/yahoo_client.py`
 
@@ -80,77 +80,77 @@ python3 generate_report.py AAPL
 
 ## 3. market-research
 
-Grok API (X検索/Web検索) と yfinance を統合した深掘りリサーチ。
+Deep research integrating Grok API (X search/Web search) and yfinance.
 
 **Script**: `.claude/skills/market-research/scripts/run_research.py`
 
 **Subcommands**:
-- `stock <symbol>`: 個別銘柄の最新ニュース・Xセンチメント
-- `industry <name>`: 業界動向リサーチ
-- `market <name>`: マーケット概況
-- `business <symbol>`: ビジネスモデル・事業構造分析
+- `stock <symbol>`: Latest news and X sentiment for an individual stock
+- `industry <name>`: Industry trend research
+- `market <name>`: Market overview
+- `business <symbol>`: Business model and corporate structure analysis
 
 **Examples**:
 ```bash
 python3 run_research.py stock 7203.T
-python3 run_research.py industry 半導体
-python3 run_research.py market 日経平均
+python3 run_research.py industry semiconductors
+python3 run_research.py market nikkei
 python3 run_research.py business 7751.T
 ```
 
-**Output**: Markdown レポート (概要/ニュース/Xトレンド/分析)
+**Output**: Markdown report (overview / news / X trends / analysis)
 
 **Core Dependencies**: `src/core/research/researcher.py`, `src/data/grok_client.py`, `src/data/yahoo_client.py`
 
-**Note**: XAI_API_KEY 環境変数が必要。未設定時は Grok 部分をスキップして yfinance のみで生成。
+**Note**: Requires the `XAI_API_KEY` environment variable. If unset, the Grok portion is skipped and the report is generated from yfinance data only.
 
 ---
 
 ## 4. watchlist
 
-ウォッチリストの CRUD 管理。
+CRUD management for watchlists.
 
 **Script**: `.claude/skills/watchlist/scripts/manage_watchlist.py`
 
 **Subcommands**:
-- `list [--name NAME]`: 一覧表示
-- `add --name NAME --symbols SYM1,SYM2`: 銘柄追加
-- `remove --name NAME --symbols SYM1`: 銘柄削除
+- `list [--name NAME]`: List watchlists
+- `add --name NAME --symbols SYM1,SYM2`: Add tickers
+- `remove --name NAME --symbols SYM1`: Remove tickers
 
 **Examples**:
 ```bash
 python3 manage_watchlist.py list
-python3 manage_watchlist.py add --name "注目" --symbols "7203.T,AAPL"
-python3 manage_watchlist.py remove --name "注目" --symbols "7203.T"
+python3 manage_watchlist.py add --name "watchlist" --symbols "7203.T,AAPL"
+python3 manage_watchlist.py remove --name "watchlist" --symbols "7203.T"
 ```
 
-**Output**: Markdown リスト
+**Output**: Markdown list
 
-**Core Dependencies**: なし (直接 JSON ファイルを読み書き)
+**Core Dependencies**: None (reads/writes JSON files directly)
 
 ---
 
 ## 5. stress-test
 
-ポートフォリオのストレステスト。8つの定義済みシナリオ + カスタムシナリオ。
+Portfolio stress test. 8 predefined scenarios + custom scenarios.
 
 **Script**: `.claude/skills/stress-test/scripts/run_stress_test.py`
 
 **Options**:
-- `--portfolio`: 銘柄リスト (カンマ区切り) またはPFから自動取得
-- `--scenario`: シナリオ指定 (トリプル安, ドル高円安, etc.)
+- `--portfolio`: Comma-separated ticker list or auto-fetched from portfolio
+- `--scenario`: Scenario name (triple-meltdown, USD/JPY surge, etc.)
 
 **Examples**:
 ```bash
 python3 run_stress_test.py --portfolio 7203.T,AAPL,D05.SI
-python3 run_stress_test.py --scenario テック暴落
+python3 run_stress_test.py --scenario tech-crash
 ```
 
-**Output**: Markdown レポート (相関行列/ショック感応度/シナリオ分析/因果連鎖/推奨アクション)。実行結果は `data/history/stress_test/` に自動保存 (KIK-428)。
+**Output**: Markdown report (correlation matrix / shock sensitivity / scenario analysis / causal chain / recommended actions). Results are auto-saved to `data/history/stress_test/` (KIK-428).
 
-**Scenarios**: トリプル安、ドル高円安、米国リセッション、日銀利上げ、米中対立、インフレ再燃、テック暴落、円高ドル安
+**Scenarios**: Triple meltdown, USD/JPY surge, US recession, BOJ rate hike, US-China conflict, inflation resurgence, tech crash, JPY appreciation
 
-**Auto-Save** (KIK-428): 実行完了時に `data/history/stress_test/{date}_{scenario}.json` へ自動保存。Neo4j にも StressTest ノード + STRESSED リレーションを dual-write。
+**Auto-Save** (KIK-428): On completion, auto-saved to `data/history/stress_test/{date}_{scenario}.json`. Also dual-writes a StressTest node + STRESSED relationship to Neo4j.
 
 **Core Dependencies**: `src/core/risk/correlation.py`, `shock_sensitivity.py`, `scenario_analysis.py`, `scenario_definitions.py`, `recommender.py`, `src/data/history_store.py`
 
@@ -158,7 +158,7 @@ python3 run_stress_test.py --scenario テック暴落
 
 ## 6. stock-portfolio
 
-ポートフォリオ管理。13のサブコマンドで保有管理・分析・シミュレーションを実行。
+Portfolio management. 13 subcommands for holdings management, analysis, and simulation.
 
 **Script**: `.claude/skills/stock-portfolio/scripts/run_portfolio.py`
 
@@ -166,18 +166,18 @@ python3 run_stress_test.py --scenario テック暴落
 
 | Command | Description |
 |:---|:---|
-| `list` | 保有銘柄一覧 (CSV 表示) |
-| `snapshot` | 現在価格・損益・通貨換算のスナップショット |
-| `buy` | 購入記録追加 |
-| `sell` | 売却記録 |
-| `analyze` | 構造分析 (セクター/地域/通貨 HHI) |
-| `health` | ヘルスチェック (3段階アラート+クロス検出+バリュートラップ+還元安定度) |
-| `forecast` | 推定利回り (3シナリオ)。結果は自動保存 (KIK-428) |
-| `rebalance` | リバランス提案 |
-| `simulate` | 複利シミュレーション |
-| `what-if` | What-If シミュレーション (銘柄追加の影響) |
-| `backtest` | 過去のスクリーニング結果からリターン検証 |
-| `adjust` | ポートフォリオ調整アドバイザー (17ルール診断→アクション提案, KIK-496) |
+| `list` | List holdings (CSV display) |
+| `snapshot` | Snapshot of current prices, P&L, and currency conversion |
+| `buy` | Record a purchase |
+| `sell` | Record a sale |
+| `analyze` | Structural analysis (sector / region / currency HHI) |
+| `health` | Health check (3-level alerts + cross detection + value trap + return stability) |
+| `forecast` | Estimated yield (3 scenarios). Results are auto-saved (KIK-428) |
+| `rebalance` | Rebalancing suggestions |
+| `simulate` | Compound interest simulation |
+| `what-if` | What-If simulation (impact of adding a stock) |
+| `backtest` | Verify returns from past screening results |
+| `adjust` | Portfolio adjustment advisor (17-rule diagnosis → action suggestions, KIK-496) |
 
 **Examples**:
 ```bash
@@ -192,7 +192,7 @@ python3 run_portfolio.py adjust
 python3 run_portfolio.py adjust --full
 ```
 
-**Auto-Save** (KIK-428): forecast サブコマンド実行完了時に `data/history/forecast/{date}_forecast.json` へ自動保存。Neo4j にも Forecast ノード + FORECASTED リレーションを dual-write。
+**Auto-Save** (KIK-428): On `forecast` subcommand completion, auto-saved to `data/history/forecast/{date}_forecast.json`. Also dual-writes a Forecast node + FORECASTED relationship to Neo4j.
 
 **Core Dependencies**: `src/core/portfolio/portfolio_manager.py`, `concentration.py`, `rebalancer.py`, `simulator.py`, `backtest.py`, `portfolio_simulation.py`, `adjustment_advisor.py`, `market_regime.py`, `src/core/health_check.py`, `return_estimate.py`, `value_trap.py`, `src/data/history_store.py`
 
@@ -200,7 +200,7 @@ python3 run_portfolio.py adjust --full
 
 ## 7. investment-note
 
-投資メモの管理。JSON + Neo4j の dual-write パターン。
+Investment note management. Dual-write pattern with JSON + Neo4j.
 
 **Script**: `.claude/skills/investment-note/scripts/manage_note.py`
 
@@ -213,13 +213,13 @@ python3 run_portfolio.py adjust --full
 
 **Examples**:
 ```bash
-python3 manage_note.py save --symbol 7203.T --type thesis --content "EV普及で部品需要増"
+python3 manage_note.py save --symbol 7203.T --type thesis --content "EV adoption increases parts demand"
 python3 manage_note.py list --symbol 7203.T
 python3 manage_note.py list --type lesson
 python3 manage_note.py delete --id abc123
 ```
 
-**Output**: Markdown テーブル (日付/銘柄/タイプ/内容)
+**Output**: Markdown table (date / ticker / type / content)
 
 **Core Dependencies**: `src/data/note_manager.py`, `src/data/graph_store.py`
 
@@ -227,34 +227,34 @@ python3 manage_note.py delete --id abc123
 
 ## 8. graph-query
 
-知識グラフへの自然言語クエリ。テンプレートマッチで正規表現パターンから graph_query.py の関数にディスパッチ。
+Natural language queries to the knowledge graph. Dispatches regex pattern matches from natural language to functions in `graph_query.py`.
 
 **Script**: `.claude/skills/graph-query/scripts/run_query.py`
 
-**Input**: 自然言語クエリ
+**Input**: Natural language query
 
 **Supported Query Types**:
 
 | Pattern | Query Type | Function |
 |:---|:---|:---|
-| 前回、以前、過去のレポート | prior_report | `get_prior_report(symbol)` |
-| 何回もスクリーニング、繰り返し候補 | recurring_picks | `get_recurring_picks()` |
-| リサーチ履歴、前に調べた | research_chain | `get_research_chain(type, target)` |
-| 最近の相場、市況 | market_context | `get_recent_market_context()` |
-| 取引履歴、売買記録 | trade_context | `get_trade_context(symbol)` |
-| メモ、ノート一覧 | stock_notes | `get_trade_context(symbol).notes` |
-| ストレステスト履歴、前回のストレステスト | stress_test_history | `get_stress_test_history(symbol)` (KIK-428) |
-| フォーキャスト推移、前回の見通し | forecast_history | `get_forecast_history(symbol)` (KIK-428) |
+| last time, previous, past report | prior_report | `get_prior_report(symbol)` |
+| appeared many times, recurring candidate | recurring_picks | `get_recurring_picks()` |
+| research history, previously researched | research_chain | `get_research_chain(type, target)` |
+| recent market, market context | market_context | `get_recent_market_context()` |
+| trade history, buy/sell record | trade_context | `get_trade_context(symbol)` |
+| notes, memo list | stock_notes | `get_trade_context(symbol).notes` |
+| stress test history, last stress test | stress_test_history | `get_stress_test_history(symbol)` (KIK-428) |
+| forecast trend, last outlook | forecast_history | `get_forecast_history(symbol)` (KIK-428) |
 
 **Examples**:
 ```bash
-python3 run_query.py "7203.Tの前回レポートは？"
-python3 run_query.py "繰り返し候補に上がってる銘柄は？"
-python3 run_query.py "AAPLの取引履歴"
-python3 run_query.py "最近の市況は？"
+python3 run_query.py "What was the last report on 7203.T?"
+python3 run_query.py "Which stocks keep showing up as candidates?"
+python3 run_query.py "AAPL trade history"
+python3 run_query.py "What is the recent market context?"
 ```
 
-**Output**: Markdown テーブル (クエリタイプに応じたフォーマット)
+**Output**: Markdown table (format depends on query type)
 
 **Core Dependencies**: `src/data/graph_nl_query.py`, `src/data/graph_query.py`, `src/data/graph_store.py`
 
@@ -286,6 +286,6 @@ investment-note → note_manager, graph_store
 graph-query ────→ graph_nl_query, graph_query, graph_store
 
 (auto-context) ─→ auto_context (graph_store, graph_query)
-                   ※ スキルではなく rules/graph-context.md + scripts/get_context.py
-                   ※ スキル実行前に自動でコンテキスト注入
+                   ※ Not a skill — uses rules/graph-context.md + scripts/get_context.py
+                   ※ Context is automatically injected before skill execution
 ```

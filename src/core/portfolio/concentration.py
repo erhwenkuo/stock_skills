@@ -109,10 +109,10 @@ def _classify_risk_level(hhi: float) -> str:
         Risk level label in Japanese.
     """
     if hhi < 0.25:
-        return "分散"
+        return "Diversified"
     if hhi < 0.50:
-        return "やや集中"
-    return "危険な集中"
+        return "Somewhat concentrated"
+    return "Dangerously concentrated"
 
 
 def analyze_concentration(
@@ -155,37 +155,37 @@ def analyze_concentration(
     """
     # Sector HHI
     sector_hhi, sector_breakdown = _compute_axis_hhi(
-        portfolio_data, weights, "sector", default_label="不明"
+        portfolio_data, weights, "sector", default_label="Unknown"
     )
 
     # Region HHI -- try "country" first, fall back to "region"
     region_hhi, region_breakdown = _compute_axis_hhi(
-        portfolio_data, weights, "country", default_label="不明"
+        portfolio_data, weights, "country", default_label="Unknown"
     )
-    # If all ended up "不明", try the "region" key instead
-    if list(region_breakdown.keys()) == ["不明"]:
+    # If all ended up "Unknown", try the "region" key instead
+    if list(region_breakdown.keys()) == ["Unknown"]:
         region_hhi, region_breakdown = _compute_axis_hhi(
-            portfolio_data, weights, "region", default_label="不明"
+            portfolio_data, weights, "region", default_label="Unknown"
         )
 
     # Currency HHI
     currency_hhi, currency_breakdown = _compute_axis_hhi(
-        portfolio_data, weights, "currency", default_label="不明"
+        portfolio_data, weights, "currency", default_label="Unknown"
     )
 
     # Size HHI (KIK-438)
     size_hhi, size_breakdown = _compute_axis_hhi(
-        portfolio_data, weights, "size_class", default_label="不明"
+        portfolio_data, weights, "size_class", default_label="Unknown"
     )
 
     # Determine the axis with the highest HHI
-    # Exclude size axis from max_hhi if all entries are "不明" (no data)
+    # Exclude size axis from max_hhi if all entries are "Unknown" (no data)
     axes = {
         "sector": sector_hhi,
         "region": region_hhi,
         "currency": currency_hhi,
     }
-    if set(size_breakdown.keys()) != {"不明"}:
+    if set(size_breakdown.keys()) != {"Unknown"}:
         axes["size"] = size_hhi
     max_hhi_axis = max(axes, key=axes.get)
     max_hhi = axes[max_hhi_axis]

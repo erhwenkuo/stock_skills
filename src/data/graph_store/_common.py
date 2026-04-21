@@ -77,10 +77,10 @@ def is_available() -> bool:
     if driver is None:
         if not _unavailable_warned:
             print(
-                "⚠️  Neo4jに接続できません\n"
-                "    原因: Dockerコンテナが起動していない可能性があります\n"
-                "    対処: docker compose up -d を実行してください\n"
-                "    → Neo4jなしで続行します（コンテキストなし）",
+                "⚠️  Cannot connect to Neo4j\n"
+                "    Cause: Docker container may not be running\n"
+                "    Fix: run docker compose up -d\n"
+                "    → Continuing without Neo4j (no context)",
                 file=sys.stderr,
             )
             _unavailable_warned = True
@@ -92,10 +92,10 @@ def is_available() -> bool:
     except Exception:
         if not _unavailable_warned:
             print(
-                "⚠️  Neo4jに接続できません\n"
-                "    原因: Dockerコンテナが起動していない可能性があります\n"
-                "    対処: docker compose up -d を実行してください\n"
-                "    → Neo4jなしで続行します（コンテキストなし）",
+                "⚠️  Cannot connect to Neo4j\n"
+                "    Cause: Docker container may not be running\n"
+                "    Fix: run docker compose up -d\n"
+                "    → Continuing without Neo4j (no context)",
                 file=sys.stderr,
             )
             _unavailable_warned = True

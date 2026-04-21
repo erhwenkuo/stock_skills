@@ -135,21 +135,21 @@ def extract_constraints(
 def format_constraints_markdown(result: dict) -> str:
     """Format constraint extraction result as markdown."""
     lines = [
-        f"## 制約条件 ({result['action_type']})",
+        f"## Constraints ({result['action_type']})",
         "",
     ]
     if result["symbols"]:
-        lines.append(f"対象シンボル: {', '.join(result['symbols'])}")
+        lines.append(f"Target symbols: {', '.join(result['symbols'])}")
         lines.append("")
 
     if not result["constraints"]:
-        lines.append("該当するlessonはありません。")
+        lines.append("No matching lessons found.")
         return "\n".join(lines)
 
     for i, c in enumerate(result["constraints"], 1):
         lines.append(
-            f"### 制約{i}: {c['source']} ({c['community']}, "
-            f"関連度{c['relevance_score']:.2f})"
+            f"### Constraint {i}: {c['source']} ({c['community']}, "
+            f"relevance {c['relevance_score']:.2f})"
         )
         lines.append(f"- **trigger**: {c['trigger']}")
         lines.append(f"- **expected_action**: {c['expected_action']}")
@@ -182,14 +182,14 @@ def _build_lot_size_constraints(symbols: list[str]) -> list[dict]:
         currency = infer_currency(sym)
         constraints.append({
             "id": f"system_lot_size_{sym}",
-            "trigger": f"{sym}の売買提案時",
+            "trigger": f"When proposing trade for {sym}",
             "expected_action": (
-                f"{sym}は{lot}株単位でしか売買できない。"
-                f"一部売却（{lot}株未満）は不可能。"
-                f"購入時は{lot}株×株価({currency})が予算内か確認すること"
+                f"{sym} can only be traded in lots of {lot} shares. "
+                f"Partial sell (fewer than {lot} shares) is not possible. "
+                f"On purchase, confirm {lot} shares × price ({currency}) is within budget."
             ),
-            "source": f"【システム制約】{sym}の売買単位={lot}株",
-            "community": "システム制約",
+            "source": f"[System Constraint] {sym} lot size = {lot} shares",
+            "community": "System Constraint",
             "relevance_score": 1.0,  # Always highest priority
         })
     return constraints
@@ -301,7 +301,7 @@ def _classify_community(lesson: dict) -> str:
         trigger = _get_trigger(lesson)
         return classify_lesson(content, trigger)
     except ImportError:
-        return "その他"
+        return "Other"
 
 
 def _lesson_to_constraint(lesson: dict, relevance_score: float) -> dict:

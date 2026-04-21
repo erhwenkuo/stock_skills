@@ -1,6 +1,6 @@
 markets:
   japan:
-    name: "日本株"
+    name: "Japanese Stocks"
     exchange_suffix: ".T"
     currency: "JPY"
     value_thresholds:
@@ -10,7 +10,7 @@ markets:
       roe_min: 0.08
 
   us:
-    name: "米国株"
+    name: "US Stocks"
     exchange_suffix: ""
     currency: "USD"
     value_thresholds:
@@ -20,7 +20,7 @@ markets:
       roe_min: 0.10
 
   asean:
-    name: "ASEAN株"
+    name: "ASEAN Stocks"
     exchanges:
       singapore: { suffix: ".SI", currency: "SGD" }
       thailand: { suffix: ".BK", currency: "THB" }

@@ -86,16 +86,16 @@ def format_snapshot(snapshot: dict) -> str:
     else:
         ts_display = datetime.now().strftime("%Y/%m/%d %H:%M")
 
-    lines.append(f"## \u30dd\u30fc\u30c8\u30d5\u30a9\u30ea\u30aa \u30b9\u30ca\u30c3\u30d7\u30b7\u30e7\u30c3\u30c8 ({ts_display})")
+    lines.append(f"## Portfolio Snapshot ({ts_display})")
     lines.append("")
 
     # Positions table
     positions = snapshot.get("positions", [])
     if not positions:
-        lines.append("\u4fdd\u6709\u9298\u67c4\u304c\u3042\u308a\u307e\u305b\u3093\u3002")
+        lines.append("No holdings found.")
         return "\n".join(lines)
 
-    lines.append("| \u9298\u67c4 | \u30e1\u30e2 | \u682a\u6570 | \u53d6\u5f97\u5358\u4fa1 | \u73fe\u5728\u4fa1\u683c | \u8a55\u4fa1\u984d | \u640d\u76ca | \u640d\u76ca\u7387 |")
+    lines.append("| Symbol | Memo | Shares | Cost Price | Current Price | Value | P&L | P&L% |")
     lines.append("|:-----|:-----|-----:|-------:|-------:|------:|-----:|-----:|")
 
     for pos in positions:
@@ -126,32 +126,32 @@ def format_snapshot(snapshot: dict) -> str:
     lines.append("")
 
     # Summary
-    lines.append("### \u30b5\u30de\u30ea\u30fc")
+    lines.append("### Summary")
 
     total_mv = snapshot.get("total_market_value_jpy")
     total_cost = snapshot.get("total_cost_jpy")
     total_pnl = snapshot.get("total_pnl_jpy")
     total_pnl_pct = snapshot.get("total_pnl_pct")
 
-    lines.append(f"- \u7dcf\u8a55\u4fa1\u984d\uff08\u5186\uff09: {_fmt_jpy(total_mv)}")
-    lines.append(f"- \u7dcf\u6295\u8cc7\u984d\uff08\u5186\uff09: {_fmt_jpy(total_cost)}")
+    lines.append(f"- Total Value (JPY): {_fmt_jpy(total_mv)}")
+    lines.append(f"- Total Cost (JPY): {_fmt_jpy(total_cost)}")
 
     if total_pnl is not None and total_pnl_pct is not None:
         indicator = _pnl_indicator(total_pnl)
         lines.append(
-            f"- \u7dcf\u640d\u76ca\uff08\u5186\uff09: {indicator} {_fmt_jpy(total_pnl)} "
+            f"- Total P&L (JPY): {indicator} {_fmt_jpy(total_pnl)} "
             f"({_fmt_pct_sign(total_pnl_pct)})"
         )
     elif total_pnl is not None:
         indicator = _pnl_indicator(total_pnl)
-        lines.append(f"- \u7dcf\u640d\u76ca\uff08\u5186\uff09: {indicator} {_fmt_jpy(total_pnl)}")
+        lines.append(f"- Total P&L (JPY): {indicator} {_fmt_jpy(total_pnl)}")
 
     lines.append("")
 
     # FX Rates
     fx_rates = snapshot.get("fx_rates", {})
     if fx_rates:
-        lines.append("### \u70ba\u66ff\u30ec\u30fc\u30c8")
+        lines.append("### FX Rates")
         for pair, rate in fx_rates.items():
             lines.append(f"- {pair}: {_fmt_float(rate, decimals=2)}")
         lines.append("")
@@ -178,14 +178,14 @@ def format_position_list(portfolio: list[dict]) -> str:
         Markdown-formatted table of positions.
     """
     lines: list[str] = []
-    lines.append("## \u4fdd\u6709\u9298\u67c4\u4e00\u89a7")
+    lines.append("## Holdings List")
     lines.append("")
 
     if not portfolio:
-        lines.append("\u4fdd\u6709\u9298\u67c4\u304c\u3042\u308a\u307e\u305b\u3093\u3002")
+        lines.append("No holdings found.")
         return "\n".join(lines)
 
-    lines.append("| \u9298\u67c4 | \u682a\u6570 | \u53d6\u5f97\u5358\u4fa1 | \u901a\u8ca8 | \u53d6\u5f97\u65e5 | \u30e1\u30e2 |")
+    lines.append("| Symbol | Shares | Cost Price | Currency | Purchase Date | Memo |")
     lines.append("|:-----|-----:|-------:|:-----|:---------|:-----|")
 
     for pos in portfolio:
@@ -238,9 +238,9 @@ def format_trade_result(result: dict, action: str) -> str:
     # Normalize action label
     action_lower = action.lower()
     if action_lower in ("buy", "\u8cfc\u5165", "\u8cb7\u3044"):
-        action_label = "\u8cfc\u5165"
+        action_label = "Buy"
     elif action_lower in ("sell", "\u58f2\u5374", "\u58f2\u308a"):
-        action_label = "\u58f2\u5374"
+        action_label = "Sell"
     else:
         action_label = action
 
@@ -252,24 +252,24 @@ def format_trade_result(result: dict, action: str) -> str:
     avg_cost = result.get("avg_cost")
     memo = result.get("memo") or ""
 
-    lines.append("## \u58f2\u8cb7\u8a18\u9332")
+    lines.append("## Trade Record")
     lines.append("")
-    lines.append(f"- \u30a2\u30af\u30b7\u30e7\u30f3: **{action_label}**")
-    lines.append(f"- \u9298\u67c4: {symbol}")
+    lines.append(f"- Action: **{action_label}**")
+    lines.append(f"- Symbol: {symbol}")
     if memo:
-        lines.append(f"- \u30e1\u30e2: {memo}")
-    lines.append(f"- \u682a\u6570: {shares:,}")
+        lines.append(f"- Memo: {memo}")
+    lines.append(f"- Shares: {shares:,}")
     if price is not None:
-        lines.append(f"- \u5358\u4fa1: {_fmt_currency_value(price, currency)}")
+        lines.append(f"- Unit price: {_fmt_currency_value(price, currency)}")
 
     if total_shares is not None:
         avg_cost_str = _fmt_currency_value(avg_cost, currency) if avg_cost is not None else "-"
         lines.append(
-            f"- \u66f4\u65b0\u5f8c\u306e\u4fdd\u6709: {total_shares:,}\u682a "
-            f"(\u5e73\u5747\u53d6\u5f97\u5358\u4fa1: {avg_cost_str})"
+            f"- Updated holdings: {total_shares:,} shares "
+            f"(avg cost: {avg_cost_str})"
         )
 
-    # KIK-441: sell 時に P&L がある場合は追加表示
+    # KIK-441: show P&L on sell
     if action_lower in ("sell", "\u58f2\u5374", "\u58f2\u308a"):
         realized_pnl = result.get("realized_pnl")
         pnl_rate = result.get("pnl_rate")
@@ -279,29 +279,29 @@ def format_trade_result(result: dict, action: str) -> str:
 
         if realized_pnl is not None:
             lines.append("")
-            lines.append("### \u5b9f\u73fe\u640d\u76ca")
+            lines.append("### Realized P&L")
             if cost_price_val is not None:
                 lines.append(
-                    f"- \u53d6\u5f97\u5358\u4fa1: {_fmt_currency_value(cost_price_val, currency)}"
+                    f"- Cost price: {_fmt_currency_value(cost_price_val, currency)}"
                 )
             if sell_price_val is not None:
                 lines.append(
-                    f"- 売却単価: {_fmt_currency_value(sell_price_val, currency)}"
+                    f"- Sale price: {_fmt_currency_value(sell_price_val, currency)}"
                 )
             if hold_days is not None:
-                lines.append(f"- \u4fdd\u6709\u671f\u9593: {hold_days}\u65e5")
+                lines.append(f"- Holding period: {hold_days} days")
             sign = "+" if realized_pnl >= 0 else ""
             rate_str = (
                 f" ({sign}{pnl_rate * 100:.2f}%)" if pnl_rate is not None else ""
             )
             lines.append(
-                f"- \u5b9f\u73fe\u640d\u76ca: **{sign}{_fmt_currency_value(realized_pnl, currency)}**{rate_str}"
+                f"- Realized P&L: **{sign}{_fmt_currency_value(realized_pnl, currency)}**{rate_str}"
             )
-            # 税引後概算（20%課税）
+            # After-tax estimate (20% tax)
             after_tax = realized_pnl * 0.80
             sign2 = "+" if after_tax >= 0 else ""
             lines.append(
-                f"- \u7a0e\u5f15\u5f8c\u6982\u7b97: {sign2}{_fmt_currency_value(after_tax, currency)}\uff0820%\u8ab2\u7a0e\u60f3\u5b9a\uff09"
+                f"- After-tax estimate: {sign2}{_fmt_currency_value(after_tax, currency)} (20% tax assumed)"
             )
 
     lines.append("")

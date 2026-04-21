@@ -7,10 +7,10 @@ class JapanMarket(Market):
     """Tokyo Stock Exchange (.T suffix).
 
     EquityQuery region: ``jp``
-    EquityQuery exchange: ``JPX`` (東証プライム・スタンダード・グロース)
+    EquityQuery exchange: ``JPX`` (TSE Prime / Standard / Growth)
     """
 
-    name = "日本株"
+    name = "Japanese Stocks"
     SUFFIX = ".T"
 
     # -- EquityQuery support ------------------------------------------------
@@ -22,7 +22,7 @@ class JapanMarket(Market):
     def get_exchanges(self) -> list[str]:
         """Return JPX as the primary exchange.
 
-        FKA (福岡) and SAP (札幌) are available but rarely needed for
+        FKA (Fukuoka) and SAP (Sapporo) are available but rarely needed for
         mainstream screening.  Callers may override if needed.
         """
         return ["JPX"]

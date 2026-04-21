@@ -102,7 +102,7 @@ def _suggest_diversification_sector(sector_breakdown: dict) -> str:
     missing = [s for s in _ALL_SECTORS if s not in sector_breakdown]
     if missing:
         return ", ".join(missing[:3])
-    return "他セクター"
+    return "Other sector"
 
 
 def _check_concentration(concentration: dict) -> list[dict]:
@@ -119,21 +119,21 @@ def _check_concentration(concentration: dict) -> list[dict]:
         recs.append({
             "priority": "high",
             "category": "concentration",
-            "title": f"セクター集中リスク: {top_sector} {top_weight*100:.0f}%",
+            "title": f"Sector concentration risk: {top_sector} {top_weight*100:.0f}%",
             "detail": (
-                f"セクターHHI={sector_hhi:.4f}（危険水準）。"
-                f"{top_sector}への依存度が高すぎます。"
+                f"Sector HHI={sector_hhi:.4f} (danger level). "
+                f"Exposure to {top_sector} is too high."
             ),
-            "action": f"異なるセクター（例: {suggestion}）の銘柄追加を検討",
+            "action": f"Consider adding stocks from a different sector (e.g., {suggestion})",
         })
     elif sector_hhi > HHI_MODERATE and sector_breakdown:
         top_sector = max(sector_breakdown, key=sector_breakdown.get)
         recs.append({
             "priority": "medium",
             "category": "concentration",
-            "title": f"セクターがやや集中: {top_sector}",
-            "detail": f"セクターHHI={sector_hhi:.4f}。分散は十分ではありません。",
-            "action": "セクター分散の改善を検討",
+            "title": f"Sector slightly concentrated: {top_sector}",
+            "detail": f"Sector HHI={sector_hhi:.4f}. Diversification is insufficient.",
+            "action": "Consider improving sector diversification",
         })
 
     # Region concentration
@@ -145,20 +145,20 @@ def _check_concentration(concentration: dict) -> list[dict]:
         recs.append({
             "priority": "high",
             "category": "concentration",
-            "title": f"地域集中リスク: {top_region} {top_weight*100:.0f}%",
+            "title": f"Region concentration risk: {top_region} {top_weight*100:.0f}%",
             "detail": (
-                f"地域HHI={region_hhi:.4f}（危険水準）。"
-                f"{top_region}への依存度が高すぎます。"
+                f"Region HHI={region_hhi:.4f} (danger level). "
+                f"Exposure to {top_region} is too high."
             ),
-            "action": "他の地域（米国/ASEAN/欧州）の銘柄追加を検討",
+            "action": "Consider adding stocks from other regions (US/ASEAN/Europe)",
         })
     elif region_hhi > HHI_MODERATE:
         recs.append({
             "priority": "low",
             "category": "concentration",
-            "title": "地域配分がやや偏り",
-            "detail": f"地域HHI={region_hhi:.4f}。",
-            "action": "地域分散の改善を検討",
+            "title": "Region allocation slightly skewed",
+            "detail": f"Region HHI={region_hhi:.4f}.",
+            "action": "Consider improving regional diversification",
         })
 
     # Currency concentration
@@ -169,9 +169,9 @@ def _check_concentration(concentration: dict) -> list[dict]:
         recs.append({
             "priority": "medium",
             "category": "concentration",
-            "title": f"通貨集中: {top_currency}",
-            "detail": f"通貨HHI={currency_hhi:.4f}。為替リスクが偏っています。",
-            "action": "異なる通貨圏の銘柄追加で為替リスクを分散",
+            "title": f"Currency concentration: {top_currency}",
+            "detail": f"Currency HHI={currency_hhi:.4f}. FX risk is skewed.",
+            "action": "Diversify FX risk by adding stocks in different currencies",
         })
 
     return recs
@@ -191,17 +191,17 @@ def _check_correlations(pairs: list[dict]) -> list[dict]:
             recs.append({
                 "priority": "high",
                 "category": "correlation",
-                "title": f"強い連動: {pair[0]} x {pair[1]} (r={corr:.2f})",
-                "detail": "両銘柄の価格が非常に強く連動しており、分散効果が限定的です。",
-                "action": "片方のポジションを縮小し、非連動セクターへの分散を検討",
+                "title": f"Strong correlation: {pair[0]} x {pair[1]} (r={corr:.2f})",
+                "detail": "Both stocks move very closely together, limiting diversification effect.",
+                "action": "Consider reducing one position and diversifying into uncorrelated sectors",
             })
         elif abs(corr) >= CORR_HIGH:
             recs.append({
                 "priority": "medium",
                 "category": "correlation",
-                "title": f"高相関ペア: {pair[0]} x {pair[1]} (r={corr:.2f})",
-                "detail": "価格連動性が高く、ショック時に同時下落のリスクがあります。",
-                "action": "相関の原因を確認し、リスク分散を検討",
+                "title": f"High-correlation pair: {pair[0]} x {pair[1]} (r={corr:.2f})",
+                "detail": "High price co-movement, risk of simultaneous decline in a shock.",
+                "action": "Investigate the cause of correlation and consider risk diversification",
             })
     return recs
 
@@ -220,17 +220,17 @@ def _check_var(var_result: dict) -> list[dict]:
         recs.append({
             "priority": "high",
             "category": "var",
-            "title": f"月次VaR(95%)が高水準: {var_95*100:.1f}%",
-            "detail": "月間で15%超の損失が統計的に5%の確率で発生し得ます。",
-            "action": "ポジションサイズの縮小またはヘッジ手段の導入を検討",
+            "title": f"Monthly VaR(95%) is high: {var_95*100:.1f}%",
+            "detail": "There is a statistical 5% probability of a loss exceeding 15% in a month.",
+            "action": "Consider reducing position size or introducing hedging instruments",
         })
     elif var_95 < VAR_WARNING:
         recs.append({
             "priority": "medium",
             "category": "var",
-            "title": f"月次VaR(95%): {var_95*100:.1f}%",
-            "detail": "月間で10%超の損失が統計的に5%の確率で発生し得ます。",
-            "action": "リスク許容度に照らしてポジション見直しを検討",
+            "title": f"Monthly VaR(95%): {var_95*100:.1f}%",
+            "detail": "There is a statistical 5% probability of a loss exceeding 10% in a month.",
+            "action": "Review positions against your risk tolerance",
         })
 
     portfolio_vol = var_result.get("portfolio_volatility", 0)
@@ -238,9 +238,9 @@ def _check_var(var_result: dict) -> list[dict]:
         recs.append({
             "priority": "medium",
             "category": "var",
-            "title": f"PFボラティリティ: {portfolio_vol*100:.1f}%",
-            "detail": "年間ボラティリティが30%を超えています。",
-            "action": "低ボラティリティ銘柄やディフェンシブ銘柄の追加を検討",
+            "title": f"Portfolio volatility: {portfolio_vol*100:.1f}%",
+            "detail": "Annual volatility exceeds 30%.",
+            "action": "Consider adding low-volatility or defensive stocks",
         })
 
     return recs
@@ -256,16 +256,16 @@ def _check_stress(scenario_result: dict) -> list[dict]:
     judgment = scenario_result.get("judgment", "")
     pf_impact = scenario_result.get("portfolio_impact", 0)
 
-    if judgment == "要対応":
+    if judgment == "Action required":
         recs.append({
             "priority": "high",
             "category": "stress",
-            "title": f"ストレステスト要対応: PF影響 {pf_impact*100:+.1f}%",
+            "title": f"Stress test action required: PF impact {pf_impact*100:+.1f}%",
             "detail": (
-                f"シナリオ「{scenario_result.get('scenario_name', '不明')}」で"
-                f"PF全体が30%超の損失想定。"
+                f"Scenario '{scenario_result.get('scenario_name', 'Unknown')}': "
+                f"Portfolio projected to lose more than 30%."
             ),
-            "action": "ヘッジポジションの構築またはエクスポージャーの削減を検討",
+            "action": "Consider building hedge positions or reducing exposure",
         })
 
     # Check individual stock impacts
@@ -277,11 +277,11 @@ def _check_stress(scenario_result: dict) -> list[dict]:
             recs.append({
                 "priority": "high",
                 "category": "stress",
-                "title": f"{sym}がシナリオで{total_impact*100:+.1f}%",
-                "detail": f"{sym}のストレス時損失が-30%超。",
+                "title": f"{sym}: scenario impact {total_impact*100:+.1f}%",
+                "detail": f"{sym}: stress loss exceeds -30%.",
                 "action": (
-                    f"{sym}のポジション縮小または"
-                    f"プットオプションでのヘッジを検討"
+                    f"Consider reducing {sym} position or "
+                    f"hedging with put options"
                 ),
             })
 
@@ -301,20 +301,20 @@ def _check_sensitivities(sensitivities: list[dict]) -> list[dict]:
         quad_name = quadrant.get("quadrant", "")
         sym = sens.get("symbol", "?")
 
-        if quad_name == "最危険":
+        if quad_name == "Highest risk":
             recs.append({
                 "priority": "high",
                 "category": "sensitivity",
-                "title": f"{sym}: ファンダ脆弱+テクニカル過熱",
+                "title": f"{sym}: Weak fundamentals + technically overbought",
                 "detail": quadrant.get("description", ""),
-                "action": f"{sym}の利益確定または縮小を検討",
+                "action": f"Consider taking profit or reducing {sym}",
             })
-        elif quad_name == "底抜けリスク":
+        elif quad_name == "Breakdown risk":
             recs.append({
                 "priority": "medium",
                 "category": "sensitivity",
-                "title": f"{sym}: 底抜けリスク",
+                "title": f"{sym}: Breakdown risk",
                 "detail": quadrant.get("description", ""),
-                "action": f"{sym}のポジション見直しを検討（損切りライン設定）",
+                "action": f"Review {sym} position (set stop-loss level)",
             })
     return recs

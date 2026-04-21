@@ -10,7 +10,7 @@ class USMarket(Market):
     EquityQuery exchanges: ``NMS`` (NASDAQ Global Select), ``NYQ`` (NYSE)
     """
 
-    name = "米国株"
+    name = "US Stocks"
 
     # -- EquityQuery support ------------------------------------------------
 

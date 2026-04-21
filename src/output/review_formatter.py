@@ -30,28 +30,28 @@ def format_performance_review(
     trades: list[dict] = data.get("trades", [])
     stats: dict = data.get("stats", {})
 
-    # --- ヘッダー ---
-    title_parts = ["売買パフォーマンスレビュー"]
+    # --- Header ---
+    title_parts = ["Trade Performance Review"]
     if year:
-        title_parts.append(f"（{year}年）")
+        title_parts.append(f" ({year})")
     if symbol:
-        title_parts.append(f"（{symbol}）")
+        title_parts.append(f" ({symbol})")
     title = "".join(title_parts)
 
     lines: list[str] = [f"## {title}", ""]
 
     if not trades:
-        lines.append("売却記録（P&L付き）がありません。")
+        lines.append("No sell records with P&L found.")
         lines.append("")
-        lines.append("売却時に `--price` を指定すると実現損益が記録されます。")
+        lines.append("Specify `--price` when selling to record realized P&L.")
         lines.append("")
-        lines.append("例: `sell --symbol NVDA --shares 5 --price 138`")
+        lines.append("Example: `sell --symbol NVDA --shares 5 --price 138`")
         return "\n".join(lines)
 
-    # --- 取引履歴テーブル ---
-    lines.append("### 取引履歴")
+    # --- Trade history table ---
+    lines.append("### Trade History")
     lines.append("")
-    lines.append("| 銘柄 | 売却日 | 株数 | 取得単価 | 売却単価 | 保有日数 | 実現損益 | 損益率 |")
+    lines.append("| Symbol | Sell Date | Shares | Cost Price | Sell Price | Hold Days | Realized P&L | P&L% |")
     lines.append("|:-----|:------|-----:|-------:|-------:|-------:|-------:|------:|")
 
     for t in trades:
@@ -67,7 +67,7 @@ def format_performance_review(
 
         cost_str = _fmt_currency_value(cost_price, currency) if cost_price is not None else "-"
         sell_str = _fmt_currency_value(sell_price, currency) if sell_price is not None else "-"
-        hold_str = f"{hold_days}日" if hold_days is not None else "-"
+        hold_str = f"{hold_days} days" if hold_days is not None else "-"
         pnl_str = _fmt_pnl(realized_pnl, currency) if realized_pnl is not None else "-"
         rate_str = _fmt_rate(pnl_rate) if pnl_rate is not None else "-"
 
@@ -78,8 +78,8 @@ def format_performance_review(
 
     lines.append("")
 
-    # --- 統計 ---
-    lines.append("### 統計")
+    # --- Statistics ---
+    lines.append("### Statistics")
     lines.append("")
     total = stats.get("total", 0)
     wins = stats.get("wins", 0)
@@ -88,18 +88,18 @@ def format_performance_review(
     avg_hold_days = stats.get("avg_hold_days")
     total_pnl = stats.get("total_pnl")
 
-    # 通貨は最初のトレードから推定
+    # Infer currency from first trade
     currency = trades[0].get("currency", "JPY") if trades else "JPY"
 
     win_rate_str = f"{win_rate * 100:.1f}%" if win_rate is not None else "-"
-    lines.append(f"- 取引件数: **{total}件** / 勝率: **{win_rate_str}** ({wins}/{total})")
+    lines.append(f"- Trades: **{total}** / Win rate: **{win_rate_str}** ({wins}/{total})")
 
     avg_ret_str = _fmt_rate(avg_return) if avg_return is not None else "-"
-    avg_hold_str = f"{avg_hold_days:.0f}日" if avg_hold_days is not None else "-"
-    lines.append(f"- 平均リターン: **{avg_ret_str}** / 平均保有期間: **{avg_hold_str}**")
+    avg_hold_str = f"{avg_hold_days:.0f} days" if avg_hold_days is not None else "-"
+    lines.append(f"- Avg return: **{avg_ret_str}** / Avg hold period: **{avg_hold_str}**")
 
     total_pnl_str = _fmt_pnl(total_pnl, currency) if total_pnl is not None else "-"
-    lines.append(f"- 合計実現損益: **{total_pnl_str}**")
+    lines.append(f"- Total realized P&L: **{total_pnl_str}**")
 
     lines.append("")
     return "\n".join(lines)
@@ -112,7 +112,7 @@ def format_performance_review(
 def _fmt_pnl(pnl: float, currency: str) -> str:
     sign = "+" if pnl >= 0 else ""
     if currency == "JPY":
-        return f"{sign}¥{pnl:,.0f}"
+        return f"{sign}\u00a5{pnl:,.0f}"
     return f"{sign}${pnl:,.2f}"
 
 

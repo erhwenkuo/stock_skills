@@ -9,7 +9,7 @@ from src.core._thresholds import th, get_thresholds
 
 # Hardcoded fallback (used when YAML is missing or region not in YAML)
 _FALLBACK_THRESHOLDS: dict[str, float] = {
-    "jp": 100_000_000_000,       # 1000億円
+    "jp": 100_000_000_000,       # 100 billion JPY
     "us": 1_000_000_000,         # $1B
     "sg": 2_000_000_000,         # SGD 2B
     "th": 30_000_000_000,        # THB 30B
@@ -58,19 +58,19 @@ def classify_market_cap(market_cap: float | None, region_code: str) -> str:
     Returns
     -------
     str
-        "小型", "中型", "大型", or "不明"
+        "Small-cap", "Mid-cap", "Large-cap", or "Unknown"
     """
     if market_cap is None or market_cap <= 0:
-        return "不明"
+        return "Unknown"
     thresholds = _get_small_cap_thresholds()
     small_threshold = thresholds.get(region_code)
     if small_threshold is None:
-        return "不明"
+        return "Unknown"
     if market_cap <= small_threshold:
-        return "小型"
+        return "Small-cap"
     if market_cap <= small_threshold * _get_large_cap_multiplier():
-        return "中型"
-    return "大型"
+        return "Mid-cap"
+    return "Large-cap"
 
 
 def check_small_cap_allocation(small_cap_weight: float) -> dict:
@@ -88,16 +88,16 @@ def check_small_cap_allocation(small_cap_weight: float) -> dict:
         return {
             "level": "critical",
             "weight": small_cap_weight,
-            "message": f"小型株比率 {small_cap_weight * 100:.0f}% — 過集中（>{crit_pct * 100:.0f}%）",
+            "message": f"Small-cap ratio {small_cap_weight * 100:.0f}% — Over-concentrated (>{crit_pct * 100:.0f}%)",
         }
     if small_cap_weight > warn_pct:
         return {
             "level": "warning",
             "weight": small_cap_weight,
-            "message": f"小型株比率 {small_cap_weight * 100:.0f}% — 注意（>{warn_pct * 100:.0f}%）",
+            "message": f"Small-cap ratio {small_cap_weight * 100:.0f}% — Caution (>{warn_pct * 100:.0f}%)",
         }
     return {
         "level": "ok",
         "weight": small_cap_weight,
-        "message": f"小型株比率 {small_cap_weight * 100:.0f}% — 正常",
+        "message": f"Small-cap ratio {small_cap_weight * 100:.0f}% — Normal",
     }

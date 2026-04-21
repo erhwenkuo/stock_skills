@@ -36,22 +36,22 @@ def cmd_buy(
     if purchase_date is None:
         purchase_date = date.today().isoformat()
 
-    # KIK-444: 確認ステップ（--yes なしの場合はプレビューのみ）
+    # KIK-444: Confirmation step (preview only when --yes is not specified)
     if not yes:
         total = shares * price if price else None
-        lines = ["## 購入確認", "",
-                 "以下の内容で購入記録を追加します:", ""]
-        lines.append(f"  銘柄:     {symbol}")
-        lines.append(f"  株数:     {shares:,}株")
+        lines = ["## Purchase Confirmation", "",
+                 "The following purchase record will be added:", ""]
+        lines.append(f"  Symbol:         {symbol}")
+        lines.append(f"  Shares:         {shares:,}")
         if price:
-            lines.append(f"  購入価格: {_fmt_conf_price(price, currency)}")
-        lines.append(f"  購入日:   {purchase_date}")
+            lines.append(f"  Purchase Price: {_fmt_conf_price(price, currency)}")
+        lines.append(f"  Purchase Date:  {purchase_date}")
         if total:
-            lines.append(f"  取得額:   {_fmt_conf_price(total, currency)}")
+            lines.append(f"  Total Cost:     {_fmt_conf_price(total, currency)}")
         if memo:
-            lines.append(f"  メモ:     {memo}")
+            lines.append(f"  Memo:           {memo}")
         lines.append("")
-        lines.append("記録しますか？ `--yes` をつけて再実行してください。")
+        lines.append("Proceed with recording? Re-run with `--yes` to confirm.")
         print("\n".join(lines))
         return
 
@@ -71,7 +71,7 @@ def cmd_buy(
                 try:
                     save_trade(symbol, "buy", shares, price, currency, purchase_date, memo)
                 except Exception as e:
-                    print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
+                    print(f"Warning: Failed to save history: {e}", file=sys.stderr)
                 _save_trade_market_context()
             return
     else:
@@ -100,16 +100,16 @@ def cmd_buy(
             })
         _fallback_save_csv(csv_path, holdings)
 
-    print(f"購入記録を追加しました: {symbol} {shares}株 @ {price} {currency}")
-    print(f"  購入日: {purchase_date}")
+    print(f"Purchase recorded: {symbol} {shares} shares @ {price} {currency}")
+    print(f"  Purchase Date: {purchase_date}")
     if memo:
-        print(f"  メモ: {memo}")
+        print(f"  Memo: {memo}")
 
     if HAS_HISTORY:
         try:
             save_trade(symbol, "buy", shares, price, currency, purchase_date, memo)
         except Exception as e:
-            print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
+            print(f"Warning: Failed to save history: {e}", file=sys.stderr)
         _save_trade_market_context()
 
     # KIK-414: Sync portfolio to Neo4j
@@ -130,12 +130,12 @@ def cmd_sell(
     yes: bool = False,
 ) -> None:
     """Record a sale (reduce shares for a symbol). KIK-441: sell_price/sell_date added. KIK-444: yes flag added."""
-    # KIK-444: 確認ステップ（--yes なしの場合はプレビューのみ）
+    # KIK-444: Confirmation step (preview only when --yes is not specified)
     if not yes:
-        lines = ["## 売却確認", "",
-                 "以下の内容で売却記録を追加します:", ""]
-        lines.append(f"  銘柄:     {symbol}")
-        lines.append(f"  株数:     {shares:,}株")
+        lines = ["## Sale Confirmation", "",
+                 "The following sale record will be added:", ""]
+        lines.append(f"  Symbol:       {symbol}")
+        lines.append(f"  Shares:       {shares:,}")
         cost_price = None
         currency = "JPY"
         try:
@@ -147,20 +147,20 @@ def cmd_sell(
         except Exception:
             pass
         if cost_price is not None:
-            lines.append(f"  取得単価: {_fmt_conf_price(cost_price, currency)}")
+            lines.append(f"  Cost Price:   {_fmt_conf_price(cost_price, currency)}")
         if sell_price:
-            lines.append(f"  売却単価: {_fmt_conf_price(sell_price, currency)}")
-            if cost_price:  # cost_price=0.0 は意図的にスキップ（ゼロ除算回避）
+            lines.append(f"  Sale Price:   {_fmt_conf_price(sell_price, currency)}")
+            if cost_price:  # Skip intentionally when cost_price=0.0 (avoid division by zero)
                 pnl = (sell_price - cost_price) * shares
                 pnl_rate = (sell_price - cost_price) / cost_price
                 sign = "+" if pnl >= 0 else ""
                 lines.append(
-                    f"  推定実現損益: {sign}{_fmt_conf_price(pnl, currency)}"
+                    f"  Est. Realized P&L: {sign}{_fmt_conf_price(pnl, currency)}"
                     f" ({sign}{pnl_rate * 100:.2f}%)"
                 )
-        lines.append(f"  売却日:   {sell_date or date.today().isoformat()}")
+        lines.append(f"  Sale Date:    {sell_date or date.today().isoformat()}")
         lines.append("")
-        lines.append("記録しますか？ `--yes` をつけて再実行してください。")
+        lines.append("Proceed with recording? Re-run with `--yes` to confirm.")
         print("\n".join(lines))
         return
 
@@ -192,9 +192,9 @@ def cmd_sell(
                 }, "sell"))
             else:
                 if remaining == 0:
-                    print(f"売却完了: {symbol} {shares}株 (全株売却 -- ポートフォリオから削除)")
+                    print(f"Sale complete: {symbol} {shares} shares (all shares sold -- removed from portfolio)")
                 else:
-                    print(f"売却記録を追加しました: {symbol} {shares}株 (残り {remaining}株)")
+                    print(f"Sale recorded: {symbol} {shares} shares ({remaining} shares remaining)")
 
             if HAS_HISTORY:
                 try:
@@ -210,7 +210,7 @@ def cmd_sell(
                         cost_price=cost_price,
                     )
                 except Exception as e:
-                    print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
+                    print(f"Warning: Failed to save history: {e}", file=sys.stderr)
                 _save_trade_market_context()
             return
         except ValueError as e:
@@ -220,20 +220,20 @@ def cmd_sell(
     holdings = _fallback_load_csv(csv_path)
     existing = [h for h in holdings if h["symbol"] == symbol]
     if not existing:
-        print(f"Error: {symbol} はポートフォリオに存在しません。")
+        print(f"Error: {symbol} does not exist in portfolio.")
         sys.exit(1)
 
     h = existing[0]
     if shares > h["shares"]:
-        print(f"Error: 売却数 ({shares}) が保有数 ({h['shares']}) を超えています。")
+        print(f"Error: Sale quantity ({shares}) exceeds held shares ({h['shares']}).")
         sys.exit(1)
 
     h["shares"] -= shares
     if h["shares"] == 0:
         holdings = [x for x in holdings if x["symbol"] != symbol]
-        print(f"売却完了: {symbol} {shares}株 (全株売却 -- ポートフォリオから削除)")
+        print(f"Sale complete: {symbol} {shares} shares (all shares sold -- removed from portfolio)")
     else:
-        print(f"売却記録を追加しました: {symbol} {shares}株 (残り {h['shares']}株)")
+        print(f"Sale recorded: {symbol} {shares} shares ({h['shares']} shares remaining)")
 
     _fallback_save_csv(csv_path, holdings)
 
@@ -243,7 +243,7 @@ def cmd_sell(
             save_trade(symbol, "sell", shares, 0.0, "", trade_date,
                        sell_price=sell_price)
         except Exception as e:
-            print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
+            print(f"Warning: Failed to save history: {e}", file=sys.stderr)
         _save_trade_market_context()
 
     # KIK-414: Sync portfolio to Neo4j

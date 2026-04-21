@@ -51,20 +51,20 @@ def cmd_list():
     _ensure_dir()
     files = [f.replace(".json", "") for f in os.listdir(WATCHLIST_DIR) if f.endswith(".json")]
     if not files:
-        print("ウォッチリストはありません。")
+        print("No watchlists found.")
         return
-    print("## ウォッチリスト一覧\n")
+    print("## Watchlist Directory\n")
     for name in sorted(files):
         symbols = _load(name)
-        print(f"- **{name}** ({len(symbols)} 銘柄)")
+        print(f"- **{name}** ({len(symbols)} stocks)")
 
 
 def cmd_show(name):
     symbols = _load(name)
     if not symbols:
-        print(f"ウォッチリスト '{name}' は空か存在しません。")
+        print(f"Watchlist '{name}' is empty or does not exist.")
         return
-    print(f"## {name} ({len(symbols)} 銘柄)\n")
+    print(f"## {name} ({len(symbols)} stocks)\n")
     for s in symbols:
         print(f"- {s}")
 
@@ -73,9 +73,9 @@ def cmd_add(name, new_symbols):
     symbols = _load(name)
     symbols.extend(new_symbols)
     _save(name, symbols)
-    print(f"'{name}' に {len(new_symbols)} 銘柄を追加しました: {', '.join(new_symbols)}")
+    print(f"Added {len(new_symbols)} stock(s) to '{name}': {', '.join(new_symbols)}")
     for s in new_symbols:
-        print_suggestions(symbol=s, context_summary=f"ウォッチリスト追加: {s}")
+        print_suggestions(symbol=s, context_summary=f"Watchlist add: {s}")
 
 
 def cmd_remove(name, remove_symbols):
@@ -84,12 +84,12 @@ def cmd_remove(name, remove_symbols):
     symbols = [s for s in symbols if s not in remove_symbols]
     _save(name, symbols)
     if removed:
-        print(f"'{name}' から {len(removed)} 銘柄を削除しました: {', '.join(removed)}")
+        print(f"Removed {len(removed)} stock(s) from '{name}': {', '.join(removed)}")
     else:
-        print("該当する銘柄が見つかりませんでした。")
+        print("No matching stocks found.")
     if removed:
         for s in removed:
-            print_suggestions(symbol=s, context_summary=f"ウォッチリスト削除: {s}")
+            print_suggestions(symbol=s, context_summary=f"Watchlist remove: {s}")
 
 
 def main():

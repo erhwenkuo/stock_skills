@@ -1,274 +1,274 @@
 # Neo4j Knowledge Graph Schema
 
-投資ナレッジグラフのスキーマリファレンス。`src/data/graph_store.py` が定義・管理する。
+Schema reference for the investment knowledge graph. Defined and managed by `src/data/graph_store.py`.
 
 ---
 
 ## Node Types (24)
 
 ### Stock
-中心ノード。すべてのアクティビティがこのノードに接続される。
+The central node. All activities connect to this node.
 
 | Property | Type | Description |
 |:---|:---|:---|
-| symbol | string (UNIQUE) | ティッカーシンボル (e.g. 7203.T, AAPL) |
-| name | string | 銘柄名 |
-| sector | string | セクター |
-| country | string | 国 |
+| symbol | string (UNIQUE) | Ticker symbol (e.g. 7203.T, AAPL) |
+| name | string | Stock name |
+| sector | string | Sector |
+| country | string | Country |
 
 ### Screen
-スクリーニング実行結果。
+Screening execution results.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `screen_{date}_{region}_{preset}` |
-| date | string | 実行日 (YYYY-MM-DD) |
-| preset | string | プリセット名 (alpha, value, etc.) |
-| region | string | 地域 (japan, us, etc.) |
-| count | int | ヒット件数 |
+| date | string | Execution date (YYYY-MM-DD) |
+| preset | string | Preset name (alpha, value, etc.) |
+| region | string | Region (japan, us, etc.) |
+| count | int | Number of hits |
 
 ### Report
-個別銘柄レポート。full モードでは拡張プロパティあり。
+Individual stock report. Extended properties available in full mode.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `report_{date}_{symbol}` |
-| date | string | 実行日 |
-| symbol | string | 対象銘柄 |
-| score | float | バリュースコア (0-100) |
-| verdict | string | 判定 (割安/適正/割高) |
-| price | float | 株価 (full モードのみ) |
-| per | float | PER (full モードのみ) |
-| pbr | float | PBR (full モードのみ) |
-| dividend_yield | float | 配当利回り (full モードのみ) |
-| roe | float | ROE (full モードのみ) |
-| market_cap | float | 時価総額 (full モードのみ) |
+| date | string | Execution date |
+| symbol | string | Target ticker |
+| score | float | Value score (0–100) |
+| verdict | string | Judgment (undervalued / fair / overvalued) |
+| price | float | Stock price (full mode only) |
+| per | float | P/E ratio (full mode only) |
+| pbr | float | P/B ratio (full mode only) |
+| dividend_yield | float | Dividend yield (full mode only) |
+| roe | float | ROE (full mode only) |
+| market_cap | float | Market cap (full mode only) |
 
 ### Trade
-売買記録。
+Buy/sell records.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `trade_{date}_{type}_{symbol}` |
-| date | string | 取引日 |
+| date | string | Trade date |
 | type | string | buy / sell |
-| symbol | string | 銘柄 |
-| shares | int | 株数 |
-| price | float | 取引価格 |
-| currency | string | 通貨 (JPY/USD/SGD) |
-| memo | string | メモ |
+| symbol | string | Ticker |
+| shares | int | Number of shares |
+| price | float | Trade price |
+| currency | string | Currency (JPY/USD/SGD) |
+| memo | string | Note |
 
 ### HealthCheck
-ヘルスチェック実行結果。
+Health check execution results.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `health_{date}` |
-| date | string | 実行日 |
-| total | int | チェック対象数 |
-| healthy | int | 健全銘柄数 |
-| exit_count | int | EXIT 判定数 |
+| date | string | Execution date |
+| total | int | Number of tickers checked |
+| healthy | int | Number of healthy tickers |
+| exit_count | int | Number of EXIT judgments |
 
 ### Note
-投資メモ。
+Investment notes.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | UUID |
-| date | string | 作成日 |
+| date | string | Creation date |
 | type | string | thesis/observation/concern/review/target/lesson/journal |
-| content | string | メモ内容 |
-| source | string | 情報ソース |
-| category | string | カテゴリ (stock/portfolio/market/general) (KIK-473) |
+| content | string | Note content |
+| source | string | Information source |
+| category | string | Category (stock/portfolio/market/general) (KIK-473) |
 
 ### Theme
-銘柄に付けられたテーマタグ。
+Theme tags attached to stocks.
 
 | Property | Type | Description |
 |:---|:---|:---|
-| name | string (UNIQUE) | テーマ名 (e.g. AI, EV, 半導体) |
+| name | string (UNIQUE) | Theme name (e.g. AI, EV, semiconductors) |
 
 ### Sector
-セクター分類。
+Sector classification.
 
 | Property | Type | Description |
 |:---|:---|:---|
-| name | string (UNIQUE) | セクター名 (e.g. Technology, Healthcare) |
+| name | string (UNIQUE) | Sector name (e.g. Technology, Healthcare) |
 
 ### Research
-深掘りリサーチ結果。
+Deep research results.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `research_{date}_{type}_{target}` |
-| date | string | 実行日 |
+| date | string | Execution date |
 | research_type | string | stock/industry/market/business |
-| target | string | 対象 (銘柄/業界名/市場名) |
-| summary | string | 要約 |
+| target | string | Target (ticker / industry name / market name) |
+| summary | string | Summary |
 
 ### Watchlist
-ウォッチリスト。
+Watchlist.
 
 | Property | Type | Description |
 |:---|:---|:---|
-| name | string (UNIQUE) | リスト名 |
+| name | string (UNIQUE) | List name |
 
 ### MarketContext
-市況スナップショット。
+Market context snapshot.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `market_context_{date}` |
-| date | string | 取得日 |
-| indices | string (JSON) | 指数データ (JSON 文字列) |
+| date | string | Retrieval date |
+| indices | string (JSON) | Index data (JSON string) |
 
 ### News (KIK-413 full mode)
-ニュース記事。Research から HAS_NEWS で接続。
+News articles. Connected from Research via HAS_NEWS.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `{research_id}_news_{i}` |
-| date | string | 記録日 |
-| title | string | 見出し (最大500文字) |
-| source | string | ソース (grok/yahoo/publisher名) |
+| date | string | Record date |
+| title | string | Headline (max 500 chars) |
+| source | string | Source (grok/yahoo/publisher name) |
 | link | string | URL |
 
 ### Sentiment (KIK-413 full mode)
-センチメント分析結果。Research/MarketContext から HAS_SENTIMENT で接続。
+Sentiment analysis results. Connected from Research/MarketContext via HAS_SENTIMENT.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `{parent_id}_sent_{source}` |
-| date | string | 記録日 |
+| date | string | Record date |
 | source | string | grok_x / yahoo_x / market |
-| score | float | スコア (0.0-1.0) |
-| summary | string | 要約 |
-| positive | string | ポジティブ要因 (yahoo_x のみ) |
-| negative | string | ネガティブ要因 (yahoo_x のみ) |
+| score | float | Score (0.0–1.0) |
+| summary | string | Summary |
+| positive | string | Positive factors (yahoo_x only) |
+| negative | string | Negative factors (yahoo_x only) |
 
-### Catalyst (KIK-413 full mode, KIK-430 拡張)
-好材料・悪材料。Research から HAS_CATALYST で接続。
-stock/business: positive/negative。industry: trend/growth_driver/risk/regulatory。
+### Catalyst (KIK-413 full mode, KIK-430 extended)
+Positive/negative catalysts. Connected from Research via HAS_CATALYST.
+stock/business: positive/negative. industry: trend/growth_driver/risk/regulatory.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `{research_id}_cat_{type}_{i}` |
-| date | string | 記録日 |
+| date | string | Record date |
 | type | string | positive / negative / trend / growth_driver / risk / regulatory |
-| text | string | 内容 (最大500文字) |
+| text | string | Content (max 500 chars) |
 
 ### AnalystView (KIK-413 full mode)
-アナリスト見解。Research から HAS_ANALYST_VIEW で接続。
+Analyst opinions. Connected from Research via HAS_ANALYST_VIEW.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `{research_id}_av_{i}` |
-| date | string | 記録日 |
-| text | string | 見解テキスト (最大500文字) |
+| date | string | Record date |
+| text | string | Opinion text (max 500 chars) |
 
-### Indicator (KIK-413 full mode, KIK-430 拡張)
-マクロ指標スナップショット。MarketContext/Research(market) から INCLUDES で接続。
+### Indicator (KIK-413 full mode, KIK-430 extended)
+Macro indicator snapshot. Connected from MarketContext/Research(market) via INCLUDES.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `{context_id}_ind_{i}` |
-| date | string | 記録日 |
-| name | string | 指標名 (e.g. S&P500, 日経平均) |
-| symbol | string | シンボル (e.g. ^GSPC) |
-| price | float | 値 |
-| daily_change | float | 日次変化率 |
-| weekly_change | float | 週次変化率 |
+| date | string | Record date |
+| name | string | Indicator name (e.g. S&P500, Nikkei 225) |
+| symbol | string | Symbol (e.g. ^GSPC) |
+| price | float | Value |
+| daily_change | float | Daily change rate |
+| weekly_change | float | Weekly change rate |
 
 ### UpcomingEvent (KIK-413 full mode)
-今後のイベント。MarketContext から HAS_EVENT で接続。
+Upcoming events. Connected from MarketContext via HAS_EVENT.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `{context_id}_event_{i}` |
-| date | string | 記録日 |
-| text | string | イベント内容 |
+| date | string | Record date |
+| text | string | Event content |
 
 ### SectorRotation (KIK-413 full mode)
-セクターローテーション情報。MarketContext から HAS_ROTATION で接続。
+Sector rotation information. Connected from MarketContext via HAS_ROTATION.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `{context_id}_rot_{i}` |
-| date | string | 記録日 |
-| text | string | ローテーション内容 |
+| date | string | Record date |
+| text | string | Rotation content |
 
 ### Portfolio (KIK-414)
-ポートフォリオアンカーノード。HOLDS リレーションで保有銘柄に接続。
+Portfolio anchor node. Connected to held stocks via HOLDS relationship.
 
 | Property | Type | Description |
 |:---|:---|:---|
-| name | string (UNIQUE) | ポートフォリオ名 (デフォルト: "default") |
+| name | string (UNIQUE) | Portfolio name (default: "default") |
 
 ### StressTest (KIK-428)
-ストレステスト実行結果。STRESSED リレーションで対象銘柄に接続。
+Stress test execution results. Connected to target stocks via STRESSED relationship.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `stress_test_{date}_{scenario}` |
-| date | string | 実行日 (YYYY-MM-DD) |
-| scenario | string | シナリオ名 (トリプル安, テック暴落, etc.) |
-| portfolio_impact | float | PF全体の推定損失率 |
-| var_95 | float | 95% VaR (日次) |
-| var_99 | float | 99% VaR (日次) |
-| symbol_count | int | 対象銘柄数 |
+| date | string | Execution date (YYYY-MM-DD) |
+| scenario | string | Scenario name (triple meltdown, tech crash, etc.) |
+| portfolio_impact | float | Estimated portfolio loss rate |
+| var_95 | float | 95% VaR (daily) |
+| var_99 | float | 99% VaR (daily) |
+| symbol_count | int | Number of target tickers |
 
 ### Forecast (KIK-428)
-フォーキャスト（将来予測）実行結果。FORECASTED リレーションで対象銘柄に接続。
+Forecast (future projection) execution results. Connected to target stocks via FORECASTED relationship.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `forecast_{date}` |
-| date | string | 実行日 (YYYY-MM-DD) |
-| optimistic | float | 楽観シナリオ推定リターン (%) |
-| base | float | ベースシナリオ推定リターン (%) |
-| pessimistic | float | 悲観シナリオ推定リターン (%) |
-| total_value_jpy | float | PF時価総額 (円) |
-| symbol_count | int | 対象銘柄数 |
+| date | string | Execution date (YYYY-MM-DD) |
+| optimistic | float | Optimistic scenario estimated return (%) |
+| base | float | Base scenario estimated return (%) |
+| pessimistic | float | Pessimistic scenario estimated return (%) |
+| total_value_jpy | float | Portfolio market value (JPY) |
+| symbol_count | int | Number of target tickers |
 
 ### ActionItem (KIK-472)
-アクションアイテム（プロアクティブ提案から自動検出）。TARGETS リレーションで対象銘柄に接続。Linear issue と紐付け可能。
+Action items (auto-detected from proactive suggestions). Connected to target stocks via TARGETS relationship. Can be linked to Linear issues.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `action_{date}_{trigger_type}_{symbol}` |
-| date | string | 検出日 (YYYY-MM-DD) |
-| trigger_type | string | トリガー種別 (exit/earnings/thesis_review/concern) |
-| title | string | アクションアイテムタイトル |
-| symbol | string | 対象銘柄シンボル |
-| urgency | string | 緊急度 (high/medium/low) |
-| status | string | ステータス (open/done) |
+| date | string | Detection date (YYYY-MM-DD) |
+| trigger_type | string | Trigger type (exit/earnings/thesis_review/concern) |
+| title | string | Action item title |
+| symbol | string | Target ticker symbol |
+| urgency | string | Urgency (high/medium/low) |
+| status | string | Status (open/done) |
 | linear_issue_id | string | Linear issue ID |
 | linear_issue_url | string | Linear issue URL |
-| linear_identifier | string | Linear issue 識別子 (e.g. KIK-999) |
+| linear_identifier | string | Linear issue identifier (e.g. KIK-999) |
 
 ### Community (KIK-547)
-銘柄クラスタ。共起シグナル（Screen/Theme/Sector/News）に基づく類似銘柄グループ。
+Stock clusters. Similar stock groups based on co-occurrence signals (Screen/Theme/Sector/News).
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `community_{level}_{index}` |
-| name | string | 自動命名（共通セクター/テーマから） |
-| size | int | メンバー銘柄数 |
-| level | int | 階層レベル (0 = 最細) |
-| created_at | string | 作成日時 (ISO 8601) |
+| name | string | Auto-named (from common sector/theme) |
+| size | int | Number of member stocks |
+| level | int | Hierarchy level (0 = finest) |
+| created_at | string | Creation datetime (ISO 8601) |
 
 ### ThemeTrend (KIK-603)
-テーマトレンド検出記録。`--auto-theme` 実行時に Grok が検出したトレンドテーマを記録。FOR_THEME リレーションで Theme ノードに接続。
+Theme trend detection records. Records trending themes detected by Grok during `--auto-theme` execution. Connected to Theme node via FOR_THEME relationship.
 
 | Property | Type | Description |
 |:---|:---|:---|
 | id | string (UNIQUE) | `theme_trend_{date}_{theme}_{region}` |
-| date | string | 検出日 (YYYY-MM-DD) |
-| theme | string | テーマキー (e.g. ai, ev, cybersecurity) |
-| confidence | float | Grok 信頼度 (0.0-1.0) |
-| reason | string | 注目理由 |
-| rank | int | 検出バッチ内ランク (1 = 最高信頼度) |
-| region | string | 検出対象地域 (e.g. japan, us) |
+| date | string | Detection date (YYYY-MM-DD) |
+| theme | string | Theme key (e.g. ai, ev, cybersecurity) |
+| confidence | float | Grok confidence (0.0–1.0) |
+| reason | string | Reason for attention |
+| rank | int | Rank within detection batch (1 = highest confidence) |
+| region | string | Target region (e.g. japan, us) |
 
 ---
 
@@ -315,33 +315,33 @@ graph LR
 
 | Relationship | From | To | Description |
 |:---|:---|:---|:---|
-| SURFACED | Screen | Stock | スクリーニングで検出された |
-| ANALYZED | Report | Stock | レポートで分析された |
-| BOUGHT | Trade | Stock | 購入取引 |
-| SOLD | Trade | Stock | 売却取引 |
-| CHECKED | HealthCheck | Stock | ヘルスチェック対象 |
-| ABOUT | Note | Stock/Portfolio/MarketContext | メモの対象（銘柄・PF・市況） (KIK-491) |
-| IN_SECTOR | Stock | Sector | セクター分類 |
-| HAS_THEME | Stock/Screen | Theme | テーマタグ |
-| RESEARCHED | Research | Stock | リサーチ対象 (stock/business タイプ) |
-| ANALYZES | Research | Sector | 業界リサーチ対象 (industry タイプ) (KIK-491) |
-| COMPLEMENTS | Research | MarketContext | 市場リサーチの文脈 (market タイプ) (KIK-491) |
-| BOOKMARKED | Watchlist | Stock | ウォッチ対象 |
-| SUPERSEDES | Research | Research | 同じ対象の新旧リサーチチェーン (日付順) |
-| HAS_NEWS | Research | News | リサーチに紐づくニュース (KIK-413) |
-| MENTIONS | News | Stock | ニュースが言及する銘柄 (KIK-413) |
-| HAS_SENTIMENT | Research/MarketContext | Sentiment | センチメント分析結果 (KIK-413) |
-| HAS_CATALYST | Research | Catalyst | 好材料・悪材料 (KIK-413) |
-| HAS_ANALYST_VIEW | Research | AnalystView | アナリスト見解 (KIK-413) |
-| INCLUDES | Research(market)/MarketContext | Indicator | マクロ指標値 (KIK-413/430) |
-| HAS_EVENT | Research(market)/MarketContext | UpcomingEvent | 今後のイベント (KIK-413/430) |
-| HAS_ROTATION | Research(market)/MarketContext | SectorRotation | セクターローテーション (KIK-413/430) |
-| MENTIONS | Research(industry) | Stock | 業界リサーチで言及された銘柄 (KIK-430) |
-| HOLDS | Portfolio | Stock | 現在保有中の銘柄 (KIK-414)。プロパティ: shares, cost_price, cost_currency, purchase_date |
-| STRESSED | StressTest | Stock | ストレステスト対象銘柄 (KIK-428)。プロパティ: impact (推定損失率) |
-| FORECASTED | Forecast | Stock | フォーキャスト対象銘柄 (KIK-428)。プロパティ: optimistic, base, pessimistic (各シナリオリターン) |
-| BELONGS_TO | Stock | Community | コミュニティへの所属 (KIK-547) |
-| FOR_THEME | ThemeTrend | Theme | テーマトレンド検出の対象テーマ (KIK-603) |
+| SURFACED | Screen | Stock | Detected by screening |
+| ANALYZED | Report | Stock | Analyzed in report |
+| BOUGHT | Trade | Stock | Buy transaction |
+| SOLD | Trade | Stock | Sell transaction |
+| CHECKED | HealthCheck | Stock | Health check target |
+| ABOUT | Note | Stock/Portfolio/MarketContext | Note target (stock / portfolio / market context) (KIK-491) |
+| IN_SECTOR | Stock | Sector | Sector classification |
+| HAS_THEME | Stock/Screen | Theme | Theme tag |
+| RESEARCHED | Research | Stock | Research target (stock/business type) |
+| ANALYZES | Research | Sector | Industry research target (industry type) (KIK-491) |
+| COMPLEMENTS | Research | MarketContext | Market research context (market type) (KIK-491) |
+| BOOKMARKED | Watchlist | Stock | Watchlist target |
+| SUPERSEDES | Research | Research | New/old research chain for the same target (chronological) |
+| HAS_NEWS | Research | News | News linked to research (KIK-413) |
+| MENTIONS | News | Stock | Stock mentioned in news (KIK-413) |
+| HAS_SENTIMENT | Research/MarketContext | Sentiment | Sentiment analysis result (KIK-413) |
+| HAS_CATALYST | Research | Catalyst | Positive/negative catalysts (KIK-413) |
+| HAS_ANALYST_VIEW | Research | AnalystView | Analyst opinion (KIK-413) |
+| INCLUDES | Research(market)/MarketContext | Indicator | Macro indicator value (KIK-413/430) |
+| HAS_EVENT | Research(market)/MarketContext | UpcomingEvent | Upcoming event (KIK-413/430) |
+| HAS_ROTATION | Research(market)/MarketContext | SectorRotation | Sector rotation (KIK-413/430) |
+| MENTIONS | Research(industry) | Stock | Stock mentioned in industry research (KIK-430) |
+| HOLDS | Portfolio | Stock | Currently held stock (KIK-414). Properties: shares, cost_price, cost_currency, purchase_date |
+| STRESSED | StressTest | Stock | Stress test target stock (KIK-428). Property: impact (estimated loss rate) |
+| FORECASTED | Forecast | Stock | Forecast target stock (KIK-428). Properties: optimistic, base, pessimistic (per-scenario returns) |
+| BELONGS_TO | Stock | Community | Community membership (KIK-547) |
+| FOR_THEME | ThemeTrend | Theme | Target theme of theme trend detection (KIK-603) |
 
 ---
 
@@ -412,8 +412,8 @@ CREATE INDEX theme_trend_theme IF NOT EXISTS FOR (tt:ThemeTrend) ON (tt.theme)
 
 ## Vector Indexes (9) — KIK-420/428
 
-TEI (Text Embeddings Inference) で生成した384次元ベクトルによるコサイン類似検索用。
-各ノードに `semantic_summary` (テンプレート生成テキスト) と `embedding` (384次元ベクトル) プロパティを追加。
+For cosine similarity search using 384-dimension vectors generated by TEI (Text Embeddings Inference).
+Each node gets a `semantic_summary` (template-generated text) and `embedding` (384-dimension vector) property.
 
 ```cypher
 CREATE VECTOR INDEX screen_embedding IF NOT EXISTS FOR (s:Screen) ON (s.embedding)
@@ -437,9 +437,9 @@ CREATE VECTOR INDEX forecast_embedding IF NOT EXISTS FOR (f:Forecast) ON (f.embe
   OPTIONS {indexConfig: {`vector.dimensions`: 384, `vector.similarity_function`: 'cosine'}}
 ```
 
-**使い方:**
+**Usage:**
 ```cypher
--- ベクトル類似検索（上位5件）
+-- Vector similarity search (top 5 results)
 CALL db.index.vector.queryNodes('report_embedding', 5, $embedding)
 YIELD node, score
 RETURN node.semantic_summary, node.date, score
@@ -450,7 +450,7 @@ ORDER BY score DESC
 
 ## Sample Cypher Queries
 
-### 1. 銘柄の全履歴を取得
+### 1. Get full history for a stock
 ```cypher
 MATCH (s:Stock {symbol: "7203.T"})
 OPTIONAL MATCH (sc:Screen)-[:SURFACED]->(s)
@@ -463,7 +463,7 @@ RETURN s, collect(DISTINCT sc) AS screens,
        collect(DISTINCT n) AS notes
 ```
 
-### 2. 繰り返しスクリーニングに出るが未購入の銘柄
+### 2. Stocks that keep appearing in screenings but have never been purchased
 ```cypher
 MATCH (sc:Screen)-[:SURFACED]->(s:Stock)
 WHERE NOT exists { MATCH (:Trade)-[:BOUGHT]->(s) }
@@ -473,20 +473,20 @@ RETURN symbol, cnt, last_date
 ORDER BY cnt DESC
 ```
 
-### 3. 直近のリサーチ SUPERSEDES チェーン
+### 3. Latest research SUPERSEDES chain
 ```cypher
 MATCH (r:Research {research_type: "stock", target: "7203.T"})
 RETURN r.date AS date, r.summary AS summary
 ORDER BY r.date DESC LIMIT 5
 ```
 
-### 4. 特定テーマに関連する銘柄一覧
+### 4. List stocks related to a specific theme
 ```cypher
 MATCH (s:Stock)-[:HAS_THEME]->(t:Theme {name: "AI"})
 RETURN s.symbol, s.name, s.sector
 ```
 
-### 5. ある銘柄の取引履歴 + メモ
+### 5. Trade history + notes for a stock
 ```cypher
 MATCH (t:Trade)-[:BOUGHT|SOLD]->(s:Stock {symbol: "AAPL"})
 RETURN t.date, t.type, t.shares, t.price
@@ -499,14 +499,14 @@ ORDER BY n.date DESC
 
 ---
 
-### 6. 銘柄のニュース履歴 (KIK-413)
+### 6. News history for a stock (KIK-413)
 ```cypher
 MATCH (n:News)-[:MENTIONS]->(s:Stock {symbol: "NVDA"})
 RETURN n.date AS date, n.title AS title, n.source AS source
 ORDER BY n.date DESC LIMIT 10
 ```
 
-### 7. センチメント推移 (KIK-413)
+### 7. Sentiment trend (KIK-413)
 ```cypher
 MATCH (r:Research)-[:RESEARCHED]->(s:Stock {symbol: "NVDA"})
 MATCH (r)-[:HAS_SENTIMENT]->(sent:Sentiment)
@@ -514,7 +514,7 @@ RETURN sent.date AS date, sent.source AS source, sent.score AS score
 ORDER BY sent.date DESC
 ```
 
-### 8. カタリスト一覧 (KIK-413)
+### 8. Catalyst list (KIK-413)
 ```cypher
 MATCH (r:Research)-[:RESEARCHED]->(s:Stock {symbol: "NVDA"})
 MATCH (r)-[:HAS_CATALYST]->(c:Catalyst)
@@ -522,21 +522,21 @@ RETURN c.type AS type, c.text AS text
 ORDER BY r.date DESC
 ```
 
-### 9. バリュエーション推移 (KIK-413)
+### 9. Valuation trend (KIK-413)
 ```cypher
 MATCH (r:Report)-[:ANALYZED]->(s:Stock {symbol: "7203.T"})
 RETURN r.date, r.score, r.verdict, r.price, r.per, r.pbr
 ORDER BY r.date DESC LIMIT 10
 ```
 
-### 10. 今後のイベント (KIK-413)
+### 10. Upcoming events (KIK-413)
 ```cypher
 MATCH (m:MarketContext)-[:HAS_EVENT]->(e:UpcomingEvent)
 RETURN e.date AS date, e.text AS text
 ORDER BY m.date DESC LIMIT 10
 ```
 
-### 11. 現在の保有銘柄一覧 (KIK-414)
+### 11. Current holdings list (KIK-414)
 ```cypher
 MATCH (p:Portfolio {name: 'default'})-[r:HOLDS]->(s:Stock)
 RETURN s.symbol AS symbol, r.shares AS shares,
@@ -545,7 +545,7 @@ RETURN s.symbol AS symbol, r.shares AS shares,
 ORDER BY s.symbol
 ```
 
-### 12. ストレステスト履歴 (KIK-428)
+### 12. Stress test history (KIK-428)
 ```cypher
 MATCH (st:StressTest)
 RETURN st.date AS date, st.scenario AS scenario,
@@ -553,14 +553,14 @@ RETURN st.date AS date, st.scenario AS scenario,
 ORDER BY st.date DESC LIMIT 5
 ```
 
-### 13. 特定銘柄のストレステスト履歴 (KIK-428)
+### 13. Stress test history for a specific stock (KIK-428)
 ```cypher
 MATCH (st:StressTest)-[r:STRESSED]->(s:Stock {symbol: "7203.T"})
 RETURN st.date AS date, st.scenario AS scenario, r.impact AS impact
 ORDER BY st.date DESC
 ```
 
-### 14. フォーキャスト履歴 (KIK-428)
+### 14. Forecast history (KIK-428)
 ```cypher
 MATCH (f:Forecast)
 RETURN f.date AS date, f.optimistic AS optimistic,
@@ -569,7 +569,7 @@ RETURN f.date AS date, f.optimistic AS optimistic,
 ORDER BY f.date DESC LIMIT 5
 ```
 
-### 15. テーマトレンド履歴 (KIK-603)
+### 15. Theme trend history (KIK-603)
 ```cypher
 MATCH (tt:ThemeTrend)
 RETURN tt.date AS date, tt.theme AS theme, tt.confidence AS confidence,
@@ -577,7 +577,7 @@ RETURN tt.date AS date, tt.theme AS theme, tt.confidence AS confidence,
 ORDER BY tt.date DESC, tt.rank ASC LIMIT 20
 ```
 
-### 16. テーマトレンド差分（直近2回の比較） (KIK-603)
+### 16. Theme trend diff (compare last 2 runs) (KIK-603)
 ```cypher
 MATCH (tt:ThemeTrend)
 WITH DISTINCT tt.date AS date ORDER BY date DESC LIMIT 2
@@ -591,24 +591,24 @@ ORDER BY tt.date DESC, tt.rank ASC
 
 ## NEO4J_MODE (KIK-413)
 
-`NEO4J_MODE` 環境変数で Neo4j への書き込み深度を制御する。
+The `NEO4J_MODE` environment variable controls the write depth to Neo4j.
 
 | Mode | Description |
 |:---|:---|
-| `off` | Neo4j 書き込みなし (JSON のみ) |
-| `summary` | 従来の要約のみ (score/verdict/summary) — 後方互換 |
-| `full` | 意味情報サブノード (News/Sentiment/Catalyst 等) も展開 |
+| `off` | No Neo4j writes (JSON only) |
+| `summary` | Summary only (score/verdict/summary) — backward compatible |
+| `full` | Also expands semantic sub-nodes (News/Sentiment/Catalyst, etc.) |
 
-**デフォルト**: 環境変数未設定時は Neo4j 接続可能なら `full`、不可なら `off`。
+**Default**: If the environment variable is not set, `full` when Neo4j is reachable, `off` otherwise.
 
 ```bash
-# fullモードでリサーチ実行
+# Run research in full mode
 NEO4J_MODE=full python3 .claude/skills/market-research/scripts/run_research.py stock NVDA
 
-# summaryモードで後方互換動作
+# Run in summary mode for backward compatibility
 NEO4J_MODE=summary python3 .claude/skills/stock-report/scripts/generate_report.py 7203.T
 
-# Neo4j書き込み無効
+# Disable Neo4j writes
 NEO4J_MODE=off python3 .claude/skills/stock-report/scripts/generate_report.py 7203.T
 ```
 
@@ -619,29 +619,29 @@ NEO4J_MODE=off python3 .claude/skills/stock-report/scripts/generate_report.py 72
 ```
 User Action (e.g. buy)
   │
-  ├─ 1. JSON Write (master) ← 必ず成功
+  ├─ 1. JSON Write (master) ← always succeeds
   │     portfolio.csv / data/notes/*.json / data/history/*.json
   │
-  └─ 2. Neo4j Write (view) ← try/except, 失敗しても OK
+  └─ 2. Neo4j Write (view) ← try/except, failure is OK
         graph_store.merge_trade() / merge_note() / etc.
 ```
 
-- JSON ファイルが master データソース。すべての read/write は JSON 経由
-- Neo4j は検索・関連付け用の view。`graph_store.py` の全関数は例外を握りつぶして `False` を返す
-- Neo4j が落ちていても全スキルが正常動作する
+- JSON files are the master data source. All reads/writes go through JSON
+- Neo4j is the view for search and association. All functions in `graph_store.py` swallow exceptions and return `False`
+- All skills work normally even when Neo4j is down
 
 ---
 
-## KIK-433: 業界コンテキスト連携（Phase 1）
+## KIK-433: Industry Context Integration (Phase 1)
 
-業界リサーチで蓄積された Catalyst ノードをフォーキャスト・レポートに反映する。
+Catalyst nodes accumulated from industry research are reflected in forecasts and reports.
 
-### 現在のクエリパターン（Phase 1）
+### Current Query Patterns (Phase 1)
 
 `graph_query.get_sector_catalysts(sector, days=30)`:
 
 ```cypher
--- セクターマッチ（case-insensitive CONTAINS）
+-- Sector match (case-insensitive CONTAINS)
 MATCH (r:Research {research_type: 'industry'})-[:HAS_CATALYST]->(c:Catalyst)
 WHERE r.date >= $since
   AND (toLower(r.target) CONTAINS toLower($sector)
@@ -650,9 +650,9 @@ RETURN c.type AS type, c.text AS text
 ORDER BY r.date DESC LIMIT 50
 ```
 
-- `growth_driver` → ポジティブ（optimistic シナリオを +N×1.7% 上方修正）
-- `risk` → ネガティブ（pessimistic シナリオを -N×1.7% 下方修正）
-- 調整上限: ±10%
+- `growth_driver` → positive (adjusts optimistic scenario upward by +N×1.7%)
+- `risk` → negative (adjusts pessimistic scenario downward by -N×1.7%)
+- Adjustment cap: ±10%
 
 `graph_query.get_industry_research_for_sector(sector, days=30)`:
 
@@ -669,48 +669,48 @@ ORDER BY r.date DESC LIMIT 5
 
 ---
 
-## KIK-434: AI駆動セマンティックリレーション
+## KIK-434: AI-Driven Semantic Relations
 
-ノード保存時に LLM（Claude Haiku）が新ノードと既存ノードの内容を読んで意味的な関係を推論し、以下のリレーションを自動付与する。
+When a node is saved, an LLM (Claude Haiku) reads the new node and existing nodes and infers semantic relationships, automatically assigning the following relations.
 
-### AI リレーション種別
+### AI Relation Types
 
-| リレーション | 意味 | 例 |
+| Relationship | Meaning | Example |
 |:---|:---|:---|
-| `INFLUENCES` | AがBに影響を与える | industry Research → 保有 Report（AI CapEx拡大が半導体株に影響） |
-| `CONTRADICTS` | AがBと矛盾する | 強気 Research vs 懸念 Note（成長鈍化の懸念） |
-| `CONTEXT_OF` | AがBの背景文脈 | market Research → HealthCheck（市場全体の不安がヘルスチェックの解釈に影響） |
-| `INFORMS` | AがBの判断材料になる | industry Research → Report（業界動向がレポートに材料提供） |
-| `SUPPORTS` | AがBを支持・補強する | Catalyst Note → 楽観 Research（カタリストが見通しを補強） |
+| `INFLUENCES` | A influences B | industry Research → held Report (AI CapEx expansion influences semiconductor stocks) |
+| `CONTRADICTS` | A contradicts B | bullish Research vs. concern Note (slowing growth concern) |
+| `CONTEXT_OF` | A is background context for B | market Research → HealthCheck (broad market anxiety affects health check interpretation) |
+| `INFORMS` | A is input for B's judgment | industry Research → Report (industry trends provide material for report) |
+| `SUPPORTS` | A supports/reinforces B | Catalyst Note → optimistic Research (catalyst reinforces outlook) |
 
-### リレーションプロパティ
+### Relationship Properties
 
 | Property | Type | Description |
 |:---|:---|:---|
-| confidence | float | LLMの確信度（0.6以上のみ保存） |
-| reason | string | LLMが判断した理由（最大500文字） |
-| created_by | string | 常に `'ai'` |
-| created_at | string | ISO 8601タイムスタンプ |
+| confidence | float | LLM confidence (only saved if >= 0.6) |
+| reason | string | LLM's reasoning (max 500 chars) |
+| created_by | string | Always `'ai'` |
+| created_at | string | ISO 8601 timestamp |
 
-### 発火タイミング
+### Trigger Timing
 
-| 保存イベント | 候補ノード（最大）|
+| Save Event | Candidate Nodes (max) |
 |:---|:---|
-| `save_research()` | portfolio holdings（max 8） |
-| `save_note()` | 同銘柄の Report + HealthCheck（max 6） |
-| `save_report()` | 同銘柄の Note + 同セクター Research（max 10） |
+| `save_research()` | portfolio holdings (max 8) |
+| `save_note()` | same-ticker Report + HealthCheck (max 6) |
+| `save_report()` | same-ticker Note + same-sector Research (max 10) |
 
 ### Graceful Degradation
 
-- `ANTHROPIC_API_KEY` 未設定 → no-op（0件）
-- Neo4j 未接続 → no-op
-- LLM タイムアウト / 非200レスポンス → no-op
-- confidence < 0.6 → フィルタ除外
+- `ANTHROPIC_API_KEY` not set → no-op (0 relations)
+- Neo4j not connected → no-op
+- LLM timeout / non-200 response → no-op
+- confidence < 0.6 → filtered out
 
-### サンプル Cypher
+### Sample Cypher
 
 ```cypher
--- AI が付与したリレーションを一覧表示 (KIK-434)
+-- List AI-assigned relationships (KIK-434)
 MATCH ()-[r:INFLUENCES|CONTRADICTS|CONTEXT_OF|INFORMS|SUPPORTS]->()
 WHERE r.created_by = 'ai'
 RETURN type(r) AS rel_type, r.confidence AS confidence,
@@ -720,46 +720,46 @@ ORDER BY r.created_at DESC LIMIT 10
 
 ---
 
-## スキーマ進化の方針
+## Schema Evolution Policy
 
-### 設計思想
+### Design Philosophy
 
-**人間がスキーマ型（語彙）を定義し、AIがリレーション（意味の繋がり）を自律的に構築する。**
-
-```
-人間が定義・管理するもの（安定・一貫性）
-  ノード型:      Stock, Research, Catalyst, Sentiment...
-  リレーション型: SUPERSEDES, HAS_CATALYST, INFLUENCES...
-
-AIが自律的に行うもの（動的・成長）
-  インスタンスの生成: 新しいResearch/Catalyst ノードを作成
-  リレーションの付与: 「このResearchはあのCatalystが原因」→ リレーションを張る
-  意味の連鎖:   Stock → Sector → Research → Sentiment → Catalyst をホップして文脈を構築
-```
-
-スキーマ型は **AIが思考するための語彙** であり、型が豊富なほどAIの表現力が上がる。
-
-### 進化サイクル
+**Humans define the schema types (vocabulary); AI autonomously builds the relationships (semantic connections).**
 
 ```
-初期: 最小限のスキーマで使い始める
+Defined and managed by humans (stable, consistent)
+  Node types:         Stock, Research, Catalyst, Sentiment...
+  Relationship types: SUPERSEDES, HAS_CATALYST, INFLUENCES...
+
+Done autonomously by AI (dynamic, growing)
+  Instance creation: Create new Research/Catalyst nodes
+  Relationship assignment: "This Research was caused by that Catalyst" → create a relationship
+  Semantic chaining: Hop through Stock → Sector → Research → Sentiment → Catalyst to build context
+```
+
+Schema types are **the vocabulary AI uses to reason**, and the richer the types, the greater the AI's expressiveness.
+
+### Evolution Cycle
+
+```
+Initial: Start with a minimal schema
   ↓
-使い込む: データが蓄積され、新しいパターンが見えてくる
-  「このリレーション型があれば表現できるのに」という場面が出てくる
+Heavy use: Data accumulates, new patterns emerge
+  "If only this relationship type existed, I could express it"
   ↓
-スキーマ拡充: 人間が新しい型を追加する
+Schema extension: Humans add new types
   ↓
-AIの表現力が向上: より豊かな知識グラフが自律的に構築される
+AI expressiveness improves: A richer knowledge graph is built autonomously
 ```
 
-→ **使いながら発見していく empirical なアプローチ**。最初から完璧な設計を目指さない。
+→ **An empirical approach of discovery through use.** Don't aim for a perfect design from the start.
 
-### スキーマ進化ログ
+### Schema Evolution Log
 
-使用中に「この型・リレーションがあると便利」と気づいたらここに記録する。
+Record here when you notice "this type/relationship would be useful" during use.
 
-| 発見日 | 種別 | 候補 | 観察したパターン | 状態 |
+| Discovery Date | Kind | Candidate | Observed Pattern | Status |
 |:---|:---|:---|:---|:---|
-| （使いながら追記） | Relationship | `TRIGGERED_BY` | CatalystがMarketContextを引き起こすケース | 候補 |
-| （使いながら追記） | Relationship | `BASED_ON` | SentimentがNewsを根拠にするケース | 候補 |
-| （使いながら追記） | Relationship | `CONFLICTS_WITH` | 2つのResearchが矛盾するケース | 候補（KIK-434の`CONTRADICTS`で代替可能かも） |
+| (add while using) | Relationship | `TRIGGERED_BY` | Case where a Catalyst triggers a MarketContext | Candidate |
+| (add while using) | Relationship | `BASED_ON` | Case where a Sentiment is grounded in News | Candidate |
+| (add while using) | Relationship | `CONFLICTS_WITH` | Case where two Research nodes contradict each other | Candidate (may be replaceable by KIK-434's `CONTRADICTS`) |

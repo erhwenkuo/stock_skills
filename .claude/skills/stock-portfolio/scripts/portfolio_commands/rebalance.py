@@ -38,18 +38,18 @@ def cmd_rebalance(
 ) -> None:
     """Generate rebalancing proposal."""
     if not HAS_REBALANCER:
-        print("Error: rebalancer モジュールが見つかりません。")
+        print("Error: rebalancer module not found.")
         sys.exit(1)
     if not HAS_RETURN_ESTIMATE:
-        print("Error: return_estimate モジュールが見つかりません。")
+        print("Error: return_estimate module not found.")
         sys.exit(1)
 
-    print("リバランス提案を生成中（forecast + health + 相関分析）...\n")
+    print("Generating rebalancing proposal (forecast + health + correlation analysis)...\n")
 
     # 1. Forecast data
     forecast_result = estimate_portfolio_return(csv_path, yahoo_client)
     if not forecast_result.get("positions"):
-        print("ポートフォリオにデータがありません。")
+        print("No data in portfolio.")
         return
 
     # 2. Health check (optional)
@@ -58,7 +58,7 @@ def cmd_rebalance(
         try:
             health_result = hc_run_health_check(csv_path, yahoo_client)
         except Exception as e:
-            print(f"Warning: ヘルスチェック取得エラー: {e}", file=sys.stderr)
+            print(f"Warning: health check fetch error: {e}", file=sys.stderr)
 
     # 3. Concentration (optional, from forecast positions)
     concentration = None
@@ -66,7 +66,7 @@ def cmd_rebalance(
         try:
             concentration = pm_get_structure_analysis(csv_path, yahoo_client)
         except Exception as e:
-            print(f"Warning: 構造分析取得エラー: {e}", file=sys.stderr)
+            print(f"Warning: structure analysis fetch error: {e}", file=sys.stderr)
 
     # 4. High-correlation pairs (optional)
     high_corr_pairs = None
@@ -90,7 +90,7 @@ def cmd_rebalance(
                     corr_result = compute_correlation_matrix(corr_portfolio)
                     high_corr_pairs = find_high_correlation_pairs(corr_result)
         except Exception as e:
-            print(f"Warning: 相関分析エラー: {e}", file=sys.stderr)
+            print(f"Warning: correlation analysis error: {e}", file=sys.stderr)
 
     # 5. Enrich forecast positions with sector/country/currency from snapshot
     if HAS_PORTFOLIO_MANAGER:

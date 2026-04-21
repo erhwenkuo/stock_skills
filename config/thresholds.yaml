@@ -16,9 +16,9 @@ health:
   cross_lookback: 60               # Trading days to scan for cross events
 
   # Small-cap allocation rules (KIK-438)
-  small_cap_warn_pct: 0.25       # 小型株比率 > 25% で警告
-  small_cap_crit_pct: 0.35       # 小型株比率 > 35% で危険
-  small_cap_cross_lookback: 30   # 小型株のクロスルックバック（通常60→30）
+  small_cap_warn_pct: 0.25       # Small-cap ratio > 25% triggers warning
+  small_cap_crit_pct: 0.35       # Small-cap ratio > 35% triggers critical
+  small_cap_cross_lookback: 30   # Small-cap cross lookback (normal 60 → 30)
 
   # Long-term suitability (KIK-371)
   lt_roe_high: 0.15
@@ -33,7 +33,7 @@ health:
 # Region-specific small-cap market cap thresholds (local currency).
 # ---------------------------------------------------------------------------
 small_cap:
-  jp: 100000000000      # 1000億円
+  jp: 100000000000      # JPY 100B
   us: 1000000000        # $1B
   sg: 2000000000        # SGD 2B
   th: 30000000000       # THB 30B
@@ -43,7 +43,7 @@ small_cap:
   hk: 10000000000       # HKD 10B
   kr: 1000000000000     # KRW 1T
   tw: 30000000000       # TWD 30B
-  large_cap_multiplier: 5   # 大型株 = 小型株閾値 × 5
+  large_cap_multiplier: 5   # Large-cap = small-cap threshold × 5
 
 # ---------------------------------------------------------------------------
 # Return estimation (src/core/return_estimate.py)
@@ -86,8 +86,8 @@ technicals:
 # Theme balance (src/core/health/theme_balance.py) (KIK-605)
 # ---------------------------------------------------------------------------
 theme_balance:
-  max_theme_weight: 0.20       # 同一テーマのPFウェイト上限
-  max_theme_stocks: 3          # 同一テーマの銘柄数上限
-  per_warn_multiplier: 2.0     # セクター中央PERの何倍で警告
-  fng_caution_threshold: 80    # F&G スコアがこれ以上でテーマ追加購入に警告
-  theme_stale_days: 90         # テーマ鮮度の日数閾値
+  max_theme_weight: 0.20       # Max portfolio weight per theme
+  max_theme_stocks: 3          # Max stocks per theme
+  per_warn_multiplier: 2.0     # Warn when stock P/E exceeds sector median by this multiplier
+  fng_caution_threshold: 80    # Warn on theme add-buys when F&G score exceeds this
+  theme_stale_days: 90         # Days threshold for theme staleness

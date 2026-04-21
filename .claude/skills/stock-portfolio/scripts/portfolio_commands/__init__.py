@@ -119,13 +119,13 @@ def _print_no_portfolio_message(csv_path: str) -> None:
     """Print human-readable message when portfolio has no data (KIK-443)."""
     if not os.path.exists(csv_path):
         print(
-            "⚠️  ポートフォリオデータが見つかりません\n"
-            "    原因: portfolio.csv がまだ作成されていません\n"
-            "    対処: まず buy コマンドで銘柄を追加してください\n"
-            "    例: run_portfolio.py buy --symbol 7203.T --shares 100 --price 2800"
+            "⚠️  Portfolio data not found\n"
+            "    Reason: portfolio.csv has not been created yet\n"
+            "    Action: Add a stock first using the buy command\n"
+            "    Example: run_portfolio.py buy --symbol 7203.T --shares 100 --price 2800"
         )
     else:
-        print("ポートフォリオにデータがありません。")
+        print("No data in portfolio.")
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +170,7 @@ def _save_trade_market_context() -> None:
         if macro:
             save_market_context({"indices": macro})
     except Exception as e:
-        print(f"Warning: 市況スナップショット保存失敗: {e}", file=sys.stderr)
+        print(f"Warning: Failed to save market context snapshot: {e}", file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------

@@ -44,14 +44,14 @@ CSV_COLUMNS = [
 
 
 def load_portfolio(csv_path: str = DEFAULT_CSV_PATH) -> list[dict]:
-    """CSVからポートフォリオを読み込む。
+    """Load portfolio from CSV.
 
     Returns
     -------
     list[dict]
-        各行が dict: {symbol, shares, cost_price, cost_currency, purchase_date, memo}
-        shares は int, cost_price は float に変換済み。
-        ファイルが存在しない場合は空リストを返す。
+        Each row as dict: {symbol, shares, cost_price, cost_currency, purchase_date, memo}
+        shares is int, cost_price is float.
+        Returns empty list if file does not exist.
     """
     csv_path = os.path.normpath(csv_path)
     if not os.path.exists(csv_path):
@@ -78,9 +78,9 @@ def load_portfolio(csv_path: str = DEFAULT_CSV_PATH) -> list[dict]:
 def save_portfolio(
     portfolio: list[dict], csv_path: str = DEFAULT_CSV_PATH
 ) -> None:
-    """ポートフォリオをCSVに保存。
+    """Save portfolio to CSV.
 
-    ディレクトリが存在しない場合は自動作成する。
+    Automatically creates the directory if it does not exist.
     """
     csv_path = os.path.normpath(csv_path)
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
@@ -115,17 +115,17 @@ def add_position(
     purchase_date: Optional[str] = None,
     memo: str = "",
 ) -> dict:
-    """新規ポジション追加 or 既存ポジションへの追加購入。
+    """Add a new position or additional purchase to an existing position.
 
-    既存銘柄がある場合:
-    - 株数を加算
-    - 平均取得単価を再計算: new_avg = (old_shares * old_price + new_shares * new_price) / total_shares
-    - purchase_date は最新の日付に更新
+    For existing holdings:
+    - Adds share count
+    - Recalculates average cost: new_avg = (old_shares * old_price + new_shares * new_price) / total_shares
+    - Updates purchase_date to the latest date
 
     Returns
     -------
     dict
-        更新後のポジション dict
+        Updated position dict
     """
     if purchase_date is None:
         purchase_date = datetime.now().strftime("%Y-%m-%d")
@@ -140,7 +140,7 @@ def add_position(
             break
 
     if existing is not None:
-        # 既存ポジションへの追加購入 → 平均取得単価を再計算
+        # Additional purchase → recalculate average cost
         old_shares = existing["shares"]
         old_price = existing["cost_price"]
         total_shares = old_shares + shares
@@ -156,7 +156,7 @@ def add_position(
             existing["memo"] = memo
         result = dict(existing)
     else:
-        # 新規ポジション
+        # New position
         new_pos = {
             "symbol": symbol.upper() if "." not in symbol else symbol,
             "shares": shares,
@@ -179,25 +179,25 @@ def sell_position(
     sell_price: Optional[float] = None,
     sell_date: Optional[str] = None,
 ) -> dict:
-    """売却。shares分を減算。0以下になったら行を削除。
+    """Sell shares. Subtracts from holdings; removes row when shares reach 0.
 
     Parameters
     ----------
     sell_price : float, optional
-        売却単価。指定時に realized_pnl / pnl_rate を計算。
+        Sell price per share. When specified, computes realized_pnl / pnl_rate.
     sell_date : str, optional
-        売却日 (YYYY-MM-DD)。指定時に hold_days を計算。
+        Sale date (YYYY-MM-DD). When specified, computes hold_days.
 
     Returns
     -------
     dict
-        更新後のポジション dict（削除された場合は shares=0 の dict）。
-        KIK-441: sold_shares / sell_price / realized_pnl / pnl_rate / hold_days を追加。
+        Updated position dict (shares=0 if fully sold).
+        KIK-441: adds sold_shares / sell_price / realized_pnl / pnl_rate / hold_days.
 
     Raises
     ------
     ValueError
-        銘柄が見つからない場合、または保有数を超える売却の場合
+        If the symbol is not found, or if shares exceed holdings.
     """
     portfolio = load_portfolio(csv_path)
 
@@ -208,20 +208,20 @@ def sell_position(
             break
 
     if target_idx is None:
-        raise ValueError(f"銘柄 {symbol} はポートフォリオに存在しません。")
+        raise ValueError(f"Symbol {symbol} not found in portfolio.")
 
     target = portfolio[target_idx]
 
     if shares > target["shares"]:
         raise ValueError(
-            f"銘柄 {symbol} の保有数 ({target['shares']}) を超える "
-            f"売却数 ({shares}) が指定されました。"
+            f"Sell quantity ({shares}) exceeds holdings "
+            f"({target['shares']}) for {symbol}."
         )
 
     remaining = target["shares"] - shares
 
     if remaining <= 0:
-        # ポジション全売却 → 行を削除
+        # Full position sell → remove row
         result = dict(target)
         result["shares"] = 0
         portfolio.pop(target_idx)
@@ -231,7 +231,7 @@ def sell_position(
 
     save_portfolio(portfolio, csv_path)
 
-    # KIK-441: P&L フィールドを追加
+    # KIK-441: Add P&L fields
     result["sold_shares"] = shares
     result["sell_price"] = sell_price
 
@@ -263,30 +263,29 @@ def get_performance_review(
     symbol: Optional[str] = None,
     base_dir: str = "data/history",
 ) -> dict:
-    """売買パフォーマンスレビュー集計 (KIK-441)。
+    """Trade performance review aggregation (KIK-441).
 
-    data/history/trade/*.json から trade_type="sell" かつ
-    realized_pnl があるレコードを集計して統計を返す。
+    Aggregates sell records with realized_pnl from data/history/trade/*.json.
 
     Parameters
     ----------
     year : int, optional
-        指定年でフィルタ（例: 2026）。None なら全期間。
+        Filter by year (e.g. 2026). None = all periods.
     symbol : str, optional
-        指定シンボルでフィルタ。None なら全銘柄。
+        Filter by symbol. None = all symbols.
     base_dir : str
-        history ルートディレクトリ。
+        History root directory.
 
     Returns
     -------
     dict
         {
-            "trades": [...],  # フィルタ済みの sell レコード一覧
+            "trades": [...],  # Filtered sell records
             "stats": {
                 "total": int,
                 "wins": int,
                 "win_rate": float | None,
-                "avg_return": float | None,   # pnl_rate の平均
+                "avg_return": float | None,   # Average pnl_rate
                 "avg_hold_days": float | None,
                 "total_pnl": float | None,
             }
@@ -296,22 +295,22 @@ def get_performance_review(
 
     all_trades = load_history("trade", base_dir=base_dir)
 
-    # sell かつ realized_pnl があるものだけ
+    # Filter to sell records with realized_pnl
     sells = [
         t for t in all_trades
         if t.get("trade_type") == "sell" and t.get("realized_pnl") is not None
     ]
 
-    # year フィルタ
+    # Year filter
     if year is not None:
         sells = [t for t in sells if str(t.get("date", "")).startswith(str(year))]
 
-    # symbol フィルタ
+    # Symbol filter
     if symbol is not None:
         sym_upper = symbol.upper()
         sells = [t for t in sells if t.get("symbol", "").upper() == sym_upper]
 
-    # 統計計算
+    # Statistics calculation
     total = len(sells)
     if total == 0:
         return {

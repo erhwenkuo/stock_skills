@@ -1,320 +1,320 @@
 ---
 name: screen-stocks
-description: 割安株スクリーニング。EquityQuery で銘柄リスト不要のスクリーニング。PER/PBR/配当利回り/ROE等で日本株・米国株・ASEAN株・香港株・韓国株・台湾株等60地域から割安銘柄を検索する。
-argument-hint: "[region] [preset] [--sector SECTOR]  例: japan value, us high-dividend, asean quality, hk value --sector Technology"
+description: "Undervalued stock screening. EquityQuery-based screening without a predefined stock list. Searches for undervalued stocks across 60+ regions including Japan, US, ASEAN, Hong Kong, Korea, and Taiwan using P/E, P/B, dividend yield, ROE, and more."
+argument-hint: "[region] [preset] [--sector SECTOR]  e.g.: japan value, us high-dividend, asean quality, hk value --sector Technology"
 allowed-tools: Bash(python3 *)
 ---
 
-# 割安株スクリーニングスキル
+# Undervalued Stock Screening Skill
 
-$ARGUMENTS を解析して region、preset、sector を判定し、以下のコマンドを実行してください。
+Parse $ARGUMENTS to determine region, preset, and sector, then run the following command.
 
-## 実行コマンド
+## Execution Command
 
 ```bash
 python3 /Users/kikuchihiroyuki/stock-skills/.claude/skills/screen-stocks/scripts/run_screen.py --region <region> --preset <preset> [--sector <sector>] [--theme <theme>] [--top <N>] [--mode <query|legacy>]
 ```
 
-## 自然言語ルーティング
+## Natural Language Routing
 
-自然言語→スキル判定は [.claude/rules/intent-routing.md](../../rules/intent-routing.md) を参照。
+For natural language → skill selection, see [.claude/rules/intent-routing.md](../../rules/intent-routing.md).
 
-## 利用可能な地域コード（yfinance EquityQuery）
+## Available Region Codes (yfinance EquityQuery)
 
-主要地域: jp, us, sg, th, my, id, ph, hk, kr, tw, cn, gb, de, fr, in, au, br, ca 等（約60地域）
+Major regions: jp, us, sg, th, my, id, ph, hk, kr, tw, cn, gb, de, fr, in, au, br, ca, etc. (~60 regions)
 
-## 利用可能な取引所コード
+## Available Exchange Codes
 
-| 取引所 | コード |
+| Exchange | Code |
 |:------|:------|
-| 東京証券取引所 | JPX |
+| Tokyo Stock Exchange | JPX |
 | NASDAQ | NMS |
 | NYSE | NYQ |
-| シンガポール証券取引所 | SES |
-| タイ証券取引所 | SET |
-| マレーシア証券取引所 | KLS |
-| インドネシア証券取引所 | JKT |
-| フィリピン証券取引所 | PHS |
-| 香港証券取引所 | HKG |
-| 韓国証券取引所 | KSC/KOE |
-| 台湾証券取引所 | TAI |
+| Singapore Exchange | SES |
+| Stock Exchange of Thailand | SET |
+| Bursa Malaysia | KLS |
+| Indonesia Stock Exchange | JKT |
+| Philippine Stock Exchange | PHS |
+| Hong Kong Stock Exchange | HKG |
+| Korea Stock Exchange | KSC/KOE |
+| Taiwan Stock Exchange | TAI |
 
-## テーマスクリーニング（KIK-439）
+## Theme Screening (KIK-439)
 
-`--theme <テーマ>` を任意のプリセットと組み合わせて、特定テーマに絞ったスクリーニングができる。
-`trending`/`pullback`/`alpha` プリセットは `--theme` 未対応。
+Use `--theme <theme>` in combination with any preset to narrow screening to a specific theme.
+`trending`/`pullback`/`alpha` presets do not support `--theme`.
 
-| テーマキー | 説明 | 対象インダストリー（抜粋） |
+| Theme Key | Description | Target Industries (excerpt) |
 |:---------|:-----|:-----------------------|
-| `ai` | AI・半導体 | Semiconductors, Software—Infrastructure, Electronic Components |
-| `ev` | EV・次世代自動車 | Auto Manufacturers, Electrical Equipment & Parts |
-| `cloud-saas` | クラウド・SaaS | Software—Application, Software—Infrastructure |
-| `cybersecurity` | サイバーセキュリティ | Software—Infrastructure（セキュリティ特化） |
-| `biotech` | バイオテック・創薬 | Biotechnology, Drug Manufacturers |
-| `renewable-energy` | 再生可能エネルギー | Solar, Utilities—Renewable |
-| `fintech` | フィンテック | Software—Application（金融特化）, Capital Markets |
-| `defense` | 防衛・宇宙 | Aerospace & Defense |
-| `healthcare` | ヘルスケア・医療機器 | Medical Devices, Health Information Services |
+| `ai` | AI & Semiconductors | Semiconductors, Software—Infrastructure, Electronic Components |
+| `ev` | EV & Next-Gen Vehicles | Auto Manufacturers, Electrical Equipment & Parts |
+| `cloud-saas` | Cloud & SaaS | Software—Application, Software—Infrastructure |
+| `cybersecurity` | Cybersecurity | Software—Infrastructure (security-focused) |
+| `biotech` | Biotech & Drug Development | Biotechnology, Drug Manufacturers |
+| `renewable-energy` | Renewable Energy | Solar, Utilities—Renewable |
+| `fintech` | Fintech | Software—Application (finance-focused), Capital Markets |
+| `defense` | Defense & Aerospace | Aerospace & Defense |
+| `healthcare` | Healthcare & Medical Devices | Medical Devices, Health Information Services |
 
-テーマ定義は `config/themes.yaml` で管理。
+Theme definitions are managed in `config/themes.yaml`.
 
-## トレンドテーマ自動検出（KIK-440）
+## Trend Theme Auto-Detection (KIK-440)
 
-`--auto-theme` を指定すると、Grok API（X/Web検索）でトレンドテーマを自動検出し、各テーマで既存のスクリーニングを順次実行する。
+Use `--auto-theme` to automatically detect trending themes via the Grok API (X/Web search) and run screening for each theme sequentially.
 
-### パイプライン
+### Pipeline
 
-1. Grok API がX/Webから注目テーマを3〜5つ検出（信頼度付き）
-2. `themes.yaml` のキーと照合し、有効テーマのみ実行（未対応テーマはスキップ通知）
-3. 各テーマで指定プリセットのスクリーニングを実行
+1. Grok API detects 3–5 trending themes from X/Web (with confidence scores)
+2. Cross-reference with keys in `themes.yaml`; only supported themes are executed (unsupported themes show a skip notice)
+3. Run the specified preset screening for each theme
 
-### 制約事項
+### Constraints
 
-- `--auto-theme` と `--theme` は排他（同時使用不可）
-- `trending`/`pullback`/`alpha` プリセットとは併用不可
-- `XAI_API_KEY` 必須（未設定時はエラー終了）
+- `--auto-theme` and `--theme` are mutually exclusive
+- Cannot be combined with `trending`/`pullback`/`alpha` presets
+- `XAI_API_KEY` required (exits with error if not set)
 
-### `trending` プリセットとの違い
+### Difference from `trending` Preset
 
 | | `--preset trending` | `--auto-theme` |
 |:---|:---|:---|
-| 検出対象 | X上の話題の**個別銘柄** | トレンドの**テーマ・セクター** |
-| 粒度 | 銘柄粒度 | テーマ粒度 |
-| スクリーニング | ファンダメンタルズ評価 | テーマ内で任意のプリセットで評価 |
+| Detection target | Trending **individual stocks** on X | Trending **themes / sectors** |
+| Granularity | Stock-level | Theme-level |
+| Screening | Fundamental evaluation | Any preset within each theme |
 
-### 実行例
+### Execution Examples
 
 ```bash
-# 日本のトレンドテーマで割安株をスクリーニング
+# Screen for undervalued stocks in Japanese trending themes
 python3 .../run_screen.py --region japan --preset value --auto-theme
 
-# 米国のトレンドテーマで高成長株
+# High-growth stocks in US trending themes
 python3 .../run_screen.py --region us --preset high-growth --auto-theme
 
-# グローバルのトレンドテーマでデフォルトプリセット
+# Global trending themes with default preset
 python3 .../run_screen.py --preset value --auto-theme
 ```
 
-## スクリーニングモード
+## Screening Modes
 
-- `--mode query` (デフォルト): **EquityQuery方式**。yfinance の EquityQuery API を使い、銘柄リスト不要で条件に合う銘柄を直接検索する。全地域に対応。高速。
-- `--mode legacy`: **銘柄リスト方式**。従来のValueScreenerを使用。事前定義した銘柄リスト（日経225、S&P500等）を1銘柄ずつ取得・評価。japan/us/asean のみ対応。
-- `--with-pullback`: **押し目フィルタ追加**。任意のプリセット（value, high-dividend 等）にテクニカル押し目判定を追加適用する。`--preset pullback` との同時指定は不要（pullback プリセットが優先される）。出力は Pullback モードと同じ列形式。
+- `--mode query` (default): **EquityQuery mode**. Uses yfinance's EquityQuery API to search for qualifying stocks directly without a predefined list. Works across all regions. Fast.
+- `--mode legacy`: **Stock list mode**. Uses the legacy ValueScreener. Fetches and evaluates stocks from a predefined list (Nikkei 225, S&P 500, etc.) one by one. Japan/US/ASEAN only.
+- `--with-pullback`: **Add pullback filter**. Applies technical pullback detection on top of any preset (value, high-dividend, etc.). No need to combine with `--preset pullback` (pullback preset takes priority). Output uses the same column format as Pullback mode.
 
-## プリセット
+## Presets
 
-- `value` : 伝統的バリュー投資（低PER・低PBR・ROE≧5%）
-- `high-dividend` : 高配当株（配当利回り3%以上）
-- `growth` : 純成長株（高ROE≧15%・売上成長≧10%。PER制約なし。割安度を問わず成長力で選別）
-- `growth-value` : 成長バリュー（成長性＋割安度）
-- `deep-value` : ディープバリュー（非常に低いPER/PBR）
-- `quality` : クオリティバリュー（高ROE≧15%＋割安。value の ROE 閾値を5%→15%に厳格化した上位集合。収益力の高い割安株に限定）
-- `pullback` : 押し目買い型（上昇トレンド中の一時調整でエントリー。EquityQuery→テクニカル→SR の3段パイプライン。実行に時間がかかります）
-- `alpha` : アルファシグナル（割安＋変化の質＋押し目の3軸統合。EquityQuery→変化の質→押し目判定→2軸スコアリングの4段パイプライン。実行に時間がかかります）
-- `trending` : Xトレンド銘柄（Grok API でX上の話題銘柄を発見→Yahoo Financeでファンダメンタルズ評価。`--theme` でテーマ絞り込み可。XAI_API_KEY 必須）
-- `long-term` : 長期投資適性（高ROE≧15%・EPS成長≧10%・配当≧2%・PER≦25・PBR≦3・時価総額1000億以上。長期保有に適した安定成長銘柄を検索）
-- `shareholder-return` : 株主還元重視（配当利回り+自社株買い利回りの総還元率でランキング。安定度評価付き: ✅安定/📈増加/⚠️一時的/📉低下）
-- `high-growth` : 高成長株（利益不問・売上成長率≧20%・直近四半期売上成長≧10%・PSR≦20・粗利率≧20%。赤字成長企業も対象。PERは使わずPSRでバブル防止）（KIK-432）
-- `small-cap-growth` : 小型急成長株（時価総額1000億以下・売上成長率≧20%・PSR≦15・粗利率≧20%。機関投資家未発見の10倍株候補。地域別時価総額自動調整付き。リスク★★★★）（KIK-437）
-- `contrarian` : 逆張り候補（テクニカル売られすぎ × バリュエーション割安 × ファンダ堅調。3軸100点スコアリング。バリュートラップの対極で「市場の過剰反応」を検出）（KIK-504）
-- `momentum` : モメンタム急騰銘柄（RSI/MACD/出来高急増/トレンド整合の4軸スコアリング。上昇トレンドにある銘柄を検出。`--submode` で安定加速か急騰かを選択可能）（KIK-506）
+- `value`: Traditional value investing (low P/E, low P/B, ROE ≥ 5%)
+- `high-dividend`: High-dividend stocks (dividend yield ≥ 3%)
+- `growth`: Pure growth stocks (high ROE ≥ 15%, revenue growth ≥ 10%; no P/E constraint; selected by growth strength regardless of valuation)
+- `growth-value`: Growth-value blend (growth potential + undervaluation)
+- `deep-value`: Deep value (very low P/E and P/B)
+- `quality`: Quality value (ROE ≥ 15% + undervaluation; stricter ROE threshold than `value` at 5% → 15%; limited to highly profitable undervalued stocks)
+- `pullback`: Pullback entry (temporary correction during an uptrend; 3-stage pipeline: EquityQuery → technical → SR; takes longer to run)
+- `alpha`: Alpha signal (3-axis integration: undervaluation + change quality + pullback; 4-stage pipeline: EquityQuery → change quality → pullback detection → 2-axis scoring; takes longer to run)
+- `trending`: X-trending stocks (discover trending stocks on X via Grok API → evaluate fundamentals via Yahoo Finance; `--theme` filtering available; `XAI_API_KEY` required)
+- `long-term`: Long-term investment suitability (ROE ≥ 15%, EPS growth ≥ 10%, dividend ≥ 2%, P/E ≤ 25, P/B ≤ 3, market cap ≥ ¥100B; searches for stable growth stocks suitable for long-term holding)
+- `shareholder-return`: Shareholder return focus (ranked by total return rate: dividend yield + buyback yield; with stability assessment: ✅Stable/📈Increasing/⚠️Temporary/📉Declining)
+- `high-growth`: High-growth stocks (profit-agnostic; revenue growth ≥ 20%, recent quarterly revenue growth ≥ 10%, PSR ≤ 20, gross margin ≥ 20%; includes unprofitable growth companies; uses PSR instead of P/E to prevent bubble selection) (KIK-432)
+- `small-cap-growth`: Small-cap high-growth (market cap ≤ ¥100B; revenue growth ≥ 20%, PSR ≤ 15, gross margin ≥ 20%; targets 10x candidates undiscovered by institutions; auto-adjusts market cap threshold by region; Risk ★★★★) (KIK-437)
+- `contrarian`: Contrarian candidates (technically oversold × valuationally cheap × fundamentally sound; 3-axis 100-point scoring; detects "market overreaction," the opposite of value traps) (KIK-504)
+- `momentum`: Momentum surge stocks (4-axis scoring: RSI/MACD/momentum rate/volume surge; detects stocks in uptrends; `--submode` selects stable acceleration vs. surge) (KIK-506)
 
-### Momentum スクリーニング詳細（KIK-506）
+### Momentum Screening Details (KIK-506)
 
-#### 3段階モメンタム分類
+#### 3-Stage Momentum Classification
 
-| 分類 | 条件 | 説明 |
+| Classification | Condition | Description |
 |:---|:---|:---|
-| 🟢 加速 (accelerating) | スコア 40〜69 | 安定した上昇モメンタム。過熱感なく継続性が高い |
-| 🟡 急騰 (surge) | スコア 70〜89 | 急激な価格上昇。短期注目度は高いが調整に注意 |
-| 🔴 過熱 (overheated) | スコア 90〜100 | 過熱状態。高いリターンが期待できるが調整リスクあり |
+| 🟢 Accelerating | Score 40–69 | Steady upward momentum; high continuity with no overheating |
+| 🟡 Surging | Score 70–89 | Rapid price rise; high short-term attention but watch for correction |
+| 🔴 Overheated | Score 90–100 | Overheated state; high return potential but elevated correction risk |
 
-#### `--submode` パラメータ
+#### `--submode` Parameter
 
-`--submode` で表示する分類を絞り込める。
+Use `--submode` to filter by classification.
 
-| 値 | 表示対象 | 推奨ユースケース |
+| Value | Shows | Recommended Use Case |
 |:---|:---|:---|
-| `stable`（デフォルト） | 🟢 加速のみ | 安定した上昇トレンド銘柄を選びたい場合 |
-| `surge` | 🟡 急騰 + 🔴 過熱 | 短期の急騰銘柄も含めたい場合 |
+| `stable` (default) | 🟢 Accelerating only | When you want stable uptrend stocks |
+| `surge` | 🟡 Surging + 🔴 Overheated | When you also want short-term surge stocks |
 
-#### 4軸スコアリング
+#### 4-Axis Scoring
 
-| 軸 | 満点 | 判定条件 |
+| Axis | Max | Condition |
 |:---|:---|:---|
-| RSI強度 | 25 | RSI ≧ 60 |
-| MACDクロス | 25 | MACD > シグナルライン（強気クロス） |
-| モメンタム率 | 25 | 20日間価格変化率が閾値を超える |
-| 出来高急増 | 25 | 5日平均出来高 / 20日平均出来高 ≧ 1.3 |
+| RSI strength | 25 | RSI ≥ 60 |
+| MACD cross | 25 | MACD > signal line (bullish cross) |
+| Momentum rate | 25 | 20-day price change rate exceeds threshold |
+| Volume surge | 25 | 5-day avg volume / 20-day avg volume ≥ 1.3 |
 
-合計スコア ≧ 40 でモメンタム銘柄として判定。
+Total score ≥ 40 qualifies as a momentum stock.
 
-## 出力
+## Output
 
-結果はMarkdown表形式で表示してください。EquityQuery モードではセクター列が追加される。
+Display results in Markdown table format. EquityQuery mode adds a Sector column.
 
-### EquityQuery モードの出力列
-順位 / 銘柄 / セクター / 株価 / PER / PBR / 配当利回り / ROE / スコア
+### EquityQuery Mode Columns
+Rank / Symbol / Sector / Price / P/E / P/B / Div Yield / ROE / Score
 
-### Legacy モードの出力列
-順位 / 銘柄 / 株価 / PER / PBR / 配当利回り / ROE / スコア
+### Legacy Mode Columns
+Rank / Symbol / Price / P/E / P/B / Div Yield / ROE / Score
 
-### Pullback モードの出力列
-順位 / 銘柄 / 株価 / PER / 押し目% / RSI / 出来高比 / SMA50 / SMA200 / スコア
+### Pullback Mode Columns
+Rank / Symbol / Price / P/E / Pullback% / RSI / Volume Ratio / SMA50 / SMA200 / Score
 
-### Alpha モードの出力列
-順位 / 銘柄 / 株価 / PER / PBR / 割安 / 変化 / 総合 / 押し目 / ア / 加速 / FCF / ROE趨勢
+### Alpha Mode Columns
+Rank / Symbol / Price / P/E / P/B / Underval / Change / Total / Pullback / α / Accel / FCF / ROE Trend
 
-### Growth モードの出力列
-順位 / 銘柄 / セクター / 株価 / PER / PBR / EPS成長 / 売上成長 / ROE
+### Growth Mode Columns
+Rank / Symbol / Sector / Price / P/E / P/B / EPS Growth / Revenue Growth / ROE
 
-### Trending モードの出力列
-順位 / 銘柄 / 話題の理由 / 株価 / PER / PBR / 配当利回り / ROE / スコア / 判定
+### Trending Mode Columns
+Rank / Symbol / Trending Reason / Price / P/E / P/B / Div Yield / ROE / Score / Judgment
 
-### Contrarian モードの出力列
-順位 / 銘柄 / 株価 / PER / PBR / RSI / SMA200乖離 / テク / バリュ / ファンダ / 総合 / 判定
+### Contrarian Mode Columns
+Rank / Symbol / Price / P/E / P/B / RSI / SMA200 Dev / Tech / Val / Fund / Total / Judgment
 
-### Momentum モードの出力列
-順位 / 銘柄 / 株価 / PER / RSI / MACD / モメンタム率 / 出来高比 / モメンタムスコア / 総合スコア / 分類
+### Momentum Mode Columns
+Rank / Symbol / Price / P/E / RSI / MACD / Momentum Rate / Volume Ratio / Momentum Score / Total Score / Classification
 
-### Shareholder Return モードの出力列
-順位 / 銘柄 / 株価 / 配当利回り / 自社株買い利回り / 総還元率 / 安定度 / ROE / PER
+### Shareholder Return Mode Columns
+Rank / Symbol / Price / Div Yield / Buyback Yield / Total Return / Stability / ROE / P/E
 
-## 実行例
+## Execution Examples
 
 ```bash
-# 日本の割安株（デフォルト）
+# Japanese undervalued stocks (default)
 python3 .../run_screen.py --region japan --preset value
 
-# 米国の高配当テクノロジー株
+# US high-dividend technology stocks
 python3 .../run_screen.py --region us --preset high-dividend --sector Technology
 
-# 香港のバリュー株
+# Hong Kong value stocks
 python3 .../run_screen.py --region hk --preset value
 
-# ASEAN の成長バリュー株（sg, th, my, id, ph を順次実行）
+# ASEAN growth-value stocks (runs sg, th, my, id, ph sequentially)
 python3 .../run_screen.py --region asean --preset growth-value
 
-# Legacy モードで米国株をスクリーニング
+# Legacy mode US screening
 python3 .../run_screen.py --region us --preset value --mode legacy
 
-# 日本株の押し目買い候補
+# Japanese pullback candidates
 python3 .../run_screen.py --region japan --preset pullback
 
-# 日本株のアルファシグナル（割安＋変化＋押し目）
+# Japanese alpha signals (undervaluation + change + pullback)
 python3 .../run_screen.py --region japan --preset alpha
 
-# 米国株のアルファシグナル
+# US alpha signals
 python3 .../run_screen.py --region us --preset alpha
 
-# 日本の割安株 + 押し目フィルタ
+# Japanese undervalued stocks + pullback filter
 python3 .../run_screen.py --region japan --preset value --with-pullback
 
-# 米国の高配当株 + 押し目フィルタ
+# US high-dividend stocks + pullback filter
 python3 .../run_screen.py --region us --preset high-dividend --with-pullback
 
-# X (Twitter) で話題の日本株
+# Trending Japanese stocks on X (Twitter)
 python3 .../run_screen.py --region japan --preset trending
 
-# X で話題のAI関連米国株
+# Trending AI-related US stocks on X
 python3 .../run_screen.py --region us --preset trending --theme "AI"
 
-# X で話題の半導体関連銘柄
-python3 .../run_screen.py --region japan --preset trending --theme "半導体"
+# Trending semiconductor-related stocks on X
+python3 .../run_screen.py --region japan --preset trending --theme "semiconductors"
 
-# 日本の長期投資候補
+# Japanese long-term investment candidates
 python3 .../run_screen.py --region japan --preset long-term
 
-# 米国の長期投資候補
+# US long-term investment candidates
 python3 .../run_screen.py --region us --preset long-term
 
-# 日本の純成長株（割安制約なし）
+# Japanese pure growth stocks (no valuation constraint)
 python3 .../run_screen.py --region japan --preset growth
 
-# 米国の純成長株
+# US pure growth stocks
 python3 .../run_screen.py --region us --preset growth
 
-# 日本の高還元株
+# Japanese high-return stocks
 python3 .../run_screen.py --region japan --preset shareholder-return
 
-# 米国の高還元株
+# US high-return stocks
 python3 .../run_screen.py --region us --preset shareholder-return
 
-# 米国の高成長株（利益不問・PSR基準）
+# US high-growth stocks (profit-agnostic, PSR-based)
 python3 .../run_screen.py --region us --preset high-growth
 
-# 日本の高成長株
+# Japanese high-growth stocks
 python3 .../run_screen.py --region japan --preset high-growth
 
-# AI関連の割安株（米国）
+# AI-related undervalued stocks (US)
 python3 .../run_screen.py --region us --preset value --theme ai
 
-# 半導体の高成長株（米国）
+# Semiconductor high-growth stocks (US)
 python3 .../run_screen.py --region us --preset high-growth --theme ai
 
-# 防衛関連株（米国・割安）
+# Defense-related stocks (US, undervalued)
 python3 .../run_screen.py --region us --preset value --theme defense
 
-# EV関連の成長株（米国）
+# EV-related growth stocks (US)
 python3 .../run_screen.py --region us --preset growth --theme ev
 
-# バイオテックの高成長株
+# Biotech high-growth stocks
 python3 .../run_screen.py --region us --preset high-growth --theme biotech
 
-# 日本の小型急成長株（時価総額1000億以下）
+# Japanese small-cap high-growth stocks (market cap ≤ ¥100B)
 python3 .../run_screen.py --region japan --preset small-cap-growth
 
-# 米国の小型急成長株（時価総額$1B以下に自動調整）
+# US small-cap high-growth stocks (auto-adjusted to ≤ $1B)
 python3 .../run_screen.py --region us --preset small-cap-growth
 
-# AI関連の小型成長株
+# AI-related small-cap growth stocks
 python3 .../run_screen.py --region us --preset small-cap-growth --theme ai
 
-# 日本の逆張り候補（売られすぎ × ファンダ堅調）
+# Japanese contrarian candidates (oversold × fundamentally sound)
 python3 .../run_screen.py --region japan --preset contrarian
 
-# 米国の逆張り候補
+# US contrarian candidates
 python3 .../run_screen.py --region us --preset contrarian
 
-# テクノロジーセクターの逆張り候補
+# Technology sector contrarian candidates
 python3 .../run_screen.py --region japan --preset contrarian --sector Technology
 
-# 日本の急騰・モメンタム銘柄（安定加速のみ、デフォルト）
+# Japanese momentum stocks (stable acceleration only, default)
 python3 .claude/skills/screen-stocks/scripts/run_screen.py --preset momentum --region japan --top 10
 
-# 米国の急騰銘柄を含むモメンタムスクリーニング（急騰・過熱も含む）
+# US momentum screening including surge stocks
 python3 .claude/skills/screen-stocks/scripts/run_screen.py --preset momentum --region us --top 5 --submode surge
 
-# テクノロジーセクターのモメンタム銘柄
+# Technology sector momentum stocks
 python3 .../run_screen.py --region japan --preset momentum --sector Technology
 ```
 
-## アノテーション機能 (KIK-418/419)
+## Annotation Features (KIK-418/419)
 
-スクリーニング結果には投資メモと売却履歴に基づくマーカーが自動付与されます。
+Screening results are automatically annotated with markers based on investment notes and trade history.
 
-### マーカー凡例
+### Marker Legend
 
-| マーカー | 意味 | トリガー |
+| Marker | Meaning | Trigger |
 |:---:|:---|:---|
-| ⚠️ | 懸念メモあり | 投資メモ type=concern |
-| 📝 | 学びメモあり | 投資メモ type=lesson |
-| 👀 | 様子見 | 投資メモ type=observation + 「見送り」「待ち」等キーワード |
+| ⚠️ | Has concern note | Investment note type=concern |
+| 📝 | Has lesson note | Investment note type=lesson |
+| 👀 | On watch | Investment note type=observation + keywords like "pass", "waiting" |
 
-### 売却済み銘柄の自動除外
+### Auto-Exclusion of Sold Stocks
 
-直近90日以内に売却した銘柄はスクリーニング結果から自動除外されます。除外数はメッセージで表示されます。
+Stocks sold within the last 90 days are automatically excluded from screening results. The exclusion count is shown in a message.
 
-### データソース
+### Data Sources
 
-1. Neo4j ナレッジグラフ（優先）
-2. JSON ファイル（Neo4j 未接続時のフォールバック）
+1. Neo4j knowledge graph (preferred)
+2. JSON files (fallback when Neo4j is not connected)
 
-## 前提知識統合ルール (KIK-466)
+## Knowledge Integration Rules (KIK-466)
 
-get_context.py の出力に以下がある場合、スクリーニング結果と統合して回答する:
+When `get_context.py` output contains the following, integrate with screening results:
 
-- **常連銘柄（SURFACED 3回以上）**: 「3回連続上位 → 安定して割安評価。詳細レポート推奨」
-- **保有銘柄**: スクリーニング結果に保有銘柄が含まれる場合、「保有中: 追加投資の検討材料」
-- **懸念メモ**: 結果銘柄に懸念メモがあれば「⚠️ 懸念メモあり」と付記
-- **売却済み**: 売却済み銘柄が再度上位に出た場合、「以前売却 → 再エントリーの検討」
+- **Recurring stocks (SURFACED 3+ times)**: "Top 3 consecutive screenings → consistently rated undervalued; detailed report recommended"
+- **Held stocks**: If screening results include held stocks, "Currently held: consider as additional investment material"
+- **Concern notes**: If a result stock has a concern note, append "⚠️ Has concern note"
+- **Sold stocks**: If a previously sold stock reappears at the top, "Previously sold → consider re-entry"

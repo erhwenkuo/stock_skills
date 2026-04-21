@@ -28,7 +28,7 @@ class ScreenerSpec:
     formatter : Callable
         Formatter function for results.
     display_name : str
-        Japanese display name (e.g. "アルファシグナル").
+        Display name (e.g. "Alpha Signal").
     constructor_kwargs : dict
         Extra kwargs for screener constructor (beyond yahoo_client).
     screen_kwargs_fn : Callable | None
@@ -147,11 +147,11 @@ class RegionConfig:
         return self._alias_map.get(region.lower(), [region.lower()])
 
     def display_name(self, code: str) -> str:
-        """Return display name (e.g. "日本株") for a region code."""
+        """Return display name for a region code."""
         info = self._regions.get(code)
         if info is None:
             return code.upper()
-        return info.get("display_name", info.get("region_name", code.upper()) + "株")
+        return info.get("display_name", info.get("region_name", code.upper()) + " stocks")
 
     def small_cap_market_cap(self, code: str) -> Optional[int]:
         """Return small-cap market cap threshold for a region code, or None."""
@@ -272,12 +272,12 @@ def build_default_registry() -> ScreenerRegistry:
 
     # --- QueryScreener-based presets (all support legacy mode) ---
     for preset, display in [
-        ("value", "バリュー"),
-        ("high-dividend", "高配当"),
-        ("growth-value", "成長バリュー"),
-        ("deep-value", "ディープバリュー"),
-        ("quality", "クオリティバリュー"),
-        ("long-term", "長期投資適性"),
+        ("value", "Value"),
+        ("high-dividend", "High Dividend"),
+        ("growth-value", "Growth Value"),
+        ("deep-value", "Deep Value"),
+        ("quality", "Quality Value"),
+        ("long-term", "Long-term Suitability"),
     ]:
         registry.register(ScreenerSpec(
             preset=preset,
@@ -293,7 +293,7 @@ def build_default_registry() -> ScreenerRegistry:
         preset="shareholder-return",
         screener_class=QueryScreener,
         formatter=_sr_fmt if _sr_fmt else format_query_markdown,
-        display_name="高還元",
+        display_name="High Return",
         category="query",
         supports_legacy=True,
     ))
@@ -303,13 +303,13 @@ def build_default_registry() -> ScreenerRegistry:
         preset="pullback",
         screener_class=PullbackScreener,
         formatter=format_pullback_markdown,
-        display_name="押し目買い",
+        display_name="Pullback Buy",
         supports_theme=False,
         supports_legacy=False,
         category="pullback",
         step_messages=(
-            "Step 1: ファンダメンタルズ条件で絞り込み中...",
-            "Step 2-3 完了: {n}銘柄が条件に合致",
+            "Step 1: Filtering by fundamentals...",
+            "Step 2-3 complete: {n} stocks matched",
         ),
     ))
 
@@ -318,13 +318,13 @@ def build_default_registry() -> ScreenerRegistry:
         preset="alpha",
         screener_class=AlphaScreener,
         formatter=format_alpha_markdown,
-        display_name="アルファシグナル",
+        display_name="Alpha Signal",
         supports_theme=False,
         supports_legacy=False,
         category="alpha",
         step_messages=(
-            "Step 1: 割安足切り (EquityQuery)...",
-            "Step 2-4 完了: {n}銘柄がアルファ条件に合致",
+            "Step 1: Undervaluation filter (EquityQuery)...",
+            "Step 2-4 complete: {n} stocks matched alpha criteria",
         ),
     ))
 
@@ -333,13 +333,13 @@ def build_default_registry() -> ScreenerRegistry:
         preset="growth",
         screener_class=GrowthScreener,
         formatter=format_growth_markdown,
-        display_name="純成長株",
+        display_name="Pure Growth",
         constructor_kwargs={},
         supports_legacy=False,
         category="growth",
         step_messages=(
-            "Step 1: 成長条件で絞り込み中 (EquityQuery)...",
-            "Step 2: {n}銘柄のEPS成長率を取得・ソート完了",
+            "Step 1: Filtering by growth criteria (EquityQuery)...",
+            "Step 2: {n} stocks EPS growth rate retrieved and sorted",
         ),
     ))
 
@@ -347,7 +347,7 @@ def build_default_registry() -> ScreenerRegistry:
         preset="high-growth",
         screener_class=GrowthScreener,
         formatter=format_growth_markdown,
-        display_name="高成長株",
+        display_name="High Growth",
         constructor_kwargs={
             "preset": "high-growth",
             "sort_by": "revenue_growth",
@@ -356,8 +356,8 @@ def build_default_registry() -> ScreenerRegistry:
         supports_legacy=False,
         category="growth",
         step_messages=(
-            "Step 1: 高成長条件で絞り込み中 (EquityQuery, 利益不問)...",
-            "Step 2: {n}銘柄の売上成長率を取得・ソート完了",
+            "Step 1: Filtering by high-growth criteria (EquityQuery, no earnings requirement)...",
+            "Step 2: {n} stocks revenue growth rate retrieved and sorted",
         ),
     ))
 
@@ -372,7 +372,7 @@ def build_default_registry() -> ScreenerRegistry:
         preset="small-cap-growth",
         screener_class=GrowthScreener,
         formatter=format_growth_markdown,
-        display_name="小型急成長株",
+        display_name="Small-cap Rapid Growth",
         constructor_kwargs={
             "preset": "small-cap-growth",
             "sort_by": "revenue_growth",
@@ -382,11 +382,11 @@ def build_default_registry() -> ScreenerRegistry:
         supports_legacy=False,
         category="growth",
         step_messages=(
-            "Step 1: 小型急成長条件で絞り込み中 (EquityQuery, 利益不問)...",
-            "Step 2: {n}銘柄の売上成長率を取得・ソート完了",
+            "Step 1: Filtering by small-cap rapid growth criteria (EquityQuery, no earnings requirement)...",
+            "Step 2: {n} stocks revenue growth rate retrieved and sorted",
         ),
         extra_warnings=[
-            "⚠️ 小型株は流動性リスクが高く、スプレッドが広い場合があります。売買時は板の厚さを確認してください。",
+            "⚠️ Small-cap stocks carry higher liquidity risk with wider spreads. Check order book depth before trading.",
         ],
     ))
 
@@ -395,12 +395,12 @@ def build_default_registry() -> ScreenerRegistry:
         preset="contrarian",
         screener_class=ContrarianScreener,
         formatter=format_contrarian_markdown,
-        display_name="逆張り候補",
+        display_name="Contrarian Candidates",
         supports_legacy=False,
         category="contrarian",
         step_messages=(
-            "Step 1: バリュー条件で絞り込み中...",
-            "Step 2-3 完了: {n}銘柄が逆張り条件に合致",
+            "Step 1: Filtering by value criteria...",
+            "Step 2-3 complete: {n} stocks matched contrarian criteria",
         ),
     ))
 
@@ -414,13 +414,13 @@ def build_default_registry() -> ScreenerRegistry:
         preset="momentum",
         screener_class=MomentumScreener,
         formatter=format_momentum_markdown,
-        display_name="モメンタム",
+        display_name="Momentum",
         supports_legacy=False,
         category="momentum",
         screen_kwargs_fn=_momentum_screen_kwargs,
         step_messages=(
-            "Step 1: モメンタム条件で絞り込み中...",
-            "Step 2-3 完了: {n}銘柄がモメンタム条件に合致",
+            "Step 1: Filtering by momentum criteria...",
+            "Step 2-3 complete: {n} stocks matched momentum criteria",
         ),
     ))
 
@@ -429,7 +429,7 @@ def build_default_registry() -> ScreenerRegistry:
         preset="trending",
         screener_class=TrendingScreener,
         formatter=format_trending_markdown,
-        display_name="Xトレンド銘柄",
+        display_name="X Trending Stocks",
         supports_theme=False,
         supports_legacy=False,
         category="special",

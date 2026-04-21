@@ -2,9 +2,9 @@
 """CLI wrapper for auto graph context injection (KIK-411).
 
 Usage:
-    python3 scripts/get_context.py "7203.Tってどう？"
-    python3 scripts/get_context.py "トヨタの状況は？"
-    python3 scripts/get_context.py "PF大丈夫？"
+    python3 scripts/get_context.py "How is 7203.T?"
+    python3 scripts/get_context.py "What's the situation with Toyota?"
+    python3 scripts/get_context.py "Is the portfolio okay?"
 """
 
 import os
@@ -26,7 +26,7 @@ def main():
     if result:
         print(result["context_markdown"])
     else:
-        print("コンテキストなし")
+        print("No context")
 
 
 if __name__ == "__main__":

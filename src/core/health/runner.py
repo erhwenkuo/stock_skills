@@ -72,7 +72,7 @@ def run_health_check(csv_path: str, client) -> dict:
         # 0. Small-cap classification (KIK-438)
         region_code = infer_region_code(symbol)
         size_class = classify_market_cap(pos.get("market_cap"), region_code)
-        is_small_cap = size_class == "小型"
+        is_small_cap = size_class == "Small-cap"
 
         # 1. Trend analysis (small caps use shorter cross lookback)
         hist = client.get_price_history(symbol, period="1y")

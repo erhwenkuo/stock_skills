@@ -12,177 +12,177 @@ from typing import Optional
 
 
 # ---------------------------------------------------------------------------
-# プリセットシナリオ定義
+# Preset scenario definitions
 # ---------------------------------------------------------------------------
 
 SCENARIOS = {
     "triple_decline": {
-        "name": "トリプル安（株安・債券安・円安）",
-        "trigger": "財政不安・格下げ",
+        "name": "Triple Decline (equity/bond/yen)",
+        "trigger": "Fiscal concerns and credit downgrade",
         "base_shock": -0.20,
         "effects": {
             "primary": [
-                {"target": "日本株全般", "impact": -0.12, "reason": "海外勢売り"},
-                {"target": "円建て", "impact": -0.10, "reason": "円安15円"},
+                {"target": "Japan stocks", "impact": -0.12, "reason": "Foreign investor selling"},
+                {"target": "JPY-denominated", "impact": -0.10, "reason": "Yen -15 yen"},
             ],
             "secondary": [
-                {"target": "グロース株", "impact": -0.12, "reason": "金利上昇"},
-                {"target": "輸出企業", "impact": +0.06, "reason": "円安メリット"},
-                {"target": "内需企業", "impact": -0.07, "reason": "コスト増"},
-                {"target": "銀行", "impact": +0.06, "reason": "利ザヤ改善"},
-                {"target": "金・安全資産", "impact": +0.03, "reason": "リスク回避で一部資金流入"},
-                {"target": "長期債", "impact": -0.10, "reason": "債券安（トリプル安の一角）"},
+                {"target": "Growth stocks", "impact": -0.12, "reason": "Rising interest rates"},
+                {"target": "Export companies", "impact": +0.06, "reason": "Yen weakness benefit"},
+                {"target": "Domestic companies", "impact": -0.07, "reason": "Cost increase"},
+                {"target": "Banks", "impact": +0.06, "reason": "Net interest margin improvement"},
+                {"target": "Gold/safe assets", "impact": +0.03, "reason": "Some inflows from risk aversion"},
+                {"target": "Long-term bonds", "impact": -0.10, "reason": "Bond price decline (one leg of triple decline)"},
             ],
             "currency": {"usd_jpy_change": +15, "impact_on_foreign": +0.097},
-            "offset": ["輸出企業の円安メリット", "銀行の金利上昇メリット"],
-            "time_axis": "即座→数週間で二次効果→介入で急反転リスク",
+            "offset": ["Export companies yen weakness benefit", "Banks interest rate rise benefit"],
+            "time_axis": "Immediate -> secondary effects in weeks -> intervention reversal risk",
         },
     },
     "yen_depreciation": {
-        "name": "ドル高円安",
-        "trigger": "日米金利差拡大",
+        "name": "USD strength / Yen weakness",
+        "trigger": "Widening US-Japan rate differential",
         "base_shock": -0.10,
         "effects": {
             "primary": [
-                {"target": "米国株(円建て)", "impact": +0.097, "reason": "為替益"},
-                {"target": "日本輸出株", "impact": +0.06, "reason": "円安メリット"},
-                {"target": "日本内需株", "impact": -0.07, "reason": "コスト増"},
+                {"target": "US stocks (JPY)", "impact": +0.097, "reason": "FX gain"},
+                {"target": "Japan export stocks", "impact": +0.06, "reason": "Yen weakness benefit"},
+                {"target": "Japan domestic stocks", "impact": -0.07, "reason": "Cost increase"},
             ],
             "secondary": [
-                {"target": "全外貨資産", "impact": -0.05, "reason": "介入→急反転リスク(165→158)"},
-                {"target": "金・安全資産", "impact": +0.03, "reason": "ドル高でも金価格は底堅い"},
-                {"target": "長期債", "impact": -0.03, "reason": "金利差拡大で債券価格下落"},
+                {"target": "All foreign assets", "impact": -0.05, "reason": "Intervention -> sharp reversal risk (165->158)"},
+                {"target": "Gold/safe assets", "impact": +0.03, "reason": "Gold price resilient even with strong USD"},
+                {"target": "Long-term bonds", "impact": -0.03, "reason": "Bond price decline due to widening rate differential"},
             ],
             "currency": {"usd_jpy_change": +10, "impact_on_foreign": +0.065},
-            "offset": ["輸出企業メリット"],
-            "time_axis": "段階的: 155→165(プラス) → 165→175(警戒) → 介入(急反転)",
+            "offset": ["Export companies benefit"],
+            "time_axis": "Gradual: 155->165 (positive) -> 165->175 (caution) -> intervention (sharp reversal)",
         },
     },
     "us_recession": {
-        "name": "米国リセッション",
-        "trigger": "景気後退入り確認",
+        "name": "US Recession",
+        "trigger": "Confirmed economic recession",
         "base_shock": -0.25,
         "effects": {
             "primary": [
-                {"target": "米国株全般", "impact": -0.25, "reason": "企業業績悪化"},
-                {"target": "シクリカル株", "impact": -0.35, "reason": "景気敏感"},
+                {"target": "US stocks", "impact": -0.25, "reason": "Deteriorating corporate earnings"},
+                {"target": "Cyclical stocks", "impact": -0.35, "reason": "Economically sensitive"},
             ],
             "secondary": [
-                {"target": "日本輸出株", "impact": -0.15, "reason": "需要減"},
-                {"target": "ASEAN株", "impact": -0.10, "reason": "資金引き揚げ"},
-                {"target": "ディフェンシブ株", "impact": -0.05, "reason": "相対的に耐性"},
-                {"target": "金・安全資産", "impact": +0.08, "reason": "安全資産需要（リスク回避）"},
-                {"target": "長期債", "impact": +0.10, "reason": "利下げ期待で債券価格上昇"},
+                {"target": "Japan export stocks", "impact": -0.15, "reason": "Demand decline"},
+                {"target": "ASEAN stocks", "impact": -0.10, "reason": "Capital outflows"},
+                {"target": "Defensive stocks", "impact": -0.05, "reason": "Relatively resilient"},
+                {"target": "Gold/safe assets", "impact": +0.08, "reason": "Safe asset demand (risk aversion)"},
+                {"target": "Long-term bonds", "impact": +0.10, "reason": "Bond price rise on rate cut expectations"},
             ],
             "currency": {"usd_jpy_change": -10, "impact_on_foreign": -0.065},
-            "offset": ["ディフェンシブ銘柄", "円高で外貨建て資産のヘッジ効果"],
-            "time_axis": "確認→半年〜1年で底打ち→金融緩和で反転",
+            "offset": ["Defensive stocks", "Yen appreciation hedges foreign assets"],
+            "time_axis": "Confirmed -> bottom in 6-12 months -> reversal on monetary easing",
         },
     },
     "boj_rate_hike": {
-        "name": "日銀利上げ加速",
-        "trigger": "インフレ持続で追加利上げ",
+        "name": "BOJ Rate Hike Acceleration",
+        "trigger": "Persistent inflation triggers additional rate hike",
         "base_shock": -0.15,
         "effects": {
             "primary": [
-                {"target": "グロース株", "impact": -0.15, "reason": "割引率上昇"},
-                {"target": "不動産", "impact": -0.12, "reason": "金利コスト増"},
-                {"target": "銀行", "impact": +0.08, "reason": "利ザヤ拡大"},
+                {"target": "Growth stocks", "impact": -0.15, "reason": "Rising discount rate"},
+                {"target": "Real Estate", "impact": -0.12, "reason": "Higher interest cost"},
+                {"target": "Banks", "impact": +0.08, "reason": "Net interest margin expansion"},
             ],
             "secondary": [
-                {"target": "高配当株", "impact": -0.05, "reason": "債券との比較劣後"},
-                {"target": "円建て外貨資産", "impact": -0.05, "reason": "円高"},
-                {"target": "金・安全資産", "impact": -0.02, "reason": "金利上昇で機会コスト増"},
-                {"target": "長期債", "impact": -0.05, "reason": "金利上昇で債券価格下落"},
+                {"target": "High dividend stocks", "impact": -0.05, "reason": "Less attractive vs bonds"},
+                {"target": "JPY-denominated foreign assets", "impact": -0.05, "reason": "Yen appreciation"},
+                {"target": "Gold/safe assets", "impact": -0.02, "reason": "Rising opportunity cost from higher rates"},
+                {"target": "Long-term bonds", "impact": -0.05, "reason": "Bond price decline from rising rates"},
             ],
             "currency": {"usd_jpy_change": -8, "impact_on_foreign": -0.052},
-            "offset": ["銀行セクター上昇", "円高で輸入コスト低下"],
-            "time_axis": "利上げ発表→即座に反応→半年で織り込み",
+            "offset": ["Banks sector rise", "Import cost reduction from yen appreciation"],
+            "time_axis": "Rate hike announcement -> immediate reaction -> priced in within 6 months",
         },
     },
     "us_china_conflict": {
-        "name": "米中対立激化",
-        "trigger": "関税・制裁強化",
+        "name": "US-China Conflict Escalation",
+        "trigger": "Tariff and sanction escalation",
         "base_shock": -0.15,
         "effects": {
             "primary": [
-                {"target": "中国関連株", "impact": -0.20, "reason": "サプライチェーン混乱"},
-                {"target": "半導体", "impact": -0.15, "reason": "輸出規制"},
+                {"target": "China-related stocks", "impact": -0.20, "reason": "Supply chain disruption"},
+                {"target": "Semiconductors", "impact": -0.15, "reason": "Export restrictions"},
             ],
             "secondary": [
-                {"target": "ASEAN株", "impact": +0.05, "reason": "サプライチェーン移転先"},
-                {"target": "防衛関連", "impact": +0.08, "reason": "地政学リスク"},
-                {"target": "金・安全資産", "impact": +0.08, "reason": "地政学リスクで安全資産需要"},
-                {"target": "長期債", "impact": +0.03, "reason": "質への逃避（国債需要）"},
+                {"target": "ASEAN stocks", "impact": +0.05, "reason": "Supply chain relocation destination"},
+                {"target": "Defense-related", "impact": +0.08, "reason": "Geopolitical risk"},
+                {"target": "Gold/safe assets", "impact": +0.08, "reason": "Safe asset demand from geopolitical risk"},
+                {"target": "Long-term bonds", "impact": +0.03, "reason": "Flight to quality (government bond demand)"},
             ],
             "currency": {"usd_jpy_change": -3, "impact_on_foreign": -0.02},
-            "offset": ["ASEANへの生産移転メリット", "防衛関連上昇"],
-            "time_axis": "発表→数日で急落→数ヶ月で代替先に資金移動",
+            "offset": ["ASEAN production relocation benefit", "Defense-related rise"],
+            "time_axis": "Announcement -> sharp drop within days -> capital shift to alternatives over months",
         },
     },
     "inflation_resurgence": {
-        "name": "インフレ再燃",
-        "trigger": "CPI再加速",
+        "name": "Inflation Resurgence",
+        "trigger": "CPI re-acceleration",
         "base_shock": -0.15,
         "effects": {
             "primary": [
-                {"target": "グロース株", "impact": -0.18, "reason": "利上げ再開懸念"},
-                {"target": "長期債", "impact": -0.10, "reason": "金利上昇"},
+                {"target": "Growth stocks", "impact": -0.18, "reason": "Rate hike resumption fears"},
+                {"target": "Long-term bonds", "impact": -0.10, "reason": "Rising interest rates"},
             ],
             "secondary": [
-                {"target": "エネルギー株", "impact": +0.10, "reason": "原油高"},
-                {"target": "素材株", "impact": +0.05, "reason": "資源価格上昇"},
-                {"target": "消費関連", "impact": -0.08, "reason": "購買力低下"},
-                {"target": "金・安全資産", "impact": +0.08, "reason": "インフレヘッジ需要"},
+                {"target": "Energy stocks", "impact": +0.10, "reason": "Rising crude oil prices"},
+                {"target": "Materials stocks", "impact": +0.05, "reason": "Rising commodity prices"},
+                {"target": "Consumer-related", "impact": -0.08, "reason": "Declining purchasing power"},
+                {"target": "Gold/safe assets", "impact": +0.08, "reason": "Inflation hedge demand"},
             ],
             "currency": {"usd_jpy_change": +5, "impact_on_foreign": +0.032},
-            "offset": ["コモディティ関連の上昇", "インフレヘッジ資産"],
-            "time_axis": "CPI発表→即座に反応→3-6ヶ月で方向性確定",
+            "offset": ["Commodity-related rise", "Inflation hedge assets"],
+            "time_axis": "CPI release -> immediate reaction -> direction set in 3-6 months",
         },
     },
     "tech_crash": {
-        "name": "テック暴落",
-        "trigger": "AI収益化の失望・バリュエーション調整・規制強化",
+        "name": "Tech Crash",
+        "trigger": "AI monetization disappointment, valuation correction, regulatory tightening",
         "base_shock": -0.30,
         "effects": {
             "primary": [
-                {"target": "テック株", "impact": -0.35, "reason": "NASDAQ -30%、バリュエーション修正"},
-                {"target": "半導体", "impact": -0.40, "reason": "AI関連の過剰期待修正"},
+                {"target": "Tech stocks", "impact": -0.35, "reason": "NASDAQ -30%, valuation correction"},
+                {"target": "Semiconductors", "impact": -0.40, "reason": "Excessive AI expectations correction"},
             ],
             "secondary": [
-                {"target": "非テック株", "impact": -0.08, "reason": "リスクオフ波及"},
-                {"target": "ディフェンシブ株", "impact": -0.03, "reason": "質への逃避で相対的に耐性"},
-                {"target": "金・安全資産", "impact": +0.06, "reason": "安全資産需要"},
-                {"target": "長期債", "impact": +0.05, "reason": "質への逃避で国債需要"},
+                {"target": "Non-tech stocks", "impact": -0.08, "reason": "Risk-off spillover"},
+                {"target": "Defensive stocks", "impact": -0.03, "reason": "Relatively resilient due to flight to quality"},
+                {"target": "Gold/safe assets", "impact": +0.06, "reason": "Safe asset demand"},
+                {"target": "Long-term bonds", "impact": +0.05, "reason": "Government bond demand from flight to quality"},
             ],
             "currency": {"usd_jpy_change": -8, "impact_on_foreign": -0.052},
-            "offset": ["ディフェンシブ銘柄の耐性", "金・債券への資金逃避", "円高による外貨資産圧縮"],
-            "time_axis": "暴落→数日で急落→数週間で二次波及→数ヶ月で底値模索",
+            "offset": ["Defensive stock resilience", "Capital flight to gold/bonds", "Foreign asset compression from yen appreciation"],
+            "time_axis": "Crash -> sharp drop in days -> secondary spread over weeks -> bottom search over months",
         },
     },
     "yen_appreciation": {
-        "name": "円高ドル安",
-        "trigger": "FRB利下げ加速＋日銀追加利上げ",
+        "name": "Yen Appreciation / USD Weakness",
+        "trigger": "Fed rate cut acceleration + BOJ additional rate hike",
         "base_shock": -0.10,
         "effects": {
             "primary": [
-                {"target": "全外貨資産", "impact": -0.13, "reason": "USD/JPY -20円 (153→133円)"},
-                {"target": "日本輸出株", "impact": -0.12, "reason": "円高デメリット"},
+                {"target": "All foreign assets", "impact": -0.13, "reason": "USD/JPY -20 yen (153->133)"},
+                {"target": "Japan export stocks", "impact": -0.12, "reason": "Yen appreciation headwind"},
             ],
             "secondary": [
-                {"target": "日本内需株", "impact": +0.04, "reason": "輸入コスト減"},
-                {"target": "金・安全資産", "impact": +0.05, "reason": "ドル安で金価格上昇"},
-                {"target": "長期債", "impact": +0.03, "reason": "利下げ環境で債券需要"},
+                {"target": "Japan domestic stocks", "impact": +0.04, "reason": "Import cost reduction"},
+                {"target": "Gold/safe assets", "impact": +0.05, "reason": "Gold price rise from USD weakness"},
+                {"target": "Long-term bonds", "impact": +0.03, "reason": "Bond demand in rate cut environment"},
             ],
             "currency": {"usd_jpy_change": -20, "impact_on_foreign": -0.131},
-            "offset": ["内需企業の輸入コスト低下", "日本国内消費改善"],
-            "time_axis": "FRB利下げ決定→数日で急速な円高→数ヶ月で新均衡",
+            "offset": ["Domestic companies import cost reduction", "Japan domestic consumption improvement"],
+            "time_axis": "Fed rate cut decision -> rapid yen appreciation in days -> new equilibrium over months",
         },
     },
 }
 
 # ---------------------------------------------------------------------------
-# シナリオ名のエイリアス（自然言語対応）
+# Scenario name aliases (natural language support)
 # ---------------------------------------------------------------------------
 
 SCENARIO_ALIASES = {
@@ -232,41 +232,41 @@ SCENARIO_ALIASES = {
 }
 
 # ---------------------------------------------------------------------------
-# セクター・通貨マッピング
+# Sector / currency mapping
 # ---------------------------------------------------------------------------
 
-# シナリオのtargetからセクター名への対応表
+# Scenario target to sector name mapping
 TARGET_TO_SECTORS = {
-    "日本株全般": None,  # 全セクター
-    "米国株全般": None,
-    "グロース株": ["Technology", "Communication Services"],
-    "輸出企業": ["Industrials", "Consumer Cyclical", "Technology"],
-    "日本輸出株": ["Industrials", "Consumer Cyclical", "Technology"],
-    "内需企業": ["Consumer Defensive", "Utilities", "Real Estate"],
-    "日本内需株": ["Consumer Defensive", "Utilities", "Real Estate"],
-    "銀行": ["Financial Services"],
-    "不動産": ["Real Estate"],
-    "高配当株": None,  # セクター横断
-    "シクリカル株": ["Consumer Cyclical", "Industrials", "Basic Materials"],
-    "ディフェンシブ株": ["Consumer Defensive", "Healthcare", "Utilities"],
-    "ASEAN株": None,  # 地域
-    "中国関連株": None,  # 地域
-    "半導体": ["Technology"],
-    "防衛関連": ["Industrials"],
-    "エネルギー株": ["Energy"],
-    "素材株": ["Basic Materials"],
-    "消費関連": ["Consumer Cyclical", "Consumer Defensive"],
-    "長期債": None,  # 非株式
-    "円建て": None,
-    "円建て外貨資産": None,
-    "米国株(円建て)": None,
-    "全外貨資産": None,
-    "テック株": ["Technology", "Communication Services"],
-    "非テック株": None,  # テック以外の全セクター（callerで判定）
-    "金・安全資産": None,  # 非株式
+    "Japan stocks": None,  # all sectors
+    "US stocks": None,
+    "Growth stocks": ["Technology", "Communication Services"],
+    "Export companies": ["Industrials", "Consumer Cyclical", "Technology"],
+    "Japan export stocks": ["Industrials", "Consumer Cyclical", "Technology"],
+    "Domestic companies": ["Consumer Defensive", "Utilities", "Real Estate"],
+    "Japan domestic stocks": ["Consumer Defensive", "Utilities", "Real Estate"],
+    "Banks": ["Financial Services"],
+    "Real Estate": ["Real Estate"],
+    "High dividend stocks": None,  # cross-sector
+    "Cyclical stocks": ["Consumer Cyclical", "Industrials", "Basic Materials"],
+    "Defensive stocks": ["Consumer Defensive", "Healthcare", "Utilities"],
+    "ASEAN stocks": None,  # region
+    "China-related stocks": None,  # region
+    "Semiconductors": ["Technology"],
+    "Defense-related": ["Industrials"],
+    "Energy stocks": ["Energy"],
+    "Materials stocks": ["Basic Materials"],
+    "Consumer-related": ["Consumer Cyclical", "Consumer Defensive"],
+    "Long-term bonds": None,  # non-equity
+    "JPY-denominated": None,
+    "JPY-denominated foreign assets": None,
+    "US stocks (JPY)": None,
+    "All foreign assets": None,
+    "Tech stocks": ["Technology", "Communication Services"],
+    "Non-tech stocks": None,  # all sectors except tech (determined by caller)
+    "Gold/safe assets": None,  # non-equity
 }
 
-# ティッカーサフィックス → 地域ラベル
+# Ticker suffix -> region label
 SUFFIX_TO_REGION = {
     ".T": "Japan",
     ".SI": "Singapore",
@@ -276,24 +276,24 @@ SUFFIX_TO_REGION = {
     ".PS": "Philippines",
 }
 
-# ETF → 資産クラスマッピング（ティッカーベース）
+# ETF -> asset class mapping (ticker-based)
 ETF_ASSET_CLASS = {
-    # 金・安全資産
-    "GLDM": "金・安全資産",
-    "GLD": "金・安全資産",
-    "IAU": "金・安全資産",
-    "SGOL": "金・安全資産",
-    # 長期債
-    "TLT": "長期債",
-    "IEF": "長期債",
-    "BND": "長期債",
-    "AGG": "長期債",
-    "VGLT": "長期債",
-    # 株式インカム
-    "JEPI": "株式インカム",
-    "JEPQ": "株式インカム",
-    "SCHD": "株式インカム",
-    "VYM": "株式インカム",
-    "HDV": "株式インカム",
-    "SPYD": "株式インカム",
+    # Gold/safe assets
+    "GLDM": "Gold/safe assets",
+    "GLD": "Gold/safe assets",
+    "IAU": "Gold/safe assets",
+    "SGOL": "Gold/safe assets",
+    # Long-term bonds
+    "TLT": "Long-term bonds",
+    "IEF": "Long-term bonds",
+    "BND": "Long-term bonds",
+    "AGG": "Long-term bonds",
+    "VGLT": "Long-term bonds",
+    # Equity income
+    "JEPI": "Equity income",
+    "JEPQ": "Equity income",
+    "SCHD": "Equity income",
+    "VYM": "Equity income",
+    "HDV": "Equity income",
+    "SPYD": "Equity income",
 }

@@ -20,12 +20,12 @@ _STATUS_ICON = {
 }
 
 _STATUS_MSG = {
-    "ok": "正常",
-    "not_configured": "未設定 — XAI_API_KEY を設定すると利用可能",
-    "auth_error": "認証エラー (401) — XAI_API_KEY を確認してください",
-    "rate_limited": "レート制限 (429) — しばらく待ってから再試行",
-    "timeout": "タイムアウト — ネットワーク接続を確認",
-    "other_error": "エラー — 詳細は stderr を確認",
+    "ok": "OK",
+    "not_configured": "Not configured — set XAI_API_KEY to enable",
+    "auth_error": "Auth error (401) — check your XAI_API_KEY",
+    "rate_limited": "Rate limited (429) — retry after a while",
+    "timeout": "Timeout — check network connection",
+    "other_error": "Error — see stderr for details",
 }
 
 
@@ -49,8 +49,8 @@ def _format_api_status(api_status: Optional[dict]) -> str:
     lines = [
         "---",
         "",
-        "## APIステータス",
-        "| API | 状態 |",
+        "## API Status",
+        "| API | Status |",
         "|:----|:-----|",
         f"| Grok (xAI) | {icon} {msg} |",
         "",
@@ -69,33 +69,26 @@ def _fmt_int(value) -> str:
 
 
 def _sentiment_label(score: float) -> str:
-    """Convert a sentiment score (-1 to 1) to a Japanese label.
-
-    >= 0.3  -> strong bull
-    >= 0.1  -> slightly bull
-    >= -0.1 -> neutral
-    >= -0.3 -> slightly bear
-    else    -> bear
-    """
+    """Convert a sentiment score (-1 to 1) to a label."""
     if score >= 0.3:
-        return "強気"
+        return "Bullish"
     if score >= 0.1:
-        return "やや強気"
+        return "Slightly bullish"
     if score >= -0.1:
-        return "中立"
+        return "Neutral"
     if score >= -0.3:
-        return "やや弱気"
-    return "弱気"
+        return "Slightly bearish"
+    return "Bearish"
 
 
 def _fmt_market_cap(value: Optional[float]) -> str:
-    """Format market cap with appropriate unit (億円 or B)."""
+    """Format market cap with appropriate unit."""
     if value is None:
         return "-"
     if value >= 1e12:
-        return f"{value / 1e12:.2f}兆"
-    if value >= 1e8:
-        return f"{value / 1e8:.0f}億"
+        return f"{value / 1e12:.2f}T"
+    if value >= 1e9:
+        return f"{value / 1e9:.1f}B"
     if value >= 1e6:
         return f"{value / 1e6:.1f}M"
     return _fmt_int(value)
@@ -119,45 +112,45 @@ def format_stock_research(data: dict) -> str:
         Markdown-formatted report.
     """
     if not data:
-        return "リサーチデータがありません。"
+        return "No research data available."
 
     symbol = data.get("symbol", "-")
     name = data.get("name") or ""
     title = f"{name} ({symbol})" if name else symbol
 
     lines: list[str] = []
-    lines.append(f"# {title} 深掘りリサーチ")
+    lines.append(f"# {title} \u2014 Deep Research")
     lines.append("")
 
     fundamentals = data.get("fundamentals", {})
 
     # --- Basic info table ---
-    lines.append("## 基本情報")
-    lines.append("| 項目 | 値 |")
+    lines.append("## Basic Information")
+    lines.append("| Item | Value |")
     lines.append("|:-----|:---|")
-    lines.append(f"| セクター | {fundamentals.get('sector') or '-'} |")
-    lines.append(f"| 業種 | {fundamentals.get('industry') or '-'} |")
-    lines.append(f"| 株価 | {_fmt_float(fundamentals.get('price'), 0)} |")
-    lines.append(f"| 時価総額 | {_fmt_market_cap(fundamentals.get('market_cap'))} |")
+    lines.append(f"| Sector | {fundamentals.get('sector') or '-'} |")
+    lines.append(f"| Industry | {fundamentals.get('industry') or '-'} |")
+    lines.append(f"| Price | {_fmt_float(fundamentals.get('price'), 0)} |")
+    lines.append(f"| Market Cap | {_fmt_market_cap(fundamentals.get('market_cap'))} |")
     lines.append("")
 
     # --- Valuation table ---
-    lines.append("## バリュエーション")
-    lines.append("| 指標 | 値 |")
+    lines.append("## Valuation")
+    lines.append("| Metric | Value |")
     lines.append("|:-----|---:|")
     lines.append(f"| PER | {_fmt_float(fundamentals.get('per'))} |")
     lines.append(f"| PBR | {_fmt_float(fundamentals.get('pbr'))} |")
-    lines.append(f"| 配当利回り | {_fmt_pct(fundamentals.get('dividend_yield'))} |")
+    lines.append(f"| Div Yield | {_fmt_pct(fundamentals.get('dividend_yield'))} |")
     lines.append(f"| ROE | {_fmt_pct(fundamentals.get('roe'))} |")
 
     value_score = data.get("value_score")
     score_str = _fmt_float(value_score) if value_score is not None else "-"
-    lines.append(f"| 割安スコア | {score_str}/100 |")
+    lines.append(f"| Value Score | {score_str}/100 |")
     lines.append("")
 
     # --- News ---
     news = data.get("news", [])
-    lines.append("## 最新ニュース")
+    lines.append("## Latest News")
     if news:
         for item in news[:10]:
             title_text = item.get("title", "")
@@ -172,7 +165,7 @@ def format_stock_research(data: dict) -> str:
             if title_text:
                 lines.append(f"- {title_text}{suffix}")
     else:
-        lines.append("最新ニュースはありません。")
+        lines.append("No news available.")
     lines.append("")
 
     # --- X Sentiment ---
@@ -183,30 +176,30 @@ def format_stock_research(data: dict) -> str:
         or x_sentiment.get("raw_response")
     )
 
-    lines.append("## X (Twitter) センチメント")
+    lines.append("## X (Twitter) Sentiment")
 
     if _has_sentiment:
         score = x_sentiment.get("sentiment_score", 0.0)
         label = _sentiment_label(score)
-        lines.append(f"**判定: {label}** (スコア: {_fmt_float(score)})")
+        lines.append(f"**Judgment: {label}** (score: {_fmt_float(score)})")
         lines.append("")
 
         positive = x_sentiment.get("positive", [])
         if positive:
-            lines.append("### ポジティブ要因")
+            lines.append("### Positive Factors")
             for p in positive:
                 lines.append(f"- {p}")
             lines.append("")
 
         negative = x_sentiment.get("negative", [])
         if negative:
-            lines.append("### ネガティブ要因")
+            lines.append("### Negative Factors")
             for n in negative:
                 lines.append(f"- {n}")
             lines.append("")
     else:
         lines.append(
-            "*Grok API (XAI_API_KEY) が未設定のため、Xセンチメント分析は利用できません。*"
+            "*Grok API (XAI_API_KEY) is not configured \u2014 X sentiment analysis unavailable.*"
         )
         lines.append("")
 
@@ -222,13 +215,13 @@ def format_stock_research(data: dict) -> str:
     )
 
     if _has_grok:
-        lines.append("## 深掘りリサーチ (Grok API)")
+        lines.append("## Deep Research (Grok API)")
         lines.append("")
 
         # Recent news
         recent_news = grok.get("recent_news", [])
         if recent_news:
-            lines.append("### 最近の重要ニュース")
+            lines.append("### Recent Key News")
             for item in recent_news:
                 lines.append(f"- {item}")
             lines.append("")
@@ -238,14 +231,14 @@ def format_stock_research(data: dict) -> str:
         positive_catalysts = catalysts.get("positive", [])
         negative_catalysts = catalysts.get("negative", [])
         if positive_catalysts or negative_catalysts:
-            lines.append("### 業績材料")
+            lines.append("### Earnings Catalysts")
             if positive_catalysts:
-                lines.append("**ポジティブ:**")
+                lines.append("**Positive:**")
                 for c in positive_catalysts:
                     lines.append(f"- {c}")
                 lines.append("")
             if negative_catalysts:
-                lines.append("**ネガティブ:**")
+                lines.append("**Negative:**")
                 for c in negative_catalysts:
                     lines.append(f"- {c}")
                 lines.append("")
@@ -253,7 +246,7 @@ def format_stock_research(data: dict) -> str:
         # Analyst views
         analyst_views = grok.get("analyst_views", [])
         if analyst_views:
-            lines.append("### アナリスト・機関投資家の見方")
+            lines.append("### Analyst & Institutional Views")
             for v in analyst_views:
                 lines.append(f"- {v}")
             lines.append("")
@@ -261,17 +254,17 @@ def format_stock_research(data: dict) -> str:
         # Competitive notes
         competitive = grok.get("competitive_notes", [])
         if competitive:
-            lines.append("### 競合比較の注目点")
+            lines.append("### Competitive Highlights")
             for c in competitive:
                 lines.append(f"- {c}")
             lines.append("")
     else:
-        lines.append("## 深掘りリサーチ")
+        lines.append("## Deep Research")
         lines.append(
-            "*Grok API (XAI_API_KEY) が未設定のため、Web/X検索リサーチは利用できません。*"
+            "*Grok API (XAI_API_KEY) is not configured \u2014 Web/X search research unavailable.*"
         )
         lines.append(
-            "*XAI_API_KEY 環境変数を設定すると、X投稿・Web検索による深掘り分析が有効になります。*"
+            "*Set the XAI_API_KEY environment variable to enable deep analysis via X posts and web search.*"
         )
         lines.append("")
 
@@ -301,17 +294,17 @@ def format_industry_research(data: dict) -> str:
         Markdown-formatted report.
     """
     if not data:
-        return "リサーチデータがありません。"
+        return "No research data available."
 
     theme = data.get("theme", "-")
 
     if data.get("api_unavailable"):
         lines: list[str] = []
-        lines.append(f"# {theme} - 業界リサーチ")
+        lines.append(f"# {theme} - Industry Research")
         lines.append("")
         lines.append(
-            "*業界リサーチにはGrok APIが必要です。"
-            "XAI_API_KEY 環境変数を設定してください。*"
+            "*Industry research requires the Grok API. "
+            "Please set the XAI_API_KEY environment variable.*"
         )
         lines.append("")
         status_section = _format_api_status(data.get("api_status"))
@@ -321,24 +314,24 @@ def format_industry_research(data: dict) -> str:
 
     grok = data.get("grok_research", {})
     lines: list[str] = []
-    lines.append(f"# {theme} - 業界リサーチ")
+    lines.append(f"# {theme} - Industry Research")
     lines.append("")
 
     # Trends
     trends = grok.get("trends", [])
-    lines.append("## トレンド")
+    lines.append("## Trends")
     if trends:
         for t in trends:
             lines.append(f"- {t}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Key players
     key_players = grok.get("key_players", [])
-    lines.append("## 主要プレイヤー")
+    lines.append("## Key Players")
     if key_players:
-        lines.append("| 企業 | ティッカー | 注目理由 |")
+        lines.append("| Company | Ticker | Note |")
         lines.append("|:-----|:----------|:---------|")
         for p in key_players:
             if isinstance(p, dict):
@@ -349,47 +342,47 @@ def format_industry_research(data: dict) -> str:
             else:
                 lines.append(f"| {p} | - | - |")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Growth drivers
     drivers = grok.get("growth_drivers", [])
-    lines.append("## 成長ドライバー")
+    lines.append("## Growth Drivers")
     if drivers:
         for d in drivers:
             lines.append(f"- {d}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Risks
     risks = grok.get("risks", [])
-    lines.append("## リスク要因")
+    lines.append("## Risk Factors")
     if risks:
         for r in risks:
             lines.append(f"- {r}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Regulatory
     regulatory = grok.get("regulatory", [])
-    lines.append("## 規制・政策動向")
+    lines.append("## Regulatory & Policy Trends")
     if regulatory:
         for r in regulatory:
             lines.append(f"- {r}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Investor focus
     focus = grok.get("investor_focus", [])
-    lines.append("## 投資家の注目ポイント")
+    lines.append("## Investor Focus Points")
     if focus:
         for f in focus:
             lines.append(f"- {f}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # API status summary (KIK-431)
@@ -416,14 +409,14 @@ def _fmt_change(value, is_point_diff: bool) -> str:
 
 
 def _vix_label(vix_price: float) -> str:
-    """Convert VIX level to a Fear & Greed label."""
+    """Convert VIX level to a market sentiment label."""
     if vix_price < 15:
-        return "低ボラティリティ（楽観相場）"
+        return "Low volatility (optimistic market)"
     if vix_price < 25:
-        return "通常レンジ"
+        return "Normal range"
     if vix_price < 35:
-        return "不安拡大"
-    return "パニック水準"
+        return "Rising anxiety"
+    return "Panic level"
 
 
 def format_market_research(data: dict) -> str:
@@ -440,19 +433,19 @@ def format_market_research(data: dict) -> str:
         Markdown-formatted report.
     """
     if not data:
-        return "リサーチデータがありません。"
+        return "No research data available."
 
     market = data.get("market", "-")
 
     lines: list[str] = []
-    lines.append(f"# {market} - マーケット概況")
+    lines.append(f"# {market} - Market Overview")
     lines.append("")
 
     # === Layer 1: Macro indicators table (yfinance) ===
     indicators = data.get("macro_indicators", [])
     if indicators:
-        lines.append("## 主要指標")
-        lines.append("| 指標 | 現在値 | 前日比 | 週間変化 |")
+        lines.append("## Key Indicators")
+        lines.append("| Indicator | Current | Daily Change | Weekly Change |")
         lines.append("|:-----|------:|------:|--------:|")
         for ind in indicators:
             name = ind.get("name", "-")
@@ -474,7 +467,7 @@ def format_market_research(data: dict) -> str:
 
     # === Layer 2: Grok qualitative ===
     if data.get("api_unavailable"):
-        lines.append("*Grok API (XAI_API_KEY) 未設定のため定性分析はスキップ*")
+        lines.append("*Grok API (XAI_API_KEY) not configured \u2014 qualitative analysis skipped*")
         lines.append("")
         return "\n".join(lines)
 
@@ -482,18 +475,18 @@ def format_market_research(data: dict) -> str:
 
     # Price action
     price_action = grok.get("price_action", "")
-    lines.append("## 直近の値動き")
-    lines.append(price_action if price_action else "情報なし")
+    lines.append("## Recent Price Action")
+    lines.append(price_action if price_action else "No information")
     lines.append("")
 
     # Macro factors
     macro = grok.get("macro_factors", [])
-    lines.append("## マクロ経済要因")
+    lines.append("## Macro Economic Factors")
     if macro:
         for m in macro:
             lines.append(f"- {m}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Sentiment
@@ -501,30 +494,30 @@ def format_market_research(data: dict) -> str:
     score = sentiment.get("score", 0.0) if isinstance(sentiment, dict) else 0.0
     summary = sentiment.get("summary", "") if isinstance(sentiment, dict) else ""
     label = _sentiment_label(score)
-    lines.append("## センチメント")
-    lines.append(f"**判定: {label}** (スコア: {_fmt_float(score)})")
+    lines.append("## Sentiment")
+    lines.append(f"**Judgment: {label}** (score: {_fmt_float(score)})")
     if summary:
         lines.append(summary)
     lines.append("")
 
     # Upcoming events
     events = grok.get("upcoming_events", [])
-    lines.append("## 注目イベント・経済指標")
+    lines.append("## Upcoming Events & Economic Indicators")
     if events:
         for e in events:
             lines.append(f"- {e}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Sector rotation
     rotation = grok.get("sector_rotation", [])
-    lines.append("## セクターローテーション")
+    lines.append("## Sector Rotation")
     if rotation:
         for r in rotation:
             lines.append(f"- {r}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # API status summary (KIK-431)
@@ -553,7 +546,7 @@ def format_business_research(data: dict) -> str:
         Markdown-formatted report.
     """
     if not data:
-        return "リサーチデータがありません。"
+        return "No research data available."
 
     symbol = data.get("symbol", "-")
     name = data.get("name") or ""
@@ -561,11 +554,11 @@ def format_business_research(data: dict) -> str:
 
     if data.get("api_unavailable"):
         lines: list[str] = []
-        lines.append(f"# {title} - ビジネスモデル分析")
+        lines.append(f"# {title} - Business Model Analysis")
         lines.append("")
         lines.append(
-            "*ビジネスモデル分析にはGrok APIが必要です。"
-            "XAI_API_KEY 環境変数を設定してください。*"
+            "*Business model analysis requires the Grok API. "
+            "Please set the XAI_API_KEY environment variable.*"
         )
         lines.append("")
         status_section = _format_api_status(data.get("api_status"))
@@ -575,20 +568,20 @@ def format_business_research(data: dict) -> str:
 
     grok = data.get("grok_research", {})
     lines: list[str] = []
-    lines.append(f"# {title} - ビジネスモデル分析")
+    lines.append(f"# {title} - Business Model Analysis")
     lines.append("")
 
     # Overview
     overview = grok.get("overview", "")
-    lines.append("## 事業概要")
-    lines.append(overview if overview else "情報なし")
+    lines.append("## Business Overview")
+    lines.append(overview if overview else "No information")
     lines.append("")
 
     # Segments
     segments = grok.get("segments", [])
-    lines.append("## 事業セグメント")
+    lines.append("## Business Segments")
     if segments:
-        lines.append("| セグメント | 売上比率 | 概要 |")
+        lines.append("| Segment | Revenue Share | Description |")
         lines.append("|:-----------|:---------|:-----|")
         for seg in segments:
             if isinstance(seg, dict):
@@ -599,53 +592,53 @@ def format_business_research(data: dict) -> str:
             else:
                 lines.append(f"| {seg} | - | - |")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Revenue model
     revenue_model = grok.get("revenue_model", "")
-    lines.append("## 収益モデル")
-    lines.append(revenue_model if revenue_model else "情報なし")
+    lines.append("## Revenue Model")
+    lines.append(revenue_model if revenue_model else "No information")
     lines.append("")
 
     # Competitive advantages
     advantages = grok.get("competitive_advantages", [])
-    lines.append("## 競争優位性")
+    lines.append("## Competitive Advantages")
     if advantages:
         for a in advantages:
             lines.append(f"- {a}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Key metrics
     metrics = grok.get("key_metrics", [])
-    lines.append("## 重要KPI")
+    lines.append("## Key KPIs")
     if metrics:
         for m in metrics:
             lines.append(f"- {m}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Growth strategy
     strategy = grok.get("growth_strategy", [])
-    lines.append("## 成長戦略")
+    lines.append("## Growth Strategy")
     if strategy:
         for s in strategy:
             lines.append(f"- {s}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # Risks
     risks = grok.get("risks", [])
-    lines.append("## ビジネスリスク")
+    lines.append("## Business Risks")
     if risks:
         for r in risks:
             lines.append(f"- {r}")
     else:
-        lines.append("情報なし")
+        lines.append("No information")
     lines.append("")
 
     # API status summary (KIK-431)

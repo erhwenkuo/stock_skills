@@ -394,7 +394,7 @@ def generate_architecture() -> str | None:
     output_mods = _list_modules_for_layer(SRC / "output", annotations)
 
     block = f"""```
-Skills (.claude/skills/*/SKILL.md → scripts/*.py) — {skill_count}スキル
+Skills (.claude/skills/*/SKILL.md → scripts/*.py) — {skill_count} skills
 Core   (src/core/) — {core_mods}
 Data   (src/data/) — {data_mods}
 Output (src/output/) — {output_mods}
@@ -442,8 +442,8 @@ def generate_test_count() -> str | None:
 
     content = DEV_MD.read_text()
     new_content = re.sub(
-        r"約\d+テスト",
-        f"約{count}テスト",
+        r"approximately \d+ tests",
+        f"approximately {count} tests",
         content,
     )
     if new_content != content:

@@ -21,9 +21,9 @@ if [ "$SRC_CHANGED" -gt 0 ]; then
     # Fallback: check if docs were updated manually
     DOC_CHANGED=$(git diff --cached --name-only | grep -cE '(CLAUDE\.md|README\.md|SKILL\.md|rules/|config/|docs/)')
     if [ "$DOC_CHANGED" -eq 0 ]; then
-      echo "src/ に変更がありますが、ドキュメントが更新されていません。"
-      echo "対象: CLAUDE.md, SKILL.md, rules/, config/, README.md, docs/"
-      echo "バイパス: git commit --no-verify"
+      echo "src/ has changes but documentation was not updated."
+      echo "Targets: CLAUDE.md, SKILL.md, rules/, config/, README.md, docs/"
+      echo "Bypass: git commit --no-verify"
       exit 1
     fi
   fi

@@ -12,8 +12,8 @@ class ValueScreener:
     """Screen stocks for value investment opportunities.
 
     .. deprecated::
-        ValueScreener は非推奨です。QueryScreener を使用してください。
-        ``--mode legacy`` は将来削除予定です。
+        ValueScreener is deprecated. Use QueryScreener instead.
+        ``--mode legacy`` will be removed in a future version.
     """
 
     def __init__(self, yahoo_client, market):
@@ -28,8 +28,8 @@ class ValueScreener:
             and ``get_thresholds() -> dict``.
         """
         warnings.warn(
-            "ValueScreener は非推奨です。QueryScreener を使用してください。"
-            " (--mode legacy は将来削除予定)",
+            "ValueScreener is deprecated. Use QueryScreener instead."
+            " (--mode legacy will be removed in a future version)",
             DeprecationWarning,
             stacklevel=2,
         )

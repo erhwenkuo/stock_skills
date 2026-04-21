@@ -6,9 +6,9 @@ from src.output._format_helpers import fmt_float as _fmt_float
 
 
 _ACTION_LABELS = {
-    "sell": "売り",
-    "reduce": "減らす",
-    "increase": "増やす",
+    "sell": "Sell",
+    "reduce": "Reduce",
+    "increase": "Increase",
 }
 
 def _estimate_shares_annotation(
@@ -25,7 +25,7 @@ def _estimate_shares_annotation(
     rounded = round_to_lot_size(estimated_shares, symbol)
     if rounded <= 0:
         rounded = lot
-    return f"\u2252 {rounded}\u682a\uff08{lot}\u682a\u5358\u4f4d\uff09"
+    return f"\u2248 {rounded} shares ({lot}-share lots)"
 
 
 _ACTION_EMOJI = {
@@ -52,31 +52,31 @@ def format_rebalance_report(proposal: dict) -> str:
 
     strategy = proposal.get("strategy", "balanced")
     strategy_label = {
-        "defensive": "ディフェンシブ",
-        "balanced": "バランス",
-        "aggressive": "アグレッシブ",
+        "defensive": "Defensive",
+        "balanced": "Balanced",
+        "aggressive": "Aggressive",
     }.get(strategy, strategy)
-    lines.append(f"## リバランス提案 ({strategy_label})")
+    lines.append(f"## Rebalance Proposal ({strategy_label})")
     lines.append("")
 
     # --- Before / After ---
     before = proposal.get("before", {})
     after = proposal.get("after", {})
 
-    lines.append("### 現在 → 提案後")
+    lines.append("### Current \u2192 Proposed")
     lines.append("")
-    lines.append("| 指標 | 現在 | 提案後 |")
+    lines.append("| Metric | Current | Proposed |")
     lines.append("|:-----|-----:|------:|")
     lines.append(
-        f"| ベース期待値 | {_fmt_pct_sign(before.get('base_return'))} "
+        f"| Base Expected Return | {_fmt_pct_sign(before.get('base_return'))} "
         f"| {_fmt_pct_sign(after.get('base_return'))} |"
     )
     lines.append(
-        f"| セクターHHI | {_fmt_float(before.get('sector_hhi'), 4)} "
+        f"| Sector HHI | {_fmt_float(before.get('sector_hhi'), 4)} "
         f"| {_fmt_float(after.get('sector_hhi'), 4)} |"
     )
     lines.append(
-        f"| 地域HHI | {_fmt_float(before.get('region_hhi'), 4)} "
+        f"| Region HHI | {_fmt_float(before.get('region_hhi'), 4)} "
         f"| {_fmt_float(after.get('region_hhi'), 4)} |"
     )
     lines.append("")
@@ -85,25 +85,25 @@ def format_rebalance_report(proposal: dict) -> str:
     freed = proposal.get("freed_cash_jpy", 0)
     additional = proposal.get("additional_cash_jpy", 0)
     if freed > 0 or additional > 0:
-        lines.append("### 資金")
+        lines.append("### Funds")
         lines.append("")
         if freed > 0:
-            lines.append(f"- **売却・削減による確保資金:** {freed:,.0f}円")
+            lines.append(f"- **Funds freed by selling/reducing:** \u00a5{freed:,.0f}")
         if additional > 0:
-            lines.append(f"- **追加投入資金:** {additional:,.0f}円")
-        lines.append(f"- **合計利用可能資金:** {freed + additional:,.0f}円")
+            lines.append(f"- **Additional capital:** \u00a5{additional:,.0f}")
+        lines.append(f"- **Total available funds:** \u00a5{freed + additional:,.0f}")
         lines.append("")
 
     # --- Actions ---
     actions = proposal.get("actions", [])
     if not actions:
-        lines.append("### アクション")
+        lines.append("### Actions")
         lines.append("")
-        lines.append("現在のポートフォリオは制約範囲内です。リバランス不要。")
+        lines.append("Current portfolio is within constraints. No rebalancing needed.")
         lines.append("")
         return "\n".join(lines)
 
-    lines.append("### アクション")
+    lines.append("### Actions")
     lines.append("")
 
     for i, action in enumerate(actions, 1):
@@ -118,20 +118,20 @@ def format_rebalance_report(proposal: dict) -> str:
         if act_type == "sell":
             value = action.get("value_jpy", 0)
             lines.append(
-                f"{i}. {emoji} **{label}**: {symbol}{name_str} 全株"
-                f" → {reason}"
+                f"{i}. {emoji} **{label}**: {symbol}{name_str} all shares"
+                f" \u2192 {reason}"
             )
             if value > 0:
-                lines.append(f"   確保資金: {value:,.0f}円")
+                lines.append(f"   Freed funds: \u00a5{value:,.0f}")
         elif act_type == "reduce":
             ratio = action.get("ratio", 0)
             value = action.get("value_jpy", 0)
             lines.append(
                 f"{i}. {emoji} **{label}**: {symbol}{name_str}"
-                f" {ratio*100:.0f}%削減 → {reason}"
+                f" {ratio*100:.0f}% reduction \u2192 {reason}"
             )
             if value > 0:
-                lines.append(f"   確保資金: {value:,.0f}円")
+                lines.append(f"   Freed funds: \u00a5{value:,.0f}")
             lot_note = _estimate_shares_annotation(
                 symbol, value, action.get("current_price"),
             )
@@ -141,7 +141,7 @@ def format_rebalance_report(proposal: dict) -> str:
             amount = action.get("amount_jpy", 0)
             lines.append(
                 f"{i}. {emoji} **{label}**: {symbol}{name_str}"
-                f" +{amount:,.0f}円 → {reason}"
+                f" +\u00a5{amount:,.0f} \u2192 {reason}"
             )
             lot_note = _estimate_shares_annotation(
                 symbol, amount, action.get("current_price"),
@@ -154,19 +154,19 @@ def format_rebalance_report(proposal: dict) -> str:
     # --- Constraints ---
     constraints = proposal.get("constraints", {})
     if constraints:
-        lines.append("### 適用制約")
+        lines.append("### Applied Constraints")
         lines.append("")
         lines.append(
-            f"- 1銘柄上限: {constraints.get('max_single_ratio', 0)*100:.0f}%"
+            f"- Single stock limit: {constraints.get('max_single_ratio', 0)*100:.0f}%"
         )
         lines.append(
-            f"- セクターHHI上限: {constraints.get('max_sector_hhi', 0):.2f}"
+            f"- Sector HHI limit: {constraints.get('max_sector_hhi', 0):.2f}"
         )
         lines.append(
-            f"- 地域HHI上限: {constraints.get('max_region_hhi', 0):.2f}"
+            f"- Region HHI limit: {constraints.get('max_region_hhi', 0):.2f}"
         )
         lines.append(
-            f"- 相関ペア合計上限:"
+            f"- Correlated pair limit:"
             f" {constraints.get('max_corr_pair_ratio', 0)*100:.0f}%"
         )
         lines.append("")

@@ -12,15 +12,15 @@ _JUDGMENT_EMOJI = {
 }
 
 _JUDGMENT_LABEL = {
-    "recommend": "この追加は推奨",
-    "caution": "注意して検討",
-    "not_recommended": "この追加は非推奨",
+    "recommend": "This addition is recommended",
+    "caution": "Review with caution",
+    "not_recommended": "This addition is not recommended",
 }
 
 _JUDGMENT_LABEL_SWAP = {
-    "recommend": "このスワップは推奨",
-    "caution": "注意して検討",
-    "not_recommended": "このスワップは非推奨",
+    "recommend": "This swap is recommended",
+    "caution": "Review with caution",
+    "not_recommended": "This swap is not recommended",
 }
 
 
@@ -53,20 +53,20 @@ def format_simulation(result) -> str:
 
     # Empty scenarios
     if not scenarios:
-        lines.append("## \u8907\u5229\u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3")
+        lines.append("## Compound Interest Simulation")
         lines.append("")
         lines.append(
-            "\u63a8\u5b9a\u30ea\u30bf\u30fc\u30f3\u304c\u53d6\u5f97\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002"
-            "\u5148\u306b /stock-portfolio forecast \u3092\u5b9f\u884c\u3057\u3066\u304f\u3060\u3055\u3044\u3002"
+            "Could not retrieve estimated returns. "
+            "Please run /stock-portfolio forecast first."
         )
         return "\n".join(lines)
 
     # Header
     if monthly_add > 0:
-        add_str = f"\u6708{monthly_add:,.0f}\u5186\u7a4d\u7acb"
+        add_str = f"Monthly \u00a5{monthly_add:,.0f} accumulation"
     else:
-        add_str = "\u7a4d\u7acb\u306a\u3057"
-    lines.append(f"## {years}\u5e74\u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\uff08{add_str}\uff09")
+        add_str = "No accumulation"
+    lines.append(f"## {years}-Year Simulation ({add_str})")
     lines.append("")
 
     # Base scenario table
@@ -77,9 +77,9 @@ def format_simulation(result) -> str:
             ret_str = f"{base_return * 100:+.2f}%"
         else:
             ret_str = "-"
-        lines.append(f"### \u30d9\u30fc\u30b9\u30b7\u30ca\u30ea\u30aa\uff08\u5e74\u5229 {ret_str}\uff09")
+        lines.append(f"### Base Scenario (Annual Return {ret_str})")
         lines.append("")
-        lines.append("| \u5e74 | \u8a55\u4fa1\u984d | \u7d2f\u8a08\u6295\u5165 | \u904b\u7528\u76ca | \u914d\u5f53\u7d2f\u8a08 |")
+        lines.append("| Year | Value | Cumulative Input | Capital Gain | Cumulative Dividends |")
         lines.append("|----|--------|----------|--------|----------|")
 
         for snap in base_snapshots:
@@ -103,18 +103,16 @@ def format_simulation(result) -> str:
 
     # Scenario comparison (final year)
     scenario_labels = {
-        "optimistic": "\u697d\u89b3",
-        "base": "\u30d9\u30fc\u30b9",
-        "pessimistic": "\u60b2\u89b3",
+        "optimistic": "Optimistic",
+        "base": "Base",
+        "pessimistic": "Pessimistic",
     }
 
     has_comparison = len(scenarios) > 1 or (len(scenarios) == 1 and "base" in scenarios)
     if has_comparison:
-        lines.append(
-            "### \u30b7\u30ca\u30ea\u30aa\u6bd4\u8f03\uff08\u6700\u7d42\u5e74\uff09"
-        )
+        lines.append("### Scenario Comparison (Final Year)")
         lines.append("")
-        lines.append("| \u30b7\u30ca\u30ea\u30aa | \u6700\u7d42\u8a55\u4fa1\u984d | \u904b\u7528\u76ca |")
+        lines.append("| Scenario | Final Value | Capital Gain |")
         lines.append("|:---------|----------:|-------:|")
 
         for key in ["optimistic", "base", "pessimistic"]:
@@ -133,9 +131,9 @@ def format_simulation(result) -> str:
 
     # Target analysis
     if target is not None:
-        lines.append("### \u76ee\u6a19\u9054\u6210\u5206\u6790")
+        lines.append("### Target Achievement Analysis")
         lines.append("")
-        lines.append(f"- \u76ee\u6a19\u984d: {_fmt_k(target)}")
+        lines.append(f"- Target: {_fmt_k(target)}")
 
         target_year_base = d.get("target_year_base")
         target_year_opt = d.get("target_year_optimistic")
@@ -143,39 +141,33 @@ def format_simulation(result) -> str:
 
         if target_year_base is not None:
             lines.append(
-                f"- \u30d9\u30fc\u30b9\u30b7\u30ca\u30ea\u30aa: "
-                f"**{target_year_base:.1f}\u5e74\u3067\u9054\u6210\u898b\u8fbc\u307f**"
+                f"- Base scenario: "
+                f"**projected to be reached in {target_year_base:.1f} years**"
             )
         else:
-            lines.append(
-                "- \u30d9\u30fc\u30b9\u30b7\u30ca\u30ea\u30aa: \u671f\u9593\u5185\u672a\u9054"
-            )
+            lines.append("- Base scenario: not reached within period")
 
         if target_year_opt is not None:
             lines.append(
-                f"- \u697d\u89b3\u30b7\u30ca\u30ea\u30aa: "
-                f"{target_year_opt:.1f}\u5e74\u3067\u9054\u6210\u898b\u8fbc\u307f"
+                f"- Optimistic scenario: "
+                f"projected to be reached in {target_year_opt:.1f} years"
             )
         elif "optimistic" in scenarios:
-            lines.append(
-                "- \u697d\u89b3\u30b7\u30ca\u30ea\u30aa: \u671f\u9593\u5185\u672a\u9054"
-            )
+            lines.append("- Optimistic scenario: not reached within period")
 
         if target_year_pess is not None:
             lines.append(
-                f"- \u60b2\u89b3\u30b7\u30ca\u30ea\u30aa: "
-                f"{target_year_pess:.1f}\u5e74\u3067\u9054\u6210\u898b\u8fbc\u307f"
+                f"- Pessimistic scenario: "
+                f"projected to be reached in {target_year_pess:.1f} years"
             )
         elif "pessimistic" in scenarios:
-            lines.append(
-                "- \u60b2\u89b3\u30b7\u30ca\u30ea\u30aa: \u671f\u9593\u5185\u672a\u9054"
-            )
+            lines.append("- Pessimistic scenario: not reached within period")
 
         required_monthly = d.get("required_monthly")
         if required_monthly is not None and required_monthly > 0:
             lines.append("")
             lines.append(
-                f"- \u76ee\u6a19\u9054\u6210\u306b\u5fc5\u8981\u306a\u6708\u984d\u7a4d\u7acb: "
+                f"- Monthly savings required to reach target: "
                 f"\u00a5{required_monthly:,.0f}"
             )
 
@@ -185,20 +177,18 @@ def format_simulation(result) -> str:
     dividend_effect = d.get("dividend_effect", 0)
     dividend_effect_pct = d.get("dividend_effect_pct", 0)
 
-    lines.append(
-        "### \u914d\u5f53\u518d\u6295\u8cc7\u306e\u52b9\u679c"
-    )
+    lines.append("### Effect of Dividend Reinvestment")
     lines.append("")
 
     if not reinvest_dividends:
-        lines.append("- \u914d\u5f53\u518d\u6295\u8cc7: OFF")
+        lines.append("- Dividend reinvestment: OFF")
     else:
         lines.append(
-            f"- \u914d\u5f53\u518d\u6295\u8cc7\u306b\u3088\u308b\u8907\u5229\u52b9\u679c: "
+            f"- Compounding effect from dividend reinvestment: "
             f"+{_fmt_k(dividend_effect)}"
         )
         lines.append(
-            f"- \u914d\u5f53\u306a\u3057\u6bd4: "
+            f"- vs. no dividend reinvestment: "
             f"+{dividend_effect_pct * 100:.1f}%"
         )
 
@@ -214,7 +204,7 @@ def _fmt_health_section(health_list: list[dict], title: str) -> list[str]:
         symbol = ph.get("symbol", "-")
         alert = ph.get("alert", {})
         level = alert.get("level", "none")
-        label = alert.get("label", "なし")
+        label = alert.get("label", "None")
         if level == "none":
             lines.append(f"✅ {symbol}: OK")
         elif level == "early_warning":
@@ -229,7 +219,7 @@ def _fmt_health_section(health_list: list[dict], title: str) -> list[str]:
             exp = etf_h.get("expense_label", "-")
             aum = etf_h.get("aum_label", "-")
             score = etf_h.get("score", "-")
-            lines.append(f"  ETF: \u7d4c\u8cbb\u7387 {exp} / AUM {aum} / \u30b9\u30b3\u30a2 {score}/100")
+            lines.append(f"  ETF: Expense ratio {exp} / AUM {aum} / Score {score}/100")
             for etf_alert in etf_h.get("alerts", []):
                 lines.append(f"  \u26a0\ufe0f {etf_alert}")
     lines.append("")
@@ -266,14 +256,14 @@ def format_what_if(result: dict) -> str:
 
     is_swap = bool(removals)
 
-    lines.append("## What-If シミュレーション")
+    lines.append("## What-If Simulation")
     lines.append("")
 
     # --- (KIK-451) Removed stocks table ---
     if removals:
-        lines.append("### 売却銘柄")
+        lines.append("### Stocks Being Sold")
         lines.append("")
-        lines.append("| 銘柄 | 株数 | 売却代金（試算） |")
+        lines.append("| Symbol | Shares | Sale Proceeds (Estimate) |")
         lines.append("|:-----|-----:|----------------:|")
         for rem in removals:
             symbol = rem.get("symbol", "-")
@@ -283,14 +273,14 @@ def format_what_if(result: dict) -> str:
                 f"| {symbol} | {shares:,} | {_fmt_jpy(rem_proceeds)} |"
             )
         lines.append("")
-        lines.append(f"売却代金合計: {_fmt_jpy(proceeds or 0.0)}")
+        lines.append(f"Total sale proceeds: {_fmt_jpy(proceeds or 0.0)}")
         lines.append("")
 
     # --- Proposed stocks ---
     if proposed:
-        lines.append("### 追加銘柄")
+        lines.append("### Stocks Being Added")
         lines.append("")
-        lines.append("| 銘柄 | 株数 | 単価 | 通貨 | 金額 |")
+        lines.append("| Symbol | Shares | Unit Price | Currency | Amount |")
         lines.append("|:-----|-----:|------:|:-----|------:|")
 
         for prop in proposed:
@@ -307,28 +297,28 @@ def format_what_if(result: dict) -> str:
             )
 
         lines.append("")
-        lines.append(f"必要資金合計: {_fmt_jpy(required_cash)}")
+        lines.append(f"Total required funds: {_fmt_jpy(required_cash)}")
         lines.append("")
 
     # --- (KIK-451) Cash balance for swap mode ---
     if is_swap:
-        lines.append("### 資金収支")
+        lines.append("### Cash Balance")
         lines.append("")
-        lines.append("| 項目 | 金額 |")
+        lines.append("| Item | Amount |")
         lines.append("|:-----|-----:|")
         if proposed:
-            lines.append(f"| 購入必要資金 | {_fmt_jpy(required_cash)} |")
-        lines.append(f"| 売却代金（試算） | {_fmt_jpy(proceeds or 0.0)} |")
+            lines.append(f"| Purchase funds required | {_fmt_jpy(required_cash)} |")
+        lines.append(f"| Sale proceeds (estimate) | {_fmt_jpy(proceeds or 0.0)} |")
         if net_cash is not None and proposed:
-            suffix = "（余剰資金）" if net_cash >= 0 else "（追加資金が必要）"
-            lines.append(f"| 差額 | {_fmt_jpy(net_cash)}{suffix} |")
+            suffix = " (surplus)" if net_cash >= 0 else " (additional funds needed)"
+            lines.append(f"| Balance | {_fmt_jpy(net_cash)}{suffix} |")
         lines.append("")
 
     # --- Portfolio change comparison ---
-    after_label = "スワップ後" if is_swap else "追加後"
-    lines.append("### ポートフォリオ変化")
+    after_label = "After Swap" if is_swap else "After Addition"
+    lines.append("### Portfolio Change")
     lines.append("")
-    lines.append(f"| 指標 | 現在 | {after_label} | 変化 |")
+    lines.append(f"| Metric | Current | {after_label} | Change |")
     lines.append("|:-----|------:|------:|:------|")
 
     # Total value
@@ -340,19 +330,19 @@ def format_what_if(result: dict) -> str:
     else:
         change_str = "-"
     lines.append(
-        f"| 総評価額 | {_fmt_jpy(bv)} | {_fmt_jpy(av)} | {change_str} |"
+        f"| Total Value | {_fmt_jpy(bv)} | {_fmt_jpy(av)} | {change_str} |"
     )
 
     # Sector HHI
     b_shhi = before.get("sector_hhi", 0)
     a_shhi = after.get("sector_hhi", 0)
     hhi_indicator = (
-        "✅ 改善" if a_shhi < b_shhi
-        else "⚠️ 悪化" if a_shhi > b_shhi
-        else "↔️ 変化なし"
+        "✅ Improved" if a_shhi < b_shhi
+        else "⚠️ Worsened" if a_shhi > b_shhi
+        else "↔️ Unchanged"
     )
     lines.append(
-        f"| セクターHHI | {_fmt_float(b_shhi, 2)} "
+        f"| Sector HHI | {_fmt_float(b_shhi, 2)} "
         f"| {_fmt_float(a_shhi, 2)} | {hhi_indicator} |"
     )
 
@@ -360,12 +350,12 @@ def format_what_if(result: dict) -> str:
     b_rhhi = before.get("region_hhi", 0)
     a_rhhi = after.get("region_hhi", 0)
     rhhi_indicator = (
-        "✅ 改善" if a_rhhi < b_rhhi
-        else "⚠️ 悪化" if a_rhhi > b_rhhi
-        else "↔️ 変化なし"
+        "✅ Improved" if a_rhhi < b_rhhi
+        else "⚠️ Worsened" if a_rhhi > b_rhhi
+        else "↔️ Unchanged"
     )
     lines.append(
-        f"| 地域HHI | {_fmt_float(b_rhhi, 2)} "
+        f"| Region HHI | {_fmt_float(b_rhhi, 2)} "
         f"| {_fmt_float(a_rhhi, 2)} | {rhhi_indicator} |"
     )
 
@@ -380,7 +370,7 @@ def format_what_if(result: dict) -> str:
             else "↔️ 0pp"
         )
         lines.append(
-            f"| 期待リターン(ベース) "
+            f"| Expected Return (Base) "
             f"| {_fmt_pct_sign(b_ret)} "
             f"| {_fmt_pct_sign(a_ret)} | {ret_indicator} |"
         )
@@ -388,14 +378,14 @@ def format_what_if(result: dict) -> str:
 
     # --- Proposed stock health ---
     if proposed_health:
-        lines += _fmt_health_section(proposed_health, "提案銘柄ヘルスチェック")
+        lines += _fmt_health_section(proposed_health, "Proposed Stock Health Check")
 
     # --- (KIK-451) Removed stock health ---
     if removed_health:
-        lines += _fmt_health_section(removed_health, "売却銘柄ヘルスチェック")
+        lines += _fmt_health_section(removed_health, "Sell Stock Health Check")
 
     # --- Judgment ---
-    lines.append("### 総合判定")
+    lines.append("### Overall Judgment")
     lines.append("")
     rec = judgment.get("recommendation", "caution")
     emoji = _JUDGMENT_EMOJI.get(rec, "")

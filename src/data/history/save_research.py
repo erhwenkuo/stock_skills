@@ -37,10 +37,10 @@ def _build_research_summary(research_type: str, result: dict) -> str:
                 parts.append(headline[:80])
         xs = grok.get("x_sentiment") or result.get("x_sentiment") or {}
         if isinstance(xs, dict) and xs.get("score") is not None:
-            parts.append(f"Xセンチメント{xs['score']}")
+            parts.append(f"X-sentiment {xs['score']}")
         vs = result.get("value_score")
         if vs is not None:
-            parts.append(f"スコア{vs}")
+            parts.append(f"Score {vs}")
 
     elif research_type == "market":
         # price_action + sentiment score
@@ -52,7 +52,7 @@ def _build_research_summary(research_type: str, result: dict) -> str:
             parts.append(pa_clean[:120])
         sent = grok.get("sentiment") or {}
         if isinstance(sent, dict) and sent.get("score") is not None:
-            parts.append(f"センチメント{sent['score']}")
+            parts.append(f"Sentiment {sent['score']}")
 
     elif research_type == "industry":
         # trends

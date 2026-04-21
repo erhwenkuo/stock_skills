@@ -122,7 +122,7 @@ def print_removal_contexts(symbols: list[str]) -> None:
                     contexts.append(result["context_markdown"])
             if contexts:
                 print("---")
-                print("## 売却候補のコンテキスト (KIK-470)\n")
+                print("## Sell Candidate Context (KIK-470)\n")
                 print("\n\n".join(contexts))
                 print()
         finally:
@@ -195,7 +195,7 @@ def _process_action_items(
         if not results:
             return
 
-        lines = ["\n---", "📌 **アクションアイテム** (自動検出)\n"]
+        lines = ["\n---", "📌 **Action Items** (auto-detected)\n"]
         for r in results:
             title = r.get("title", "")
             symbol = r.get("symbol", "")
@@ -204,7 +204,7 @@ def _process_action_items(
 
             status_parts = []
             if neo4j:
-                status_parts.append("Neo4j保存済")
+                status_parts.append("Saved to Neo4j")
             if linear:
                 ident = linear.get("identifier", "")
                 url = linear.get("url", "")
@@ -213,7 +213,7 @@ def _process_action_items(
                 elif ident:
                     status_parts.append(f"Linear: {ident}")
 
-            status = " / ".join(status_parts) if status_parts else "検出済"
+            status = " / ".join(status_parts) if status_parts else "detected"
             lines.append(f"- {title} ({status})")
 
         print("\n".join(lines))

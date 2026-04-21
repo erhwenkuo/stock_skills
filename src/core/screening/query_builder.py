@@ -245,11 +245,11 @@ def _build_theme_condition(theme: str, themes: dict) -> EquityQuery:
     if theme not in themes:
         valid = ", ".join(sorted(themes.keys()))
         raise ValueError(
-            f"テーマ '{theme}' は未定義です。有効なテーマ: {valid}"
+            f"Theme '{theme}' is not defined. Valid themes: {valid}"
         )
     industries = themes[theme].get("industries", [])
     if not industries:
-        raise ValueError(f"テーマ '{theme}' に industries が定義されていません")
+        raise ValueError(f"Theme '{theme}' has no industries defined")
     return EquityQuery("is-in", ["industry", *industries])
 
 

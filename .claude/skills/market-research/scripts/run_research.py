@@ -47,7 +47,7 @@ def _print_research_history(research_type: str, target: str):
     try:
         chain = get_research_chain(research_type, target, limit=3)
         if chain:
-            print(f"\n### リサーチ履歴 ({len(chain)}回)")
+            print(f"\n### Research History ({len(chain)} entries)")
             for entry in chain:
                 d = entry.get("date", "?")
                 s = entry.get("summary", "")
@@ -59,13 +59,13 @@ def _print_research_history(research_type: str, target: str):
 
 
 def cmd_stock(args):
-    """銘柄リサーチ"""
+    """Stock research"""
     if not HAS_RESEARCHER:
-        print("Error: researcher モジュールが見つかりません。")
+        print("Error: researcher module not found.")
         sys.exit(1)
 
     _print_research_history("stock", args.symbol)
-    print(f"リサーチ中: {args.symbol} ...")
+    print(f"Researching: {args.symbol} ...")
     result = research_stock(args.symbol, yahoo_client)
 
     if HAS_FORMATTER:
@@ -78,17 +78,17 @@ def cmd_stock(args):
         try:
             save_research("stock", args.symbol, result)
         except Exception as e:
-            print(f"Warning: リサーチ履歴保存失敗: {e}", file=sys.stderr)
+            print(f"Warning: Failed to save research history: {e}", file=sys.stderr)
 
 
 def cmd_industry(args):
-    """業界リサーチ"""
+    """Industry research"""
     if not HAS_RESEARCHER:
-        print("Error: researcher モジュールが見つかりません。")
+        print("Error: researcher module not found.")
         sys.exit(1)
 
     _print_research_history("industry", args.theme)
-    print(f"業界リサーチ中: {args.theme} ...")
+    print(f"Industry research: {args.theme} ...")
     result = research_industry(args.theme)
 
     if HAS_FORMATTER:
@@ -101,17 +101,17 @@ def cmd_industry(args):
         try:
             save_research("industry", args.theme, result)
         except Exception as e:
-            print(f"Warning: リサーチ履歴保存失敗: {e}", file=sys.stderr)
+            print(f"Warning: Failed to save research history: {e}", file=sys.stderr)
 
 
 def cmd_market(args):
-    """マーケットリサーチ"""
+    """Market research"""
     if not HAS_RESEARCHER:
-        print("Error: researcher モジュールが見つかりません。")
+        print("Error: researcher module not found.")
         sys.exit(1)
 
     _print_research_history("market", args.market)
-    print(f"マーケットリサーチ中: {args.market} ...")
+    print(f"Market research: {args.market} ...")
     result = research_market(args.market, yahoo_client)
 
     if HAS_FORMATTER:
@@ -128,17 +128,17 @@ def cmd_market(args):
             if macro:
                 save_market_context({"indices": macro})
         except Exception as e:
-            print(f"Warning: リサーチ履歴保存失敗: {e}", file=sys.stderr)
+            print(f"Warning: Failed to save research history: {e}", file=sys.stderr)
 
 
 def cmd_business(args):
-    """ビジネスモデル分析"""
+    """Business model analysis"""
     if not HAS_BUSINESS:
-        print("Error: researcher モジュール (research_business) が見つかりません。")
+        print("Error: researcher module (research_business) not found.")
         sys.exit(1)
 
     _print_research_history("business", args.symbol)
-    print(f"ビジネスモデル分析中: {args.symbol} ...")
+    print(f"Business model analysis: {args.symbol} ...")
     result = research_business(args.symbol, yahoo_client)
 
     if HAS_BUSINESS_FORMATTER:
@@ -151,31 +151,31 @@ def cmd_business(args):
         try:
             save_research("business", args.symbol, result)
         except Exception as e:
-            print(f"Warning: リサーチ履歴保存失敗: {e}", file=sys.stderr)
+            print(f"Warning: Failed to save research history: {e}", file=sys.stderr)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="深掘りリサーチツール")
+    parser = argparse.ArgumentParser(description="Deep research tool")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # stock
-    p_stock = subparsers.add_parser("stock", help="銘柄リサーチ")
-    p_stock.add_argument("symbol", help="ティッカーシンボル (例: 7203.T, AAPL)")
+    p_stock = subparsers.add_parser("stock", help="Stock research")
+    p_stock.add_argument("symbol", help="Ticker symbol (e.g., 7203.T, AAPL)")
     p_stock.set_defaults(func=cmd_stock)
 
     # industry
-    p_industry = subparsers.add_parser("industry", help="業界・テーマリサーチ")
-    p_industry.add_argument("theme", help="業界名またはテーマ (例: 半導体, AI)")
+    p_industry = subparsers.add_parser("industry", help="Industry/theme research")
+    p_industry.add_argument("theme", help="Industry name or theme (e.g., semiconductors, AI)")
     p_industry.set_defaults(func=cmd_industry)
 
     # market
-    p_market = subparsers.add_parser("market", help="マーケット概況リサーチ")
-    p_market.add_argument("market", help="マーケット名や指数 (例: 日経平均, S&P500)")
+    p_market = subparsers.add_parser("market", help="Market overview research")
+    p_market.add_argument("market", help="Market name or index (e.g., Nikkei, S&P500)")
     p_market.set_defaults(func=cmd_market)
 
     # business
-    p_business = subparsers.add_parser("business", help="ビジネスモデル分析")
-    p_business.add_argument("symbol", help="ティッカーシンボル (例: 7751.T, AAPL)")
+    p_business = subparsers.add_parser("business", help="Business model analysis")
+    p_business.add_argument("symbol", help="Ticker symbol (e.g., 7751.T, AAPL)")
     p_business.set_defaults(func=cmd_business)
 
     args = parser.parse_args()
@@ -188,7 +188,7 @@ def main():
 
     # Proactive suggestions (KIK-465)
     _sym = getattr(args, "symbol", "") or ""
-    print_suggestions(symbol=_sym, context_summary=f"リサーチ完了: {args.command} {_target}")
+    print_suggestions(symbol=_sym, context_summary=f"Research complete: {args.command} {_target}")
 
 
 if __name__ == "__main__":

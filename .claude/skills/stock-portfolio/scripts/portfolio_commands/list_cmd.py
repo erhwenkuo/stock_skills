@@ -26,9 +26,9 @@ def cmd_list(csv_path: str) -> None:
         return
 
     # Fallback: print as markdown table
-    print("## ポートフォリオ一覧\n")
-    print("| 銘柄 | 保有数 | 取得単価 | 通貨 | 購入日 | メモ |")
-    print("|:-----|------:|--------:|:-----|:-------|:-----|")
+    print("## Portfolio Holdings\n")
+    print("| Symbol | Shares | Cost Price | Currency | Purchase Date | Memo |")
+    print("|:-------|-------:|-----------:|:---------|:--------------|:-----|")
     for h in holdings:
         print(
             f"| {h['symbol']} | {h['shares']} | {h['cost_price']:.2f} "

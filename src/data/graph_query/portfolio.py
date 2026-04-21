@@ -186,7 +186,7 @@ def get_portfolio_holdings_for_linking(limit: int = 8) -> list[dict]:
                 "  coalesce(s.sector, '') AS sector, "
                 "  coalesce(rep.score, 0) AS score, "
                 "  coalesce(rep.verdict, '') AS verdict, "
-                "  ('保有: ' + s.symbol + ' score=' + toString(coalesce(rep.score, 0))) AS summary "
+                "  ('Held: ' + s.symbol + ' score=' + toString(coalesce(rep.score, 0))) AS summary "
                 "LIMIT $limit",
                 limit=limit,
             )

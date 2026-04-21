@@ -87,7 +87,7 @@ SUFFIX_TO_CURRENCY = {
 # Suffix -> lot size (minimum tradable shares) mapping
 # US stocks (no suffix) = 1 share; most Asian markets = 100 shares
 SUFFIX_TO_LOT_SIZE: dict[str, int] = {
-    ".T": 100,       # Japan (単元株)
+    ".T": 100,       # Japan (trading unit)
     ".SI": 100,      # Singapore
     ".BK": 100,      # Thailand
     ".KL": 100,      # Malaysia
@@ -157,8 +157,8 @@ def validate_lot_size(shares: int, symbol: str) -> None:
     if shares % lot != 0:
         nearest = round_to_lot_size(shares, symbol)
         raise ValueError(
-            f"{symbol}は{lot}株単位で売買する必要があります。"
-            f"{shares}株は不正です（最も近い有効株数: {nearest}株）"
+            f"{symbol} must be traded in multiples of {lot} shares. "
+            f"{shares} shares is invalid (nearest valid amount: {nearest} shares)"
         )
 
 

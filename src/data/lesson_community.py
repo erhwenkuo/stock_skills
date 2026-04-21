@@ -15,18 +15,18 @@ from src.data.lesson_conflict import tokenize
 # ---------------------------------------------------------------------------
 
 _COMMUNITIES = {
-    "判断バイアス": [
+    "Judgment Bias": [
         "バイアス", "固定観念", "鵜呑み", "機会損失", "過多", "禁止",
         "慎重", "楽観", "悲観", "思い込み", "先入観", "過信",
         "パニック", "感情", "衝動", "焦り", "保守", "同日",
     ],
-    "売買ルール": [
+    "Trade Rules": [
         "損切り", "利確", "カタリスト", "エントリー", "閾値",
         "rsi", "vix", "条件", "ルール", "タイミング", "購入",
         "売却", "ストップ", "トレール", "ポジション", "追加",
         "分割", "ナンピン", "打ち止め", "停止", "出来高",
     ],
-    "マクロ戦略": [
+    "Macro Strategy": [
         "原油", "金利", "etf", "ローテーション", "マクロ",
         "インフレ", "ヘッジ", "為替", "円安", "円高",
         "債券", "イールド", "セクター", "景気", "リセッション",
@@ -59,7 +59,7 @@ def classify_lesson(content: str = "", trigger: str = "") -> str:
             scores[community] = score
 
     if not scores:
-        return "その他"
+        return "Other"
 
     return max(scores, key=scores.get)
 
@@ -147,25 +147,25 @@ def get_all_lesson_communities() -> list[dict]:
 # ---------------------------------------------------------------------------
 
 _INTENT_THEME_MAP = {
-    "売買": "売買ルール",
-    "損切り": "売買ルール",
-    "利確": "売買ルール",
-    "買い": "売買ルール",
-    "売り": "売買ルール",
-    "エントリー": "売買ルール",
-    "ポジション": "売買ルール",
-    "ヘルスチェック": "売買ルール",
-    "health": "売買ルール",
-    "adjust": "売買ルール",
-    "市況": "マクロ戦略",
-    "マクロ": "マクロ戦略",
-    "金利": "マクロ戦略",
-    "vix": "マクロ戦略",
-    "為替": "マクロ戦略",
-    "相場": "マクロ戦略",
-    "バイアス": "判断バイアス",
-    "判断": "判断バイアス",
-    "分析": "判断バイアス",
+    "売買": "Trade Rules",
+    "損切り": "Trade Rules",
+    "利確": "Trade Rules",
+    "買い": "Trade Rules",
+    "売り": "Trade Rules",
+    "エントリー": "Trade Rules",
+    "ポジション": "Trade Rules",
+    "ヘルスチェック": "Trade Rules",
+    "health": "Trade Rules",
+    "adjust": "Trade Rules",
+    "市況": "Macro Strategy",
+    "マクロ": "Macro Strategy",
+    "金利": "Macro Strategy",
+    "vix": "Macro Strategy",
+    "為替": "Macro Strategy",
+    "相場": "Macro Strategy",
+    "バイアス": "Judgment Bias",
+    "判断": "Judgment Bias",
+    "分析": "Judgment Bias",
 }
 
 

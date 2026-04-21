@@ -15,10 +15,10 @@ def cmd_save(args):
     """Save a note."""
     # KIK-473: journal type does not require --symbol or --category
     if args.type != "journal" and not args.symbol and not args.category:
-        print("Error: --symbol または --category のいずれかは必須です。")
+        print("Error: Either --symbol or --category is required.")
         sys.exit(1)
     if not args.content:
-        print("Error: --content は必須です。")
+        print("Error: --content is required.")
         sys.exit(1)
 
     # KIK-534: lesson-specific fields
@@ -39,14 +39,14 @@ def cmd_save(args):
     )
 
     label = note.get("symbol") or note.get("category", "general")
-    print(f"メモを保存しました: {note['id']}")
-    print(f"  対象: {label} / タイプ: {note['type']} / カテゴリ: {note.get('category', '-')}")
-    print(f"  内容: {note['content']}")
+    print(f"Note saved: {note['id']}")
+    print(f"  Target: {label} / Type: {note['type']} / Category: {note.get('category', '-')}")
+    print(f"  Content: {note['content']}")
     # KIK-534: show lesson-specific fields
     if note.get("trigger"):
-        print(f"  トリガー: {note['trigger']}")
+        print(f"  Trigger: {note['trigger']}")
     if note.get("expected_action"):
-        print(f"  次回アクション: {note['expected_action']}")
+        print(f"  Next action: {note['expected_action']}")
     # KIK-570: Show conflict warnings
     conflicts = note.get("_conflicts", [])
     if conflicts:
@@ -57,15 +57,15 @@ def cmd_save(args):
             ctype = c.get("conflict_type", "similar")
             detail = c.get("conflict_detail", "")
             ex_content = (ex.get("content") or "")[:50]
-            label = "⚠️ 矛盾候補" if ctype == "contradicting_action" else "📝 類似lesson"
-            print(f"  {label} (類似度: {sim:.2f}): {detail or ex_content}")
+            label = "⚠️ Contradiction candidate" if ctype == "contradicting_action" else "📝 Similar lesson"
+            print(f"  {label} (similarity: {sim:.2f}): {detail or ex_content}")
     # KIK-473: show detected symbols for journal notes
     detected = note.get("detected_symbols", [])
     if detected:
-        print(f"  検出銘柄: {', '.join(detected)}")
+        print(f"  Detected symbols: {', '.join(detected)}")
     print_suggestions(
         symbol=args.symbol or "",
-        context_summary=f"メモ保存: {args.type} {label}",
+        context_summary=f"Note saved: {args.type} {label}",
     )
 
 
@@ -75,11 +75,11 @@ def cmd_list(args):
 
     if not notes:
         if args.symbol:
-            print(f"{args.symbol} のメモはありません。")
+            print(f"No notes found for {args.symbol}.")
         elif args.category:
-            print(f"カテゴリ '{args.category}' のメモはありません。")
+            print(f"No notes found for category '{args.category}'.")
         else:
-            print("メモはありません。")
+            print("No notes found.")
         return
 
     label_parts = []
@@ -89,10 +89,10 @@ def cmd_list(args):
         label_parts.append(f"category={args.category}")
     if args.type:
         label_parts.append(args.type)
-    label = " / ".join(label_parts) if label_parts else "全件"
+    label = " / ".join(label_parts) if label_parts else "All"
 
-    print(f"## 投資メモ一覧 ({label}: {len(notes)} 件)\n")
-    print("| 日付 | 対象 | カテゴリ | タイプ | 内容 |")
+    print(f"## Investment Notes ({label}: {len(notes)} entries)\n")
+    print("| Date | Target | Category | Type | Content |")
     print("|:-----|:-----|:---------|:-------|:-----|")
     for n in notes:
         content = n.get("content", "")
@@ -105,54 +105,54 @@ def cmd_list(args):
         cat = n.get("category", "-")
         print(f"| {n.get('date', '-')} | {target} | {cat} | {n.get('type', '-')} | {short} |")
 
-    print(f"\n合計 {len(notes)} 件")
+    print(f"\nTotal: {len(notes)} entries")
 
 
 def cmd_delete(args):
     """Delete a note by ID."""
     if not args.id:
-        print("Error: --id は必須です。")
+        print("Error: --id is required.")
         sys.exit(1)
 
     if delete_note(args.id):
-        print(f"メモを削除しました: {args.id}")
+        print(f"Note deleted: {args.id}")
     else:
-        print(f"メモが見つかりません: {args.id}")
+        print(f"Note not found: {args.id}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="投資メモ管理")
+    parser = argparse.ArgumentParser(description="Investment note management")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # save
-    p_save = subparsers.add_parser("save", help="メモ保存")
-    p_save.add_argument("--symbol", default=None, help="ティッカーシンボル (例: 7203.T)")
+    p_save = subparsers.add_parser("save", help="Save a note")
+    p_save.add_argument("--symbol", default=None, help="Ticker symbol (e.g., 7203.T)")
     p_save.add_argument("--category", default=None,
                         choices=["portfolio", "market", "general"],
-                        help="カテゴリ (symbol未指定時に使用)")
+                        help="Category (used when --symbol is not specified)")
     p_save.add_argument(
         "--type", default="observation",
         choices=["thesis", "observation", "concern", "review", "target", "lesson", "journal", "exit-rule"],
-        help="メモタイプ",
+        help="Note type",
     )
-    p_save.add_argument("--content", required=True, help="メモ内容")
-    p_save.add_argument("--source", default="manual", help="ソース (例: manual, health-check)")
-    p_save.add_argument("--trigger", default=None, help="lessonのトリガー (type=lesson時のみ有効, KIK-534)")
-    p_save.add_argument("--expected-action", default=None, help="次回期待アクション (type=lesson時のみ有効, KIK-534)")
+    p_save.add_argument("--content", required=True, help="Note content")
+    p_save.add_argument("--source", default="manual", help="Source (e.g., manual, health-check)")
+    p_save.add_argument("--trigger", default=None, help="Trigger for lesson notes (only valid when type=lesson, KIK-534)")
+    p_save.add_argument("--expected-action", default=None, help="Expected next action (only valid when type=lesson, KIK-534)")
     p_save.set_defaults(func=cmd_save)
 
     # list
-    p_list = subparsers.add_parser("list", help="メモ一覧")
-    p_list.add_argument("--symbol", default=None, help="銘柄でフィルタ")
+    p_list = subparsers.add_parser("list", help="List notes")
+    p_list.add_argument("--symbol", default=None, help="Filter by symbol")
     p_list.add_argument("--category", default=None,
                         choices=["stock", "portfolio", "market", "general"],
-                        help="カテゴリでフィルタ")
-    p_list.add_argument("--type", default=None, help="タイプでフィルタ")
+                        help="Filter by category")
+    p_list.add_argument("--type", default=None, help="Filter by type")
     p_list.set_defaults(func=cmd_list)
 
     # delete
-    p_delete = subparsers.add_parser("delete", help="メモ削除")
-    p_delete.add_argument("--id", required=True, help="メモID")
+    p_delete = subparsers.add_parser("delete", help="Delete a note")
+    p_delete.add_argument("--id", required=True, help="Note ID")
     p_delete.set_defaults(func=cmd_delete)
 
     args = parser.parse_args()

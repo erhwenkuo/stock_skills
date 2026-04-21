@@ -16,16 +16,16 @@ from portfolio_commands import (
 def cmd_forecast(csv_path: str) -> None:
     """Generate 3-scenario return estimation for portfolio."""
     if not HAS_RETURN_ESTIMATE:
-        print("Error: return_estimate モジュールが見つかりません。")
+        print("Error: return_estimate module not found.")
         sys.exit(1)
 
-    print("推定利回り算出中（アナリスト目標・ニュース・センチメント取得）...\n")
+    print("Calculating estimated return (fetching analyst targets, news, and sentiment)...\n")
 
     result = estimate_portfolio_return(csv_path, yahoo_client)
 
     positions = result.get("positions", [])
     if not positions:
-        print("ポートフォリオにデータがありません。")
+        print("No data available in portfolio.")
         return
 
     if HAS_PORTFOLIO_FORMATTER:
@@ -33,8 +33,8 @@ def cmd_forecast(csv_path: str) -> None:
     else:
         # Fallback text output
         portfolio = result.get("portfolio", {})
-        print("## 推定利回り（12ヶ月）\n")
-        for label, key in [("楽観", "optimistic"), ("ベース", "base"), ("悲観", "pessimistic")]:
+        print("## Estimated Return (12 months)\n")
+        for label, key in [("Optimistic", "optimistic"), ("Base", "base"), ("Pessimistic", "pessimistic")]:
             ret = portfolio.get(key)
             if ret is not None:
                 print(f"- {label}: {ret * 100:+.2f}%")
@@ -53,4 +53,4 @@ def cmd_forecast(csv_path: str) -> None:
             total_jpy = result.get("total_value_jpy", 0)
             save_forecast(positions=positions, total_value_jpy=total_jpy)
         except Exception as e:
-            print(f"Warning: フォーキャスト履歴保存失敗: {e}", file=sys.stderr)
+            print(f"Warning: Failed to save forecast history: {e}", file=sys.stderr)

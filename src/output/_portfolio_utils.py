@@ -23,10 +23,10 @@ def _pnl_indicator(value: Optional[float]) -> str:
 def _classify_hhi(hhi: float) -> str:
     """Classify HHI into a risk label."""
     if hhi < 0.25:
-        return "\u5206\u6563"  # 分散
+        return "Diversified"
     if hhi < 0.50:
-        return "\u3084\u3084\u96c6\u4e2d"  # やや集中
-    return "\u5371\u967a\u306a\u96c6\u4e2d"  # 危険な集中
+        return "Moderately concentrated"
+    return "Dangerously concentrated"
 
 
 def _fmt_k(value: Optional[float]) -> str:

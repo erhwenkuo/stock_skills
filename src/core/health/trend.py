@@ -38,7 +38,7 @@ def check_trend_health(
         sma50, sma200.
     """
     default = {
-        "trend": "不明",
+        "trend": "Unknown",
         "price_above_sma50": False,
         "price_above_sma200": False,
         "sma50_above_sma200": False,
@@ -120,11 +120,11 @@ def check_trend_health(
 
     # Trend determination
     if price_above_sma50 and sma50_above_sma200:
-        trend = "上昇"
+        trend = "Uptrend"
     elif sma50_approaching or (not price_above_sma50 and price_above_sma200):
-        trend = "横ばい"
+        trend = "Sideways"
     else:
-        trend = "下降"
+        trend = "Downtrend"
 
     return {
         "trend": trend,

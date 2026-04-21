@@ -1,243 +1,243 @@
-# Graph Context: ナレッジグラフスキーマ + 自動コンテキスト注入 (KIK-411/420)
+# Graph Context: Knowledge Graph Schema + Automatic Context Injection (KIK-411/420)
 
-## Neo4j ナレッジグラフスキーマ
+## Neo4j Knowledge Graph Schema
 
-CSV/JSON が master、Neo4j は検索・関連付け用の view（dual-write パターン）。詳細は `docs/neo4j-schema.md` 参照。
+CSV/JSON are the master; Neo4j is a view for search and association (dual-write pattern). See `docs/neo4j-schema.md` for details.
 
-**24 ノード:**
-Stock(中心), Screen, Report, Trade, HealthCheck, Note, Theme, Sector,
+**24 Nodes:**
+Stock (central), Screen, Report, Trade, HealthCheck, Note, Theme, Sector,
 Research, Watchlist, MarketContext, Portfolio,
 News, Sentiment, Catalyst, AnalystView, Indicator, UpcomingEvent, SectorRotation,
 StressTest, Forecast, ActionItem, Community, ThemeTrend
 
-**主要リレーション:**
+**Key Relations:**
 - `Screen-[SURFACED]->Stock` / `Report-[ANALYZED]->Stock` / `Trade-[BOUGHT|SOLD]->Stock`
-- `Portfolio-[HOLDS]->Stock` (現在保有, KIK-414) / `Watchlist-[BOOKMARKED]->Stock`
+- `Portfolio-[HOLDS]->Stock` (current holdings, KIK-414) / `Watchlist-[BOOKMARKED]->Stock`
 - `Research-[HAS_NEWS]->News-[MENTIONS]->Stock` / `Research-[HAS_SENTIMENT]->Sentiment`
 - `Research-[HAS_CATALYST]->Catalyst` / `Research-[HAS_ANALYST_VIEW]->AnalystView`
-- `Research-[SUPERSEDES]->Research` (同一対象の新旧チェーン)
+- `Research-[SUPERSEDES]->Research` (new-old chain for the same subject)
 - `MarketContext-[INCLUDES]->Indicator` / `MarketContext-[HAS_EVENT]->UpcomingEvent`
 - `Note-[ABOUT]->Stock` / `Note-[ABOUT]->Portfolio` / `Note-[ABOUT]->MarketContext` (KIK-491)
 - `Research-[ANALYZES]->Sector` / `Research-[COMPLEMENTS]->MarketContext` (KIK-491)
 - `Stock-[IN_SECTOR]->Sector` / `Stock-[HAS_THEME]->Theme`
 - `ActionItem-[TARGETS]->Stock` / `HealthCheck-[TRIGGERED]->ActionItem` (KIK-472)
-- `Stock-[BELONGS_TO]->Community` (KIK-547: コミュニティ検出)
-- `ThemeTrend-[FOR_THEME]->Theme` (KIK-603: テーマトレンド検出)
+- `Stock-[BELONGS_TO]->Community` (KIK-547: community detection)
+- `ThemeTrend-[FOR_THEME]->Theme` (KIK-603: theme trend detection)
 
-**データの流れ:** スキル実行 → JSON/CSV保存(master) → Neo4j同期(view) → 次回 `get_context.py` で自動取得
+**Data Flow:** Skill execution → JSON/CSV save (master) → Neo4j sync (view) → retrieved via `get_context.py` on next run
 
 ---
 
-## 自動コンテキスト注入
+## Automatic Context Injection
 
-ユーザーのプロンプトに銘柄名・ティッカーシンボルが含まれている場合、
-スキル実行前に以下のスクリプトを実行してコンテキストを取得する。
+When the user's prompt contains a stock name or ticker symbol,
+run the following script before skill execution to retrieve context.
 
-## いつ実行するか
+## When to Run
 
-**毎回実行。** TEI + Neo4j が利用可能な限り、すべてのプロンプトでベクトル類似検索を行う（KIK-420）。
+**Every time.** As long as TEI + Neo4j are available, perform a vector similarity search on every prompt (KIK-420).
 
-加えて、以下の条件でシンボルベース検索も併用:
-- ティッカーシンボル（7203.T, AAPL, D05.SI 等）が含まれる
-- 企業名（トヨタ、Apple 等）+ 「どう」「調べて」「分析」等の分析意図がある
-- 「PF」「ポートフォリオ」+ 状態確認の意図がある
-- 「相場」「市況」等のマーケット照会意図がある
+Additionally, combine with symbol-based search under the following conditions:
+- Contains a ticker symbol (7203.T, AAPL, D05.SI, etc.)
+- Contains a company name (Toyota, Apple, etc.) + analysis intent (how, look up, analyze, etc.)
+- Contains "PF" or "portfolio" + status check intent
+- Contains market inquiry intent (market conditions, situation, etc.)
 
-### ハイブリッド検索 (KIK-420)
+### Hybrid Search (KIK-420)
 
-| TEI | Neo4j | 動作 |
+| TEI | Neo4j | Behavior |
 |:---|:---|:---|
-| OK | OK | **毎回ベクトル検索** + シンボルベース検索 |
-| NG | OK | シンボルベース検索のみ（従来通り） |
-| OK | NG | 従来通り（intent-routing のみ） |
-| NG | NG | 従来通り（intent-routing のみ） |
+| OK | OK | **Vector search every time** + symbol-based search |
+| NG | OK | Symbol-based search only (as before) |
+| OK | NG | As before (intent-routing only) |
+| NG | NG | As before (intent-routing only) |
 
-シンボルが含まれない曖昧なクエリ（「前に調べた半導体関連の銘柄」）でも、ベクトル検索により過去の関連ノードを取得可能。
+Even for ambiguous queries without symbols (e.g., "semiconductor-related stocks I looked up before"), vector search can retrieve related past nodes.
 
-## コンテキスト取得コマンド
+## Context Retrieval Command
 
 ```bash
-python3 scripts/get_context.py "<ユーザー入力>"
+python3 scripts/get_context.py "<user input>"
 ```
 
-## コンテキストの使い方
+## How to Use Context
 
-1. **出力1行目のアクション指示に従う**（KIK-428）:
-   - `⛔ FRESH — スキル実行不要。このコンテキストのみで回答。` → スキルを実行せずコンテキストだけで回答
-   - `⚡ RECENT — 差分モードで軽量更新。` → 差分取得のみ
-   - `🔄 STALE — フル再取得。スキルを実行。` → スキルをフル実行
-   - `🆕 NONE — データなし。スキルを実行。` → スキルをフル実行
-2. 「推奨スキル」を参考にスキルを選択する（intent-routing.md と合わせて判断）
-3. 前回の値がある場合は差分を意識した出力にする
-5. Neo4j 未接続時は出力が「コンテキストなし」→ 従来通り intent-routing のみで判断
+1. **Follow the action instruction on the first line of the output** (KIK-428):
+   - `⛔ FRESH — No skill execution needed. Answer using this context only.` → Answer using context only, without running skills
+   - `⚡ RECENT — Lightweight update in diff mode.` → Fetch diff only
+   - `🔄 STALE — Full re-fetch. Run the skill.` → Run skill fully
+   - `🆕 NONE — No data. Run the skill.` → Run skill fully
+2. Refer to "Recommended Skill" as a reference alongside intent-routing.md for final skill selection
+3. If previous values exist, make the output diff-aware
+5. When Neo4j is not connected, output shows "no context" → make decisions using intent-routing only as before
 
-## コンテキスト鮮度判定 (KIK-427)
+## Context Freshness Assessment (KIK-427)
 
-`get_context.py` の出力に鮮度ラベル（FRESH/RECENT/STALE/NONE）を付与し、LLM がデータの再取得要否を判断する。
+`get_context.py` output includes a freshness label (FRESH/RECENT/STALE/NONE), allowing the LLM to decide whether to re-fetch data.
 
-### 鮮度ラベル
+### Freshness Labels
 
-| ラベル | 基準 | LLMの行動 |
+| Label | Criteria | LLM Action |
 |:---|:---|:---|
-| **FRESH** | `CONTEXT_FRESH_HOURS` 以内（デフォルト24h） | コンテキストのみで回答。API再取得しない |
-| **RECENT** | `CONTEXT_RECENT_HOURS` 以内（デフォルト168h=7日） | 差分モードで軽量に更新 |
-| **STALE** | `CONTEXT_RECENT_HOURS` 超 | フル再取得（レポート/リサーチを再実行） |
-| **NONE** | データなし | ゼロから実行 |
+| **FRESH** | Within `CONTEXT_FRESH_HOURS` (default 24h) | Answer using context only. Do not re-fetch API |
+| **RECENT** | Within `CONTEXT_RECENT_HOURS` (default 168h=7 days) | Lightweight update in diff mode |
+| **STALE** | Exceeds `CONTEXT_RECENT_HOURS` | Full re-fetch (re-run report/research) |
+| **NONE** | No data | Run from scratch |
 
-### 環境変数
+### Environment Variables
 
 ```bash
-# グローバル閾値（時間単位）
-CONTEXT_FRESH_HOURS=24      # これ以内 → FRESH
-CONTEXT_RECENT_HOURS=168    # これ以内 → RECENT / これ超 → STALE
+# Global thresholds (in hours)
+CONTEXT_FRESH_HOURS=24      # Within this → FRESH
+CONTEXT_RECENT_HOURS=168    # Within this → RECENT / Exceeds this → STALE
 ```
 
-未設定時はデフォルト値（24h / 168h）で動作。
+Default values (24h / 168h) are used when not set.
 
-## コミュニティデータの活用 (KIK-547/549/550)
+## Using Community Data (KIK-547/549/550)
 
-`get_context.py` 出力にコミュニティ所属情報（`- コミュニティ: 〇〇 (N銘柄)`）が含まれる場合、以下の場面で活用する。
+When `get_context.py` output includes community membership information (`- Community: XX (N stocks)`), use it in the following situations.
 
-### 参照タイミング
+### When to Reference
 
-- **銘柄分析時**: 同じコミュニティの類似銘柄を「関連銘柄」として提示
-- **ウォッチリスト検討時**: ウォッチ銘柄が既保有銘柄と同コミュニティなら「既に同グループ保有」と注記
-- **PF診断時**: `community_concentration` が warning を含む場合、「〇〇コミュニティに集中」と警告
-- **EXIT代替提案時**: 同コミュニティ=同リスク、異コミュニティ=分散効果。目的に応じて使い分け
+- **During stock analysis**: Present stocks in the same community as "related stocks"
+- **During watchlist review**: If a watchlist stock is in the same community as an already-held stock, note "same group already held"
+- **During portfolio diagnosis**: If `community_concentration` includes a warning, alert "concentrated in XX community"
+- **During EXIT alternative proposals**: Same community = same risk, different community = diversification effect. Use appropriately based on objective
 
-### 統合ルール
+### Integration Rules
 
-1. コミュニティ情報があれば「同じグループ: 〇〇, △△」と回答に織り込む
-2. PF集中警告時: 「〇〇コミュニティにN銘柄集中（XX%）。異なるグループへの分散を検討」
-3. コミュニティ名が `Community_N`（fallback名）の場合は隠れたテーマの可能性。News共起パターンを参照
-4. Neo4j未接続/コミュニティ未生成 → セクション非表示（graceful degradation）
+1. If community information exists, weave "same group: XX, YY" into the answer
+2. During portfolio concentration warning: "N stocks concentrated in XX community (XX%). Consider diversifying to a different group"
+3. If community name is `Community_N` (fallback name), it may be a hidden theme. Refer to News co-occurrence patterns
+4. When Neo4j is not connected or communities not yet generated → hide section (graceful degradation)
 
-## スキル推奨の優先度
+## Skill Recommendation Priority
 
-| 関係性 | 推奨スキル | 理由 |
+| Relationship | Recommended Skill | Reason |
 |:---|:---|:---|
-| 保有銘柄（BOUGHT あり） | `/stock-portfolio health` | 保有者として診断優先 |
-| テーゼ3ヶ月経過 | `/stock-portfolio health` + レビュー促し | 定期振り返りタイミング |
-| EXIT 判定あり | `/screen-stocks`（同セクター代替） | 乗り換え提案 |
-| ウォッチ中（BOOKMARKED） | `/stock-report` + 前回差分 | 買い時かの判断材料 |
-| 3回以上スクリーニング出現 | `/stock-report` + 注目フラグ | 繰り返し上位で注目度高 |
-| 直近リサーチ済み（RECENT） | 差分のみ取得 | API コスト削減（鮮度判定で自動判断） |
-| 懸念メモあり | `/stock-report` + 懸念再検証 | 心配事項の確認 |
-| 過去データあり | `/stock-report` | 過去の文脈を踏まえた分析 |
-| 未知の銘柄 | `/stock-report` | ゼロから調査 |
-| 市況照会 | `/market-research market` | 市況コンテキスト参照 |
-| ポートフォリオ照会 | `/stock-portfolio health` | PF全体の診断 |
+| Held stock (BOUGHT exists) | `/stock-portfolio health` | Diagnosis as holder takes priority |
+| Thesis older than 3 months | `/stock-portfolio health` + review prompt | Timing for periodic reflection |
+| EXIT judgment exists | `/screen-stocks` (same sector alternative) | Propose replacement |
+| On watchlist (BOOKMARKED) | `/stock-report` + previous diff | Basis for buy timing decision |
+| Appeared in screening 3+ times | `/stock-report` + attention flag | High attention from repeated top appearances |
+| Recently researched (RECENT) | Diff only | Reduce API cost (auto-judged by freshness) |
+| Concern memo exists | `/stock-report` + concern re-verification | Checking worries |
+| Past data exists | `/stock-report` | Analysis with past context |
+| Unknown stock | `/stock-report` | Research from scratch |
+| Market inquiry | `/market-research market` | Reference market context |
+| Portfolio inquiry | `/stock-portfolio health` | Full portfolio diagnosis |
 
-## intent-routing.md との連携
+## Integration with intent-routing.md
 
-1. **graph-context が先**: まずコンテキストを取得し、推奨スキルを確認
-2. **intent-routing で最終判断**: ユーザーの意図と推奨スキルを照合して最終決定
-3. **推奨は参考**: graph-context の推奨はあくまで参考。ユーザーの明示的な意図が優先
+1. **graph-context first**: Retrieve context first and check recommended skill
+2. **Final decision via intent-routing**: Cross-reference user intent and recommended skill for final decision
+3. **Recommendations are reference only**: graph-context recommendations are merely suggestions. Explicit user intent takes priority
 
-例:
-- graph-context: 保有銘柄 → health 推奨
-- ユーザー: 「7203.Tの最新ニュースは？」
-- 最終判断: ユーザーの意図（ニュース）優先 → `/market-research stock 7203.T`
-  ただし「保有銘柄である」という情報はコンテキストとして活用
+Example:
+- graph-context: Held stock → health recommended
+- User: "What's the latest news on 7203.T?"
+- Final decision: User intent (news) takes priority → `/market-research stock 7203.T`
+  However, "it is a held stock" is used as context
 
-## 前提知識統合原則 (KIK-466)
+## Prior Knowledge Integration Principle (KIK-466)
 
-スクリプト実行後、`get_context.py` の出力（Neo4j知識）とスキル出力（数値データ）を統合して回答を構成する。
-数値を並べるだけでなく、蓄積された文脈を踏まえた**解釈**を加える。
+After script execution, integrate `get_context.py` output (Neo4j knowledge) with skill output (numerical data) to compose the answer.
+Don't just list numbers — add **interpretation** informed by accumulated context.
 
-### 5つの統合ルール
+### 5 Integration Rules
 
-1. **数値だけを並べない** — PER 8.5倍 → 「前回レポート時の12.3倍から大幅低下。業績悪化か割安化か要確認」
-2. **過去との差分を示す** — 前回データがあれば必ず比較コメントを付ける（改善/悪化/横ばい）
-3. **投資メモを参照する** — 懸念メモ・テーゼ・ターゲットがあれば回答に織り込む（「懸念メモ: 中国リスク → 最新ニュースで改善兆候」等）
-4. **売買履歴を活用する** — BOUGHT/SOLD 記録があれば保有者視点のコメントを付加（「保有中」「売却済み」等）
-5. **Graceful degradation** — Neo4j未接続時はスキル出力のみで回答（知識統合なしでも動作する）
-6. **売却候補は履歴を確認してから提案する（KIK-470）** — what-if/swap で売却を提案する前に、その銘柄の `get_context.py` を実行し、スクリーニング出現回数・投資メモ・リサーチ履歴を確認する。ヘルスチェックのラベル（EARLY WARNING等）だけで判断しない
+1. **Don't just list numbers** — PER 8.5x → "Significant drop from 12.3x at last report. Check whether this is due to deteriorating earnings or undervaluation"
+2. **Show diff from the past** — If previous data exists, always add a comparison comment (improved/deteriorated/flat)
+3. **Reference investment memos** — If concern memos, theses, or targets exist, weave them into the answer (e.g., "Concern memo: China risk → signs of improvement in latest news")
+4. **Use trade history** — If BOUGHT/SOLD records exist, add holder perspective comments ("currently held," "already sold," etc.)
+5. **Graceful degradation** — When Neo4j is not connected, answer using skill output only (works without knowledge integration)
+6. **Check history before proposing sell candidates (KIK-470)** — Before proposing a sell in what-if/swap, run `get_context.py` for that stock and check screening appearances, investment memos, and research history. Don't judge based on health check labels (EARLY WARNING, etc.) alone
 
-### 分析結論の記録促し
+### Prompting to Record Analysis Conclusions
 
-リサーチ・レポート・ヘルスチェック後にClaude が分析結論（テーゼ・懸念・判断）を含む回答をした場合、末尾に記録を促す:
+After research, reports, or health checks where Claude provides an answer containing an analysis conclusion (thesis, concern, judgment), add a prompt at the end to record it:
 
-> 💡 この分析はまだ投資メモとして記録されていません。テーゼ/懸念として記録しますか？
+> 💡 This analysis has not yet been recorded as an investment memo. Would you like to record it as a thesis/concern?
 
-**対象**: market-research（stock/business/industry）、stock-report、stock-portfolio health（EXIT/警告）
-**条件**: Claude の回答に具体的な投資判断・見解・リスク評価が含まれる場合
-**記録されないもの**: 生データの羅列、ユーザーが既に記録済みの内容
+**Target**: market-research (stock/business/industry), stock-report, stock-portfolio health (EXIT/warning)
+**Condition**: When Claude's answer contains a specific investment judgment, view, or risk assessment
+**Not recorded**: Raw data lists, content the user has already recorded
 
-**KIK-503: target メモ→Linear issue 連携**: `type: target`（購入/売却予定）の投資メモ保存後、Linear issue 登録を促す。詳細は `intent-routing.md` の記録ドメインセクション参照
+**KIK-503: target memo → Linear issue integration**: After saving an investment memo with `type: target` (planned purchase/sale), prompt to register a Linear issue. See the record domain section in `intent-routing.md` for details
 
-## 投資lessonの参照 (KIK-534)
+## Referencing Investment Lessons (KIK-534)
 
-`get_context.py` の出力に「## 投資lesson」セクションが自動付加される。type=lesson のノートに trigger（トリガー条件）と expected_action（次回アクション）が含まれている場合、スキル実行時のコンテキストとして表示される。
+`get_context.py` output automatically includes an "## Investment Lessons" section. When notes of type=lesson contain a trigger (trigger condition) and expected_action (next action), they are displayed as context during skill execution.
 
-### 参照タイミング
+### When to Reference
 
-- **スキル実行前**: `get_context.py` 経由で自動取得。銘柄指定時はその銘柄の lesson、銘柄なしは全 lesson を最大5件表示
-- **判断バイアス補正**: lesson に記録された過去の失敗パターン（trigger）が現在の状況に該当する場合、expected_action に従って判断を修正する
+- **Before skill execution**: Automatically retrieved via `get_context.py`. When a symbol is specified, lessons for that symbol are shown; when no symbol, up to 5 lessons overall are shown
+- **Judgment bias correction**: When a lesson's recorded failure pattern (trigger) matches the current situation, modify the judgment according to expected_action
 
-### 補正ルール
+### Correction Rules
 
-1. lesson の trigger が現在の分析対象・状況に一致する場合、**必ずその lesson を回答に織り込む**
-2. 「前にも同じパターンで失敗した」旨を明示し、expected_action を推奨する
-3. lesson がない場合や該当しない場合は、セクション自体を非表示（graceful degradation）
+1. When a lesson's trigger matches the current analysis subject/situation, **always incorporate that lesson into the answer**
+2. Explicitly state "this is the same pattern as a past failure" and recommend the expected_action
+3. When there are no lessons or none are applicable, hide the section entirely (graceful degradation)
 
-### 例
+### Example
 
 ```
-## 投資lesson
-- [7203.T] 高値掴みした → 次回はRSI70超で買わない (2026-02-15)
-- モメンタムに飛びついた → 出来高確認してから入る (2026-02-10)
+## Investment Lessons
+- [7203.T] Bought at high → Don't buy when RSI > 70 next time (2026-02-15)
+- Jumped on momentum → Confirm volume before entering (2026-02-10)
 ```
 
-→ 7203.T のレポート実行時、RSI が 70 超なら「過去の lesson: 高値掴みリスクあり」と注意喚起する
+→ When running a report for 7203.T, if RSI is above 70, warn "past lesson: high-price purchase risk"
 
-## Grokプロンプト文脈注入 (KIK-488)
+## Grok Prompt Context Injection (KIK-488)
 
-`src/data/grok_context.py` がNeo4jから投資家文脈（保有状態・前回レポート・テーゼ・懸念等）をコンパクトに抽出し、Grok APIプロンプトに注入する。
+`src/data/grok_context.py` compactly extracts investor context (holding status, previous reports, theses, concerns, etc.) from Neo4j and injects it into the Grok API prompt.
 
-- **注入先**: `researcher.py` → `grok_client.py` の5つのsearch関数（stock_deep, x_sentiment, industry, market, business）
-- **トークン予算**: 最大300トークン（~900文字）。行単位で切り詰め
-- **データ優先度**: 保有状態(高) > 前回レポート(高) > テーゼ/懸念(高) > スクリーニング出現(中) > リサーチ履歴(中) > ヘルスチェック(中) > テーマ(低)
-- **graceful degradation**: Neo4j未接続 → context="" → Grokは文脈なしで通常動作
+- **Injection targets**: `researcher.py` → `grok_client.py` 5 search functions (stock_deep, x_sentiment, industry, market, business)
+- **Token budget**: Max 300 tokens (~900 characters). Truncated line-by-line
+- **Data priority**: Holding status (high) > Previous report (high) > Thesis/concern (high) > Screening appearances (medium) > Research history (medium) > Health check (medium) > Theme (low)
+- **Graceful degradation**: When Neo4j is not connected → context="" → Grok operates normally without context
 
-## graceful degradation
+## Graceful Degradation
 
-- Neo4j 未接続時: スクリプトは「コンテキストなし」を出力 → 従来通りの動作
-- Neo4j 未接続時（Grok文脈）: `grok_context` が空文字を返す → Grokプロンプトに文脈なし（KIK-488）
-- TEI 未起動時: ベクトル検索スキップ → シンボルベース検索のみ（KIK-420）
-- スクリプトエラー時: 無視して intent-routing のみで判断
-- シンボル検出できない場合 + TEI 未起動: 「コンテキストなし」→ 通常の intent-routing
-- シンボル検出できない場合 + TEI 起動中: ベクトル検索で関連ノードを取得可能（KIK-420）
+- When Neo4j is not connected: Script outputs "no context" → operates as usual
+- When Neo4j is not connected (Grok context): `grok_context` returns empty string → no context in Grok prompt (KIK-488)
+- When TEI is not running: Skip vector search → symbol-based search only (KIK-420)
+- On script error: Ignore and judge using intent-routing only
+- When symbol cannot be detected + TEI not running: "no context" → normal intent-routing
+- When symbol cannot be detected + TEI running: Related nodes can be retrieved via vector search (KIK-420)
 
-## プロアクティブ提案 (KIK-435)
+## Proactive Suggestions (KIK-435)
 
-スキル実行後、蓄積知識に基づく次のアクションを提案する。
+After skill execution, suggest the next action based on accumulated knowledge.
 
-### 自動組み込み (KIK-465)
+### Auto-Integration (KIK-465)
 
-各スキルスクリプトに `print_context()` と `print_suggestions()` が組み込まれており、スキル実行時に自動的にコンテキスト取得・提案表示が行われる。手動で `get_context.py` や `suggest.py` を呼ぶ必要はない。
+`print_context()` and `print_suggestions()` are built into each skill script, so context retrieval and suggestion display happen automatically during skill execution. No need to manually call `get_context.py` or `suggest.py`.
 
-- 冒頭: `print_context()` でグラフコンテキストを自動取得・表示
-- 末尾: `print_suggestions()` でプロアクティブ提案を自動表示
-- 10秒タイムアウト（SIGALRM）
-- Neo4j 未接続・エラー時は graceful degradation（出力なし、クラッシュしない）
+- At the start: `print_context()` automatically retrieves and displays graph context
+- At the end: `print_suggestions()` automatically displays proactive suggestions
+- 10-second timeout (SIGALRM)
+- Graceful degradation when Neo4j is not connected or on error (no output, no crash)
 
-### CLI ラッパー（手動実行用）
+### CLI Wrapper (for manual execution)
 
 ```bash
 python3 scripts/suggest.py [--symbol <ticker>] [--sector <sector>]
 ```
 
-- 提案は最大 3 件。urgency: high（赤信号） > medium（要確認） > low（参考）
+- Up to 3 suggestions. urgency: high (red flag) > medium (needs attention) > low (reference)
 
-**トリガー種別:**
+**Trigger types:**
 
-| 種別 | トリガー条件 | urgency |
+| Type | Trigger Condition | urgency |
 |:---|:---|:---|
-| 時間 | ヘルスチェック >14日未実施 | medium（>30日は high） |
-| 時間 | テーゼメモ >90日経過 | medium |
-| 時間 | 決算イベントが 7日以内 | high |
-| 状態 | 同銘柄がスクリーニングで 3回以上上位 | medium |
-| 状態 | 懸念メモが記録済み | medium |
-| コンテキスト | リサーチセクターが保有銘柄と一致 | low |
-| コンテキスト | 実行結果にキーワード一致（決算・利上げ・EXIT等） | low |
+| Time | Health check not run for >14 days | medium (>30 days = high) |
+| Time | Thesis memo older than >90 days | medium |
+| Time | Earnings event within 7 days | high |
+| State | Same stock appeared in top screening 3+ times | medium |
+| State | Concern memo recorded | medium |
+| Context | Research sector matches a held stock | low |
+| Context | Keywords match in execution results (earnings, rate hike, EXIT, etc.) | low |

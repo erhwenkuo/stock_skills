@@ -11,87 +11,87 @@ paths:
   - ".claude/skills/stress-test/**"
 ---
 
-# ポートフォリオ・ストレステスト開発ルール
+# Portfolio & Stress Test Development Rules
 
-## ポートフォリオ管理
+## Portfolio Management
 
-- CSV ベース: `.claude/skills/stock-portfolio/data/portfolio.csv`
-- `.CASH` シンボル（JPY.CASH, USD.CASH）は Yahoo Finance API をスキップ
-- `_is_cash()` / `_cash_currency()` ヘルパーで判定
+- CSV-based: `.claude/skills/stock-portfolio/data/portfolio.csv`
+- `.CASH` symbols (JPY.CASH, USD.CASH) skip the Yahoo Finance API
+- Use `_is_cash()` / `_cash_currency()` helpers for detection
 
-## ヘルスチェック (KIK-356/357/374/403/438)
+## Health Check (KIK-356/357/374/403/438)
 
-- `check_trend_health()`: SMA50/200, RSI から「上昇/横ばい/下降」を判定
-  - **ゴールデンクロス/デッドクロス検出（KIK-374）**: 60日 lookback でクロスイベントを検出。`cross_signal`, `days_since_cross`, `cross_date` を返す
-  - **小型株クロスルックバック短縮（KIK-438）**: 小型株は `cross_lookback=30` で直近の変動を早期検出
-- `check_change_quality()`: alpha.py の `compute_change_score()` を再利用。ETF は `_is_etf()` で検出し `quality_label="対象外"`
-- `compute_alert_level()`: 3段階（早期警告/注意/撤退）。撤退にはテクニカル崩壊+ファンダ悪化の両方が必要。デッドクロス検出時は EXIT 発動
-  - **株主還元安定度（KIK-403）**: `temporary`（一時的高還元）→ EARLY_WARNING 昇格、`decreasing`（減少傾向）→ 理由追加のみ
-  - **小型株アラート引き上げ（KIK-438）**: `is_small_cap=True` の場合、EARLY_WARNING → CAUTION に自動昇格
-- `check_long_term_suitability()`: 長期適性判定。`shareholder_return_data` があれば `total_return_rate`（配当+自社株買い）で判定、なければ `dividend_yield` にフォールバック
-- ETF判定: `_is_etf()` は `bool()` truthiness チェック
+- `check_trend_health()`: Determines "uptrend/sideways/downtrend" from SMA50/200 and RSI
+  - **Golden Cross/Dead Cross Detection (KIK-374)**: Detects cross events within a 60-day lookback. Returns `cross_signal`, `days_since_cross`, `cross_date`
+  - **Small-cap cross lookback reduction (KIK-438)**: Small-cap stocks use `cross_lookback=30` for early detection of recent fluctuations
+- `check_change_quality()`: Reuses `compute_change_score()` from alpha.py. ETFs are detected with `_is_etf()` and get `quality_label="N/A"`
+- `compute_alert_level()`: 3 levels (early warning / caution / exit). Exit requires both technical breakdown AND fundamental deterioration. Dead cross triggers EXIT
+  - **Shareholder return stability (KIK-403)**: `temporary` (temporary high return) → promote to EARLY_WARNING; `decreasing` (declining trend) → add reason only
+  - **Small-cap alert escalation (KIK-438)**: When `is_small_cap=True`, automatically escalate EARLY_WARNING → CAUTION
+- `check_long_term_suitability()`: Long-term suitability assessment. Uses `total_return_rate` (dividends + buybacks) if `shareholder_return_data` is available, otherwise falls back to `dividend_yield`
+- ETF detection: `_is_etf()` uses `bool()` truthiness check
 
-## 小型株アロケーション (KIK-438)
+## Small-Cap Allocation (KIK-438)
 
-- `src/core/portfolio/small_cap.py`: 小型株分類・アロケーション判定の一元モジュール
-- `classify_market_cap(market_cap, region_code)`: 地域別閾値で「小型/中型/大型/不明」に分類
-  - JP: ≤1000億円、US: ≤$1B、SG: ≤SGD 2B、他は `_SMALL_CAP_THRESHOLDS` 参照
-  - 大型閾値 = 小型閾値 × 5
-- `check_small_cap_allocation(small_cap_weight)`: PF全体の小型株比率をチェック
-  - `>25%` → warning、`>35%` → critical（`thresholds.yaml` で設定可能）
-- `src/core/ticker_utils.py` に `infer_region_code()` を追加（suffix → 2文字リージョンコード）
-- ヘルスチェック出力: `[小型]` バッジ付きシンボル + PF全体の小型株比率サマリー
-- 構造分析（analyze）: 規模別構成テーブル（大型/中型/小型/不明）+ size_hhi を追加（4軸化）
+- `src/core/portfolio/small_cap.py`: Centralized module for small-cap classification and allocation assessment
+- `classify_market_cap(market_cap, region_code)`: Classifies as "small/mid/large/unknown" using region-specific thresholds
+  - JP: ≤¥100B, US: ≤$1B, SG: ≤SGD 2B, others: see `_SMALL_CAP_THRESHOLDS`
+  - Large-cap threshold = small-cap threshold × 5
+- `check_small_cap_allocation(small_cap_weight)`: Checks the portfolio's overall small-cap ratio
+  - `>25%` → warning, `>35%` → critical (configurable in `thresholds.yaml`)
+- Added `infer_region_code()` to `src/core/ticker_utils.py` (suffix → 2-char region code)
+- Health check output: Symbol with `[small]` badge + portfolio-wide small-cap ratio summary
+- Structural analysis (analyze): Size composition table (large/mid/small/unknown) + size_hhi added (4-axis)
 
-## コミュニティ集中監視 (KIK-549)
+## Community Concentration Monitoring (KIK-549)
 
-- `src/core/health_check.py`: `_compute_community_concentration()` でコミュニティ別の集中度を計測
-- Community HHI = Σ(コミュニティ別時価総額比率)²
-- 警告閾値（同一コミュニティにcount>=2銘柄が該当する場合のみ）:
-  - weight `>30%` → warning「コミュニティ集中やや高め」
-  - weight `>50%` → critical「実質的に分散できていない可能性」
-- ヘルスチェック出力: `⚠️ コミュニティ集中: 〇〇に △銘柄（%%）`
-- コミュニティ = 共起シグナル（Screen/Theme/Sector/News）に基づく銘柄クラスタ（KIK-547）
-- Neo4j未接続時: `community_concentration = None`（警告なし、graceful degradation）
+- `src/core/health_check.py`: `_compute_community_concentration()` measures concentration by community
+- Community HHI = Σ(community market cap ratio)²
+- Warning thresholds (only when count>=2 stocks in the same community):
+  - weight `>30%` → warning "Community concentration somewhat high"
+  - weight `>50%` → critical "Effective diversification may not be achieved"
+- Health check output: `⚠️ Community concentration: XX community △ stocks (%%)`
+- Community = stock cluster based on co-occurrence signals (Screen/Theme/Sector/News) (KIK-547)
+- When Neo4j is not connected: `community_concentration = None` (no warning, graceful degradation)
 
-## 株主還元率 (KIK-375)
+## Shareholder Return Rate (KIK-375)
 
-- `calculate_shareholder_return()`: 配当 + 自社株買い の総還元率を算出
-- yahoo_client が cashflow から `dividend_paid` と `stock_repurchase` を抽出（3段階フォールバック）
-- stock-report で「## 株主還元」セクションに出力
+- `calculate_shareholder_return()`: Calculates total return rate of dividends + buybacks
+- yahoo_client extracts `dividend_paid` and `stock_repurchase` from cashflow (3-step fallback)
+- Output in stock-report under "## Shareholder Returns" section
 
-## リターン推定 (KIK-359/360)
+## Return Estimation (KIK-359/360)
 
-- 株式: yfinance の `targetHighPrice`/`targetMeanPrice`/`targetLowPrice` から期待リターン算出
-- ETF: 過去2年の月次リターンから CAGR を算出し ±1σ でシナリオ分岐（キャップ±30%）
-- ニュース: yfinance `ticker.news` で公式メディアニュースを取得
-- Xセンチメント: Grok API (`grok-4-1-fast-non-reasoning` + X Search)。`XAI_API_KEY` 未設定時スキップ
+- Stocks: Calculate expected return from yfinance `targetHighPrice`/`targetMeanPrice`/`targetLowPrice`
+- ETF: Calculate CAGR from past 2-year monthly returns and branch scenarios by ±1σ (capped at ±30%)
+- News: Retrieve official media news via yfinance `ticker.news`
+- X sentiment: Grok API (`grok-4-1-fast-non-reasoning` + X Search). Skip if `XAI_API_KEY` not set
 
-## リバランス (KIK-363)
+## Rebalancing (KIK-363)
 
-- 3戦略: defensive（10%, 0.20）、balanced（15%, 0.25）、aggressive（25%, 0.35）
-- アクション生成: (1) sell: health=EXIT or base<-10%, (2) reduce: overweight/相関集中, (3) increase: 正リターン+制約内
+- 3 strategies: defensive (10%, 0.20), balanced (15%, 0.25), aggressive (25%, 0.35)
+- Action generation: (1) sell: health=EXIT or base<-10%, (2) reduce: overweight/correlated concentration, (3) increase: positive return + within constraints
 
-## 入替提案ルール (KIK-450)
+## Swap Proposal Rules (KIK-450)
 
-PF 入替提案（EXIT 銘柄の乗り換え・代替候補の提示）を行う際は、**必ず `what-if` シミュレーションを実行してから提案する**。
+When proposing portfolio swaps (replacement of EXIT stocks / presenting alternative candidates), **always run `what-if` simulation before proposing**.
 
-- **スワップ提案時**: `what-if --remove "<EXIT銘柄>:SHARES" --add "<代替>:SHARES:PRICE"` を実行し、HHI変化・資金収支・判定ラベルをユーザーに提示する
-- **追加提案のみの場合**: `what-if --add "<追加銘柄>:SHARES:PRICE"` を実行してから提案する
-- シミュレーションを実行せず口頭だけで「〇〇に乗り換えてはどうか」と提案することは禁止
-- **単元株コスト制限**: 1単元コスト（株数 × 株価）が PF 総額の 20% を超える場合は「1単元 ¥XX 万はPF総額の YY% 相当のため高額です」と必ず明記する
-- `what-if` 実行に必要な株価が不明な場合は `yahoo_client.get_stock_info(symbol)["price"]` を取得してから計算する
+- **When proposing a swap**: Run `what-if --remove "<EXIT stock>:SHARES" --add "<alternative>:SHARES:PRICE"` and present HHI changes, fund balance, and judgment label to the user
+- **When proposing addition only**: Run `what-if --add "<additional stock>:SHARES:PRICE"` before proposing
+- Proposing "consider switching to XX" verbally without running a simulation is prohibited
+- **Single-lot cost limit**: If the single-lot cost (shares × price) exceeds 20% of total portfolio value, always state "1 lot ¥XX is YY% of total portfolio value"
+- If the price needed for `what-if` is unknown, retrieve it via `yahoo_client.get_stock_info(symbol)["price"]` first
 
-### 提案フロー（必須手順）
+### Proposal Flow (Required Steps)
 
-1. `health` で EXIT/注意銘柄を検出
-2. `/screen-stocks`（同セクター/リージョン）で代替候補を検索
-3. **`what-if --remove "<EXIT銘柄>:<保有株数>" --add "<代替>:<株数>:<株価>"` を実行**
-4. シミュレーション結果（HHI変化・資金収支・スワップ判定）を提示してから提案する
+1. Detect EXIT/caution stocks with `health`
+2. Search for alternative candidates with `/screen-stocks` (same sector/region)
+3. **Run `what-if --remove "<EXIT stock>:<held shares>" --add "<alternative>:<shares>:<price>"`**
+4. Present simulation results (HHI changes, fund balance, swap judgment) before proposing
 
-## シナリオ分析 (KIK-354/358)
+## Scenario Analysis (KIK-354/358)
 
-- 8シナリオ: トリプル安、ドル高円安、米国リセッション、日銀利上げ、米中対立、インフレ再燃、テック暴落、円高ドル安
-- `SCENARIO_ALIASES` で自然言語入力に対応
-- ETF資産クラスマッチング: `_ETF_ASSET_CLASS` マッピングで金・長期債・株式インカムに分類
-- `_match_target()`: 地域→通貨→輸出/内需→ETF資産クラス→非テック→セクターの優先順
+- 8 scenarios: Triple meltdown, USD/JPY surge, US recession, BOJ rate hike, US-China conflict, inflation resurgence, tech crash, JPY appreciation
+- `SCENARIO_ALIASES` handles natural language input
+- ETF asset class matching: `_ETF_ASSET_CLASS` mapping classifies gold, long-term bonds, equity income
+- `_match_target()`: Priority order — region → currency → export/domestic → ETF asset class → non-tech → sector

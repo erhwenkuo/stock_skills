@@ -238,26 +238,26 @@ def assess_return_stability(history: list[dict]) -> dict:
         if rate >= 0.05:
             return {
                 "stability": "single_high",
-                "label": "💰 高還元",
+                "label": "💰 High return",
                 "latest_rate": rate,
                 "avg_rate": rate,
-                "reason": f"1年データ（{rate * 100:.1f}%）",
+                "reason": f"1-year data ({rate * 100:.1f}%)",
             }
         elif rate >= 0.02:
             return {
                 "stability": "single_moderate",
-                "label": "💰 還元あり",
+                "label": "💰 Return present",
                 "latest_rate": rate,
                 "avg_rate": rate,
-                "reason": f"1年データ（{rate * 100:.1f}%）",
+                "reason": f"1-year data ({rate * 100:.1f}%)",
             }
         else:
             return {
                 "stability": "single_low",
-                "label": "➖ 低還元",
+                "label": "➖ Low return",
                 "latest_rate": rate,
                 "avg_rate": rate,
-                "reason": f"1年データ（{rate * 100:.1f}%）",
+                "reason": f"1-year data ({rate * 100:.1f}%)",
             }
 
     latest = rates[0]
@@ -268,48 +268,48 @@ def assess_return_stability(history: list[dict]) -> dict:
     if prev > 0 and latest / prev >= 2.0 and latest >= 0.08:
         return {
             "stability": "temporary",
-            "label": "⚠️ 一時的高還元",
+            "label": "⚠️ Temporary high return",
             "latest_rate": latest,
             "avg_rate": avg_rate,
-            "reason": f"前年比{latest / prev:.1f}倍に急増",
+            "reason": f"Surged {latest / prev:.1f}x vs prior year",
         }
 
     # Increasing: all years non-decreasing (latest first order)
     if all(rates[i] >= rates[i + 1] for i in range(len(rates) - 1)):
         return {
             "stability": "increasing",
-            "label": "📈 増加傾向",
+            "label": "📈 Increasing trend",
             "latest_rate": latest,
             "avg_rate": avg_rate,
-            "reason": f"{len(rates)}年連続増加",
+            "reason": f"{len(rates)} consecutive years increasing",
         }
 
     # Decreasing: all years non-increasing
     if all(rates[i] <= rates[i + 1] for i in range(len(rates) - 1)):
         return {
             "stability": "decreasing",
-            "label": "📉 減少傾向",
+            "label": "📉 Decreasing trend",
             "latest_rate": latest,
             "avg_rate": avg_rate,
-            "reason": f"{len(rates)}年連続減少",
+            "reason": f"{len(rates)} consecutive years decreasing",
         }
 
     # Stable: all >= 5%
     if all(r >= 0.05 for r in rates):
         return {
             "stability": "stable",
-            "label": "✅ 安定高還元",
+            "label": "✅ Stable high return",
             "latest_rate": latest,
             "avg_rate": avg_rate,
-            "reason": f"{len(rates)}年平均{avg_rate * 100:.1f}%で安定",
+            "reason": f"{len(rates)}-year avg {avg_rate * 100:.1f}% stable",
         }
 
     return {
         "stability": "mixed",
-        "label": "➡️ 変動あり",
+        "label": "➡️ Mixed",
         "latest_rate": latest,
         "avg_rate": avg_rate,
-        "reason": f"{len(rates)}年平均: {avg_rate * 100:.1f}%",
+        "reason": f"{len(rates)}-year avg: {avg_rate * 100:.1f}%",
     }
 
 

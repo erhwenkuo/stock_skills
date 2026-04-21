@@ -1,125 +1,125 @@
 ---
 name: market-research
-description: "銘柄・業界・マーケット・ビジネスモデルの深掘りリサーチ。Grok API (X/Web検索) と yfinance を統合して多角的な分析レポートを生成する。"
-argument-hint: "[stock|industry|market|business] [対象]  例: stock 7203.T, industry 半導体, market 日経平均, business 7751.T"
+description: "Deep research on stocks, industries, markets, and business models. Integrates Grok API (X/Web search) and yfinance for multi-angle analysis reports."
+argument-hint: "[stock|industry|market|business] [target]  e.g.: stock 7203.T, industry semiconductors, market nikkei, business 7751.T"
 allowed-tools: Bash(python3 *)
 ---
 
-# 深掘りリサーチスキル
+# Deep Research Skill
 
-$ARGUMENTS を解析してリサーチタイプと対象を判定し、以下のコマンドを実行してください。
+Parse $ARGUMENTS to determine research type and target, then run the following command.
 
-## 実行コマンド
+## Execution Command
 
 ```bash
 python3 /Users/kikuchihiroyuki/stock-skills/.claude/skills/market-research/scripts/run_research.py <command> <target>
 ```
 
-## 自然言語ルーティング
+## Natural Language Routing
 
-自然言語→スキル判定は [.claude/rules/intent-routing.md](../../rules/intent-routing.md) を参照。
+For natural language → skill selection, see [.claude/rules/intent-routing.md](../../rules/intent-routing.md).
 
-## リサーチタイプ別の出力
+## Output by Research Type
 
-### stock（銘柄リサーチ）
-- 基本情報 + バリュエーション（yfinance）
-- 最新ニュース（yfinance）
-- Xセンチメント（Grok API）
-- 深掘り分析: ニュース・業績材料・アナリスト見解・競合比較（Grok API）
+### stock (stock research)
+- Basic info + valuation (yfinance)
+- Latest news (yfinance)
+- X sentiment (Grok API)
+- Deep analysis: news, earnings catalysts, analyst views, competitive comparison (Grok API)
 
-### industry（業界リサーチ）
-- トレンド・主要プレイヤー・成長ドライバー・リスク・規制動向（Grok API）
+### industry (industry research)
+- Trends, key players, growth drivers, risks, regulatory landscape (Grok API)
 
-### market（マーケット概況）
-- 値動き・マクロ要因・センチメント・注目イベント・セクターローテーション（Grok API）
+### market (market overview)
+- Price movement, macro factors, sentiment, notable events, sector rotation (Grok API)
 
-### business（ビジネスモデル分析）
-- 事業概要（何で稼いでいるか）
-- 事業セグメント構成（セグメント名・売上比率・概要）
-- 収益モデル（ストック型/フロー型/サブスク等）
-- 競争優位性（参入障壁・ブランド・技術・moat）
-- 重要KPI（投資家が注目すべき指標）
-- 成長戦略（中期経営計画・M&A・新規事業）
-- ビジネスリスク（構造的リスク・依存度）
+### business (business model analysis)
+- Business overview (how the company makes money)
+- Business segment breakdown (segment names, revenue share, overview)
+- Revenue model (recurring/transactional/subscription, etc.)
+- Competitive advantages (entry barriers, brand, technology, moat)
+- Key KPIs (metrics investors should focus on)
+- Growth strategy (mid-term business plan, M&A, new businesses)
+- Business risks (structural risks, dependencies)
 
-## API について
+## About the APIs
 
 ### Grok API
-- XAI_API_KEY 環境変数が設定されている場合のみ Grok API を利用
-- 未設定時は yfinance データのみでレポート生成（stock の場合）
+- Only uses Grok API when `XAI_API_KEY` environment variable is set
+- When not set, generates report from yfinance data only (for `stock`)
 
-### 2層構成
-1. **Layer 1 (yfinance)**: 常に利用可能（ファンダメンタルズ・株価データ）
-2. **Layer 2 (Grok API)**: XAI_API_KEY 設定時（X投稿・Web検索による深掘り分析）
+### 2-Layer Structure
+1. **Layer 1 (yfinance)**: Always available (fundamentals, price data)
+2. **Layer 2 (Grok API)**: When `XAI_API_KEY` is set (X posts, web search for deep analysis)
 
-- industry / market / business は Layer 2 が必要。未設定時はその旨を表示
+- industry / market / business require Layer 2. Displays a message when not set
 
-### APIステータスサマリー（KIK-431）
+### API Status Summary (KIK-431)
 
-各レポートの末尾に Grok API の状態を表示する:
+Displays Grok API status at the end of each report:
 
-| 状態 | 表示 |
+| Status | Display |
 |:-----|:-----|
-| 正常 | ✅ 正常 |
-| 未設定 | 🔑 未設定 — XAI_API_KEY を設定すると利用可能 |
-| 認証エラー | ❌ 認証エラー (401) — XAI_API_KEY を確認してください |
-| レート制限 | ⚠️ レート制限 (429) — しばらく待ってから再試行 |
-| タイムアウト | ⏱️ タイムアウト — ネットワーク接続を確認 |
-| その他のエラー | ❌ エラー — 詳細は stderr を確認 |
+| Normal | ✅ OK |
+| Not set | 🔑 Not set — Set XAI_API_KEY to enable |
+| Auth error | ❌ Auth error (401) — Check your XAI_API_KEY |
+| Rate limit | ⚠️ Rate limited (429) — Wait and retry |
+| Timeout | ⏱️ Timeout — Check network connection |
+| Other error | ❌ Error — Check stderr for details |
 
-## 出力の補足
+## Output Supplement
 
-スクリプトの出力をそのまま表示した後、Claudeが以下を補足してください:
+After displaying the script output as-is, Claude should add:
 
-### stock の場合
-- ファンダメンタルズデータと Grok リサーチの整合性を確認
-- バリュースコアと市場センチメントの乖離があれば指摘
-- 投資判断に影響する追加コンテキストがあれば補足
+### For stock
+- Check consistency between fundamentals data and Grok research
+- Point out any divergence between value score and market sentiment
+- Add additional context relevant to investment decisions
 
-### industry の場合
-- 日本市場固有の事情を補足（規制環境、参入障壁等）
-- 関連する銘柄スクリーニングの提案（/screen-stocks との連携）
+### For industry
+- Supplement Japan-specific circumstances (regulatory environment, entry barriers, etc.)
+- Suggest related stock screening (/screen-stocks integration)
 
-### market の場合
-- ポートフォリオへの影響を推定（/stock-portfolio との連携）
-- 類似過去事例があれば言及
+### For market
+- Estimate impact on portfolio (/stock-portfolio integration)
+- Mention comparable past cases if available
 
-### business の場合
-- セグメント構成と株価バリュエーションの関係を考察
-- 収益モデルの持続性（ストック型は安定、フロー型は景気感応度高い等）
-- 競争優位性が実際の財務指標（ROE、利益率等）に表れているか確認
-- `/stock-report` の結果と合わせてファンダメンタルズとの整合性を補足
+### For business
+- Consider relationship between segment composition and stock valuation
+- Revenue model sustainability (recurring is stable, transactional has higher cyclicality, etc.)
+- Confirm whether competitive advantages appear in actual financial metrics (ROE, margins, etc.)
+- Supplement fundamentals consistency using `/stock-report` results
 
-## 実行例
+## Execution Examples
 
 ```bash
-# 銘柄リサーチ
+# Stock research
 python3 .../run_research.py stock 7203.T
 python3 .../run_research.py stock AAPL
 
-# 業界リサーチ
-python3 .../run_research.py industry 半導体
+# Industry research
+python3 .../run_research.py industry semiconductors
 python3 .../run_research.py industry "Electric Vehicles"
 
-# マーケットリサーチ
-python3 .../run_research.py market 日経平均
+# Market research
+python3 .../run_research.py market nikkei
 python3 .../run_research.py market "S&P500"
 
-# ビジネスモデル分析
+# Business model analysis
 python3 .../run_research.py business 7751.T
 python3 .../run_research.py business AAPL
 ```
 
-## 前提知識統合ルール (KIK-466)
+## Knowledge Integration Rules (KIK-466)
 
-get_context.py の出力に以下がある場合、リサーチ結果と統合して回答する:
+When `get_context.py` output contains the following, integrate with research results:
 
-- **保有銘柄との関連**: リサーチ対象セクターにPF保有銘柄がある場合、「保有中の7203.Tに影響あり → ヘルスチェック推奨」
-- **過去リサーチ（SUPERSEDES）**: 同一対象の前回リサーチと比較。「前回（2週間前）: センチメント中立 → 今回: やや強気」
-- **投資メモ**: 対象銘柄の懸念・テーゼがあれば、リサーチ結果と照合して更新の示唆
-- **ウォッチリスト**: リサーチ対象がウォッチ中なら「監視中銘柄 → 買い時判断材料」と文脈を付加
+- **Relation to held stocks**: If the research target sector includes PF holdings, "7203.T is affected → health check recommended"
+- **Past research (SUPERSEDES)**: Compare with previous research on the same target. "2 weeks ago: neutral sentiment → now: slightly bullish"
+- **Investment notes**: If there are concerns or thesis for the target stock, cross-check with research results and suggest updates
+- **Watchlist**: If the research target is on the watchlist, add context: "Watching → material for buy timing decision"
 
-### 分析結論の記録促し
+### Prompting to Record Analysis Conclusions
 
-stock/business/industry リサーチで銘柄への見解・テーゼ性のある結論を含む回答をした場合:
-> 💡 この分析はまだ投資メモとして記録されていません。テーゼ/懸念として記録しますか？
+When a response for stock/business/industry research contains specific investment opinions or thesis-level conclusions:
+> 💡 This analysis has not yet been recorded as an investment note. Would you like to record it as a thesis or concern?

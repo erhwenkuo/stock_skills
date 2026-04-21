@@ -27,24 +27,24 @@ from src.core.ticker_utils import (
 
 
 def get_snapshot(csv_path: str, client) -> dict:
-    """スナップショット生成。
+    """Generate portfolio snapshot.
 
-    各銘柄について:
-    - yahoo_client.get_stock_info() で現在価格・セクター等を取得
-    - 損益計算: (current_price - cost_price) * shares
-    - 損益率: (current_price - cost_price) / cost_price
-    - 評価額: current_price * shares
+    For each symbol:
+    - Fetches current price, sector, etc. via yahoo_client.get_stock_info()
+    - Calculates P&L: (current_price - cost_price) * shares
+    - Calculates P&L rate: (current_price - cost_price) / cost_price
+    - Calculates market value: current_price * shares
 
-    為替レート取得:
-    - USDJPY=X, SGDJPY=X 等をyfinanceで取得
-    - 全銘柄を円換算
+    FX rate retrieval:
+    - Fetches USDJPY=X, SGDJPY=X, etc. via yfinance
+    - Converts all positions to JPY
 
     Parameters
     ----------
     csv_path : str
-        ポートフォリオCSVのパス
+        Path to portfolio CSV
     client
-        yahoo_client モジュール（get_stock_info を持つ）
+        yahoo_client module (must have get_stock_info)
 
     Returns
     -------
@@ -106,7 +106,7 @@ def get_snapshot(csv_path: str, client) -> dict:
             total_cost_jpy += cost_jpy
             positions.append({
                 "symbol": symbol,
-                "name": f"現金 ({cash_currency})",
+                "name": f"Cash ({cash_currency})",
                 "sector": "Cash",
                 "shares": shares,
                 "cost_price": cost_price,
@@ -206,19 +206,19 @@ def get_snapshot(csv_path: str, client) -> dict:
 
 
 def get_structure_analysis(csv_path: str, client) -> dict:
-    """構造分析。PFの偏りを自動集計。
+    """Structure analysis. Automatically aggregates portfolio bias.
 
-    各銘柄のセクター・地域・通貨をyfinanceから取得し、
-    evaluation_jpy ベースの比率でHHIを算出。
+    Fetches sector, region, and currency for each symbol via yfinance,
+    then computes HHI based on evaluation_jpy weights.
 
-    concentration.py の analyze_concentration() を活用。
+    Uses analyze_concentration() from concentration.py.
 
     Parameters
     ----------
     csv_path : str
-        ポートフォリオCSVのパス
+        Path to portfolio CSV
     client
-        yahoo_client モジュール（get_stock_info を持つ）
+        yahoo_client module (must have get_stock_info)
 
     Returns
     -------
@@ -253,7 +253,7 @@ def get_structure_analysis(csv_path: str, client) -> dict:
             "currency_hhi": 0.0,
             "size_hhi": 0.0,
             "concentration_multiplier": 1.0,
-            "risk_level": "分散",
+            "risk_level": "Diversified",
         }
 
     # Calculate weights based on evaluation_jpy
@@ -297,7 +297,7 @@ def get_structure_analysis(csv_path: str, client) -> dict:
         "currency_hhi": conc.get("currency_hhi", 0.0),
         "size_hhi": conc.get("size_hhi", 0.0),
         "concentration_multiplier": conc.get("concentration_multiplier", 1.0),
-        "risk_level": conc.get("risk_level", "分散"),
+        "risk_level": conc.get("risk_level", "Diversified"),
     }
 
 
@@ -367,22 +367,22 @@ def get_portfolio_shareholder_return(csv_path: str, client) -> dict:
 def merge_positions(
     current: list[dict], proposed: list[dict]
 ) -> list[dict]:
-    """現在PFに提案銘柄をマージ（加重平均コスト計算）。
+    """Merge proposed stocks into current portfolio (weighted average cost).
 
-    入力リストは変更しない（deep copy して操作）。
+    Does not modify input lists (deep copy).
 
     Parameters
     ----------
     current : list[dict]
-        現在のポートフォリオ（load_portfolio の戻り値）。
+        Current portfolio (return value of load_portfolio).
     proposed : list[dict]
-        追加提案銘柄。各 dict は symbol, shares, cost_price,
-        cost_currency を持つ。
+        Proposed additions. Each dict must have symbol, shares, cost_price,
+        cost_currency.
 
     Returns
     -------
     list[dict]
-        マージ後のポートフォリオ。
+        Merged portfolio.
     """
     merged = copy.deepcopy(current)
     symbol_map: dict[str, int] = {

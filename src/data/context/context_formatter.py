@@ -15,7 +15,7 @@ from src.data.context.freshness import (
 def _format_context(symbol: str, history: dict, skill: str, reason: str,
                     relationship: str) -> str:
     """Format graph context as markdown with freshness labels (KIK-427/428)."""
-    lines = [f"## 過去の経緯: {symbol} ({relationship})"]
+    lines = [f"## History: {symbol} ({relationship})"]
 
     # Track freshness by data type for summary
     freshness_map: dict[str, str] = {}  # data_type -> label
@@ -25,8 +25,8 @@ def _format_context(symbol: str, history: dict, skill: str, reason: str,
         d = s.get("date", "?")
         fl = freshness_label(d)
         lines.append(f"- [{fl}] {d} {s.get('preset', '')} "
-                     f"スクリーニング ({s.get('region', '')})")
-        freshness_map.setdefault("スクリーニング", fl)
+                     f"Screening ({s.get('region', '')})")
+        freshness_map.setdefault("Screening", fl)
 
     # Reports
     for r in history.get("reports", [])[:2]:
@@ -34,34 +34,34 @@ def _format_context(symbol: str, history: dict, skill: str, reason: str,
         fl = freshness_label(d)
         verdict = r.get("verdict", "")
         score = r.get("score", "")
-        lines.append(f"- [{fl}] {d} レポート: スコア {score}, {verdict}")
-        freshness_map.setdefault("レポート", fl)
+        lines.append(f"- [{fl}] {d} Report: Score {score}, {verdict}")
+        freshness_map.setdefault("Report", fl)
 
     # Trades
     for t in history.get("trades", [])[:3]:
         d = t.get("date", "?")
         fl = freshness_label(d)
-        action = "購入" if t.get("type") == "buy" else "売却"
+        action = "Buy" if t.get("type") == "buy" else "Sell"
         lines.append(f"- [{fl}] {d} {action}: "
-                     f"{t.get('shares', '')}株 @ {t.get('price', '')}")
-        freshness_map.setdefault("取引", fl)
+                     f"{t.get('shares', '')} shares @ {t.get('price', '')}")
+        freshness_map.setdefault("Trade", fl)
 
     # Health checks
     for h in history.get("health_checks", [])[:1]:
         d = h.get("date", "?")
         fl = freshness_label(d)
-        lines.append(f"- [{fl}] {d} ヘルスチェック実施")
-        freshness_map.setdefault("ヘルスチェック", fl)
+        lines.append(f"- [{fl}] {d} Health check performed")
+        freshness_map.setdefault("Health Check", fl)
 
     # Notes
     for n in history.get("notes", [])[:3]:
         content = (n.get("content", "") or "")[:50]
-        lines.append(f"- メモ({n.get('type', '')}): {content}")
+        lines.append(f"- Note ({n.get('type', '')}): {content}")
 
     # Themes
     themes = history.get("themes", [])
     if themes:
-        lines.append(f"- テーマ: {', '.join(themes[:5])}")
+        lines.append(f"- Themes: {', '.join(themes[:5])}")
 
     # Community (KIK-549)
     try:
@@ -69,9 +69,9 @@ def _format_context(symbol: str, history: dict, skill: str, reason: str,
         comm = get_stock_community(symbol)
         if comm:
             peers = comm.get("peers", [])[:5]
-            lines.append(f"- コミュニティ: {comm['name']} ({comm['size']}銘柄)")
+            lines.append(f"- Community: {comm['name']} ({comm['size']} stocks)")
             if peers:
-                lines.append(f"  同一クラスタ: {', '.join(peers)}")
+                lines.append(f"  Same cluster: {', '.join(peers)}")
     except Exception:
         pass
 
@@ -80,17 +80,17 @@ def _format_context(symbol: str, history: dict, skill: str, reason: str,
         d = r.get("date", "?")
         fl = freshness_label(d)
         summary = (r.get("summary", "") or "")[:50]
-        lines.append(f"- [{fl}] {d} リサーチ({r.get('research_type', '')}): "
+        lines.append(f"- [{fl}] {d} Research ({r.get('research_type', '')}): "
                      f"{summary}")
-        freshness_map.setdefault("リサーチ", fl)
+        freshness_map.setdefault("Research", fl)
 
     if len(lines) == 1:
-        lines.append("- (過去データなし)")
+        lines.append("- (no past data)")
 
     # Freshness summary (KIK-427)
     if freshness_map:
         lines.append("")
-        lines.append("### 鮮度サマリー")
+        lines.append("### Freshness Summary")
         for dtype, fl in freshness_map.items():
             lines.append(f"- {dtype}: [{fl}] → {freshness_action(fl)}")
 
@@ -98,7 +98,7 @@ def _format_context(symbol: str, history: dict, skill: str, reason: str,
     overall = _best_freshness(list(freshness_map.values())) if freshness_map else "NONE"
     lines.insert(0, _action_directive(overall) + "\n")
 
-    lines.append(f"\n**推奨**: {skill} ({reason})")
+    lines.append(f"\n**Recommended**: {skill} ({reason})")
     return "\n".join(lines)
 
 
@@ -107,12 +107,12 @@ def _format_market_context(mc: dict) -> str:
     d = mc.get("date", "?")
     fl = freshness_label(d)
     lines = [_action_directive(fl) + "\n"]
-    lines.append(f"## 直近の市況コンテキスト [{fl}]")
-    lines.append(f"- 取得日: {d} → {freshness_action(fl)}")
+    lines.append(f"## Recent Market Context [{fl}]")
+    lines.append(f"- Fetched: {d} → {freshness_action(fl)}")
     for idx in mc.get("indices", [])[:5]:
         if isinstance(idx, dict):
             name = idx.get("name", idx.get("symbol", "?"))
             price = idx.get("price", idx.get("close", "?"))
             lines.append(f"- {name}: {price}")
-    lines.append("\n**推奨**: market-research (市況照会)")
+    lines.append("\n**Recommended**: market-research (market check)")
     return "\n".join(lines)

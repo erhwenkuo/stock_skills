@@ -157,7 +157,7 @@ def _generate_sell_actions(
     """Generate SELL actions for positions that should be fully exited.
 
     Rules:
-      1. health alert = "exit" (撤退)
+      1. health alert = "exit" (Exit signal)
       2. base expected return is significantly negative (< -10%)
     """
     actions = []
@@ -176,13 +176,13 @@ def _generate_sell_actions(
         alert = alert_map.get(symbol, {})
         if alert.get("level") == "exit":
             reasons = alert.get("reasons", [])
-            reason_str = "、".join(reasons) if reasons else "撤退シグナル"
+            reason_str = "; ".join(reasons) if reasons else "Exit signal"
             actions.append({
                 "action": "sell",
                 "symbol": symbol,
                 "name": pos.get("name", ""),
                 "ratio": 1.0,
-                "reason": f"ヘルスチェック撤退: {reason_str}",
+                "reason": f"Health check exit: {reason_str}",
                 "value_jpy": _pos_value_jpy(pos),
                 "priority": 1,
             })
@@ -196,7 +196,7 @@ def _generate_sell_actions(
                 "symbol": symbol,
                 "name": pos.get("name", ""),
                 "ratio": 1.0,
-                "reason": f"ベース期待値 {base_ret*100:.1f}% (大幅マイナス)",
+                "reason": f"Base expected return {base_ret*100:.1f}% (significantly negative)",
                 "value_jpy": _pos_value_jpy(pos),
                 "priority": 2,
             })
@@ -255,7 +255,7 @@ def _generate_reduce_actions(
                 "symbol": symbol,
                 "name": pos.get("name", ""),
                 "ratio": round(reduce_ratio, 2),
-                "reason": f"比率 {w*100:.1f}% → {target_w*100:.1f}% (上限{max_single*100:.0f}%)",
+                "reason": f"Ratio {w*100:.1f}% → {target_w*100:.1f}% (limit {max_single*100:.0f}%)",
                 "value_jpy": round(value_jpy * reduce_ratio, 0),
                 "current_price": pos.get("price"),
                 "priority": 3,
@@ -291,7 +291,7 @@ def _generate_reduce_actions(
                         "symbol": target_sym,
                         "name": target_pos.get("name", ""),
                         "ratio": round(reduce_ratio, 2),
-                        "reason": f"相関集中 ({sym_a}/{sym_b} r={corr_val:.2f}, 合計{combined_w*100:.0f}%>{max_corr*100:.0f}%)",
+                        "reason": f"Correlation concentration ({sym_a}/{sym_b} r={corr_val:.2f}, combined {combined_w*100:.0f}%>{max_corr*100:.0f}%)",
                         "value_jpy": round(value_jpy * reduce_ratio, 0),
                         "current_price": target_pos.get("price"),
                         "priority": 4,
@@ -314,7 +314,7 @@ def _generate_reduce_actions(
                     "symbol": symbol,
                     "name": pos.get("name", ""),
                     "ratio": reduce_ratio,
-                    "reason": f"セクター削減指示 ({reduce_sector})",
+                    "reason": f"Sector reduction instruction ({reduce_sector})",
                     "value_jpy": round(value_jpy * reduce_ratio, 0),
                     "current_price": pos.get("price"),
                     "priority": 5,
@@ -337,7 +337,7 @@ def _generate_reduce_actions(
                     "symbol": symbol,
                     "name": pos.get("name", ""),
                     "ratio": reduce_ratio,
-                    "reason": f"通貨削減指示 ({reduce_currency})",
+                    "reason": f"Currency reduction instruction ({reduce_currency})",
                     "value_jpy": round(value_jpy * reduce_ratio, 0),
                     "current_price": pos.get("price"),
                     "priority": 5,
@@ -420,7 +420,7 @@ def _generate_increase_actions(
             "name": pos.get("name", ""),
             "amount_jpy": round(alloc, 0),
             "current_price": pos.get("price"),
-            "reason": f"ベース期待値 +{base_ret*100:.1f}% (比率{current_w*100:.1f}%→{(value_jpy+alloc)/new_total*100:.1f}%)",
+            "reason": f"Base expected return +{base_ret*100:.1f}% (ratio {current_w*100:.1f}%→{(value_jpy+alloc)/new_total*100:.1f}%)",
             "priority": 6,
         })
         allocated += alloc

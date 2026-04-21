@@ -53,7 +53,7 @@ def main():
 
     print(f"Total lessons: {stats['total']}")
     for community, items in sorted(stats["classified"].items()):
-        print(f"\n  [{community}] ({len(items)}件)")
+        print(f"\n  [{community}] ({len(items)} items)")
         for item in items:
             print(f"    - {item}")
 

@@ -39,43 +39,43 @@ _CONTEXT_PATTERNS: dict[str, dict] = {
     "energy": {
         "keywords": ["エネルギー", "原油", "石油", "天然ガス", "energy", "oil"],
         "emoji": "\u26a1",
-        "title": "エネルギーセクターの確認",
+        "title": "Check energy sector",
         "command_hint": "screen-stocks --sector Energy",
     },
     "tech_weak": {
         "keywords": ["テック軟調", "ハイテク下落", "テクノロジー下落", "tech decline"],
         "emoji": "\U0001f4c9",
-        "title": "テック銘柄のリスク確認",
-        "command_hint": "stress-test --scenario テック暴落",
+        "title": "Check tech stock risk",
+        "command_hint": "stress-test --scenario tech_crash",
     },
     "gold": {
         "keywords": ["金急騰", "金価格", "ゴールド", "gold"],
         "emoji": "\U0001f947",
-        "title": "コモディティ関連の影響確認",
+        "title": "Check commodity-related impact",
         "command_hint": "stress-test",
     },
     "rate": {
         "keywords": ["利上げ", "金利上昇", "rate hike", "利下げ", "金利低下"],
         "emoji": "\U0001f3e6",
-        "title": "金利変動のPF影響確認",
-        "command_hint": "stress-test --scenario 日銀利上げ",
+        "title": "Check interest rate impact on portfolio",
+        "command_hint": "stress-test --scenario boj_rate_hike",
     },
     "earnings": {
         "keywords": ["決算", "好決算", "悪決算", "earnings", "上方修正", "下方修正"],
         "emoji": "\U0001f4ca",
-        "title": "決算関連銘柄のフォローアップ",
+        "title": "Follow up on earnings-related stocks",
         "command_hint": "stock-report",
     },
     "health_warning": {
         "keywords": ["警戒", "EXIT", "損切り", "バリュートラップ", "デッドクロス"],
         "emoji": "\U0001f6a8",
-        "title": "警戒銘柄の対応検討",
+        "title": "Consider action for cautionary stocks",
         "command_hint": "screen-stocks --preset alpha",
     },
     "screening_result": {
         "keywords": ["スクリーニング完了", "銘柄発見", "上位ランクイン"],
         "emoji": "\U0001f50d",
-        "title": "上位銘柄の詳細分析",
+        "title": "Detailed analysis of top stocks",
         "command_hint": "stock-report",
     },
 }
@@ -137,8 +137,8 @@ class ProactiveEngine:
             if last_hc is None:
                 out.append({
                     "emoji": "📋",
-                    "title": "ヘルスチェックの実施",
-                    "reason": "ヘルスチェックの記録がありません",
+                    "title": "Run health check",
+                    "reason": "No health check record found",
                     "command_hint": "portfolio health",
                     "urgency": "medium",
                 })
@@ -147,8 +147,8 @@ class ProactiveEngine:
                 if delta >= _HEALTH_STALE_DAYS:
                     out.append({
                         "emoji": "📋",
-                        "title": "ヘルスチェックの実施",
-                        "reason": f"最終チェックから{delta}日経過",
+                        "title": "Run health check",
+                        "reason": f"{delta} days since last check",
                         "command_hint": "portfolio health",
                         "urgency": "high" if delta >= _HEALTH_HIGH_DAYS else "medium",
                     })
@@ -163,15 +163,15 @@ class ProactiveEngine:
                 from src.data.graph_query import get_old_thesis_notes
                 old_theses = get_old_thesis_notes(older_than_days=_THESIS_REVIEW_DAYS)
             for note in old_theses[:1]:
-                sym = note.get("symbol") or "保有銘柄"
+                sym = note.get("symbol") or "holding"
                 days = note.get("days_old", _THESIS_REVIEW_DAYS)
                 out.append({
                     "emoji": "🔄",
-                    "title": f"{sym}の投資テーゼを見直す",
-                    "reason": f"テーゼ記録から{days}日経過（要再検証）",
+                    "title": f"Review investment thesis for {sym}",
+                    "reason": f"{days} days since thesis recorded (review needed)",
                     "command_hint": (
                         f"investment-note list --symbol {sym}"
-                        if sym != "保有銘柄" else "investment-note list --type thesis"
+                        if sym != "holding" else "investment-note list --type thesis"
                     ),
                     "urgency": "medium",
                 })
@@ -190,8 +190,8 @@ class ProactiveEngine:
                 ev_text = str(ev.get("text", ""))[:60]
                 out.append({
                     "emoji": "📅",
-                    "title": "決算イベントが近い",
-                    "reason": f"{ev_date} に予定: {ev_text} — 直前のレポート確認を推奨",
+                    "title": "Upcoming earnings event",
+                    "reason": f"Scheduled {ev_date}: {ev_text} — pre-event report check recommended",
                     "command_hint": "market-research market",
                     "urgency": "high",
                 })
@@ -219,8 +219,8 @@ class ProactiveEngine:
                 cnt = pick.get("count", _RECURRING_MIN)
                 out.append({
                     "emoji": "🔍",
-                    "title": f"{sym}の詳細分析",
-                    "reason": f"スクリーニングで{cnt}回上位にランクイン",
+                    "title": f"Detailed analysis of {sym}",
+                    "reason": f"Ranked top {cnt} times in screening",
                     "command_hint": f"stock-report {sym}",
                     "urgency": "medium",
                 })
@@ -237,11 +237,11 @@ class ProactiveEngine:
             for c in concerns:
                 sym = c.get("symbol") or ""
                 days = c.get("days_old", 0)
-                sym_display = sym if sym else "銘柄"
+                sym_display = sym if sym else "stock"
                 out.append({
                     "emoji": "⚠️",
-                    "title": f"{sym_display}の懸念メモを再確認",
-                    "reason": f"{days}日前に懸念を記録済み — 状況変化を確認",
+                    "title": f"Re-check concern memo for {sym_display}",
+                    "reason": f"Concern recorded {days} days ago — check for situation changes",
                     "command_hint": (
                         f"investment-note list --symbol {sym}"
                         if sym else "investment-note list --type concern"
@@ -277,8 +277,8 @@ class ProactiveEngine:
             if sector in held_sectors:
                 out.append({
                     "emoji": "💡",
-                    "title": f"{sector}セクターの最新リサーチがあります",
-                    "reason": "保有銘柄のセクターに関連する直近リサーチを検出",
+                    "title": f"Recent research available for {sector} sector",
+                    "reason": "Recent research detected for a sector in your holdings",
                     "command_hint": f"market-research industry {sector}",
                     "urgency": "low",
                 })
@@ -301,7 +301,7 @@ class ProactiveEngine:
                 out.append({
                     "emoji": pattern["emoji"],
                     "title": pattern["title"],
-                    "reason": f"実行結果に関連: {context[:60]}",
+                    "reason": f"Related to execution result: {context[:60]}",
                     "command_hint": pattern["command_hint"],
                     "urgency": "low",
                 })
@@ -368,8 +368,8 @@ class ProactiveEngine:
                             # No updated_at → treat as stale
                             out.append({
                                 "emoji": "\U0001f4c5",
-                                "title": f"テーマ「{name}」の再検証",
-                                "reason": f"テーマの鮮度情報なし — PF銘柄が属するテーマの再検証を推奨",
+                                "title": f"Re-verify theme '{name}'",
+                                "reason": f"No theme freshness data — re-verification of themes in portfolio recommended",
                                 "command_hint": f"screen-stocks --auto-theme",
                                 "urgency": "medium",
                             })
@@ -380,8 +380,8 @@ class ProactiveEngine:
                                 if delta >= stale_days:
                                     out.append({
                                         "emoji": "\U0001f4c5",
-                                        "title": f"テーマ「{name}」の再検証",
-                                        "reason": f"テーマ更新から{delta}日経過 — トレンド変化の確認を推奨",
+                                        "title": f"Re-verify theme '{name}'",
+                                        "reason": f"{delta} days since theme update — check for trend changes",
                                         "command_hint": f"screen-stocks --auto-theme",
                                         "urgency": "medium",
                                     })
@@ -422,7 +422,7 @@ def format_suggestions(suggestions: list[dict]) -> str:
     """Format suggestion list as markdown for display after skill output."""
     if not suggestions:
         return ""
-    lines = [f"\n---\n💡 **次のアクション提案** ({len(suggestions)}件)\n"]
+    lines = [f"\n---\n💡 **Suggested Next Actions** ({len(suggestions)})\n"]
     for i, s in enumerate(suggestions, 1):
         emoji = s.get("emoji", "💡")
         title = s.get("title", "")
@@ -431,6 +431,6 @@ def format_suggestions(suggestions: list[dict]) -> str:
         lines.append(f"{i}. {emoji} **{title}**")
         lines.append(f"   {reason}")
         if cmd:
-            lines.append(f"   → `{cmd}` を実行してください")
+            lines.append(f"   → Run `{cmd}`")
         lines.append("")
     return "\n".join(lines)

@@ -42,13 +42,13 @@ def _fmt_price(val) -> str:
 
 def main():
     today = date.today().isoformat()
-    print(f"## 市況ダッシュボード ({today})")
+    print(f"## Market Dashboard ({today})")
     print()
 
     # --- Macro indicators ---
-    print("### 主要指標")
+    print("### Key Indicators")
     print()
-    print("| 指標 | 値 | 日次変動 | 週次変動 |")
+    print("| Indicator | Value | Daily Change | Weekly Change |")
     print("|:---|---:|---:|---:|")
 
     indicators = get_macro_indicators()
@@ -61,7 +61,7 @@ def main():
     print()
 
     # --- Fear & Greed ---
-    print("### Fear & Greed スコア")
+    print("### Fear & Greed Score")
     print()
     fg = compute_fear_greed()
     fg_emoji = {
@@ -75,52 +75,52 @@ def main():
     print(f"**{fg['score']:.0f} / 100** — {emoji} {fg['label']}")
     print()
     if fg["indicators"]:
-        print("| 指標 | 値 | スコア | シグナル |")
+        print("| Indicator | Value | Score | Signal |")
         print("|:---|---:|---:|:---|")
         for ind in fg["indicators"]:
             print(f"| {ind['name']} | {ind['value']} | {ind['score']:.0f} | {ind['signal']} |")
         print()
 
     # --- VIX History ---
-    print("### VIX推移（1ヶ月）")
+    print("### VIX Trend (1 Month)")
     print()
     vix = get_vix_history()
     if vix["current"] is not None:
-        print(f"現在: **{vix['current']}** — {vix['phase']}（トレンド: {vix['trend']}）")
+        print(f"Current: **{vix['current']}** — {vix['phase']} (Trend: {vix['trend']})")
         print()
         if vix["history"]:
-            print("| 日付 | VIX |")
+            print("| Date | VIX |")
             print("|:---|---:|")
             for h in vix["history"]:
                 print(f"| {h['date']} | {h['close']} |")
             print()
     else:
-        print("VIXデータ取得不可")
+        print("VIX data unavailable")
         print()
 
     # --- Yield Curve ---
-    print("### 金利・イールドカーブ")
+    print("### Interest Rates & Yield Curve")
     print()
     yc = get_yield_curve()
     if yc["yields"]:
-        print("| テナー | 利回り |")
+        print("| Tenor | Yield |")
         print("|:---|---:|")
         for tenor in ["3M", "5Y", "10Y", "30Y"]:
             rate = yc["yields"].get(tenor, "-")
-            print(f"| 米{tenor} | {rate}% |" if isinstance(rate, float) else f"| 米{tenor} | - |")
+            print(f"| US {tenor} | {rate}% |" if isinstance(rate, float) else f"| US {tenor} | - |")
         print()
         if yc["spread_10y_3m"] is not None:
-            print(f"10Y-3Mスプレッド: **{yc['spread_10y_3m']:+.3f}%** — {yc['curve_status']}")
+            print(f"10Y-3M Spread: **{yc['spread_10y_3m']:+.3f}%** — {yc['curve_status']}")
         if yc["history_10y"]:
             print()
-            print("米10年債推移:")
-            print("| 日付 | 利回り |")
+            print("US 10Y Yield Trend:")
+            print("| Date | Yield |")
             print("|:---|---:|")
             for h in yc["history_10y"]:
                 print(f"| {h['date']} | {h['rate']}% |")
         print()
     else:
-        print("金利データ取得不可")
+        print("Interest rate data unavailable")
         print()
 
 

@@ -1,34 +1,34 @@
-# 取引所ナレッジ: yfinance EquityQuery 用の地域・取引所マッピング
+# Exchange knowledge: region/exchange mapping for yfinance EquityQuery
 #
-# region:        yfinance EquityQuery で指定する地域コード
-# region_name:   表示用の地域名（日本語）
-# display_name:  スクリーニング結果ヘッダー用の表示名（KIK-514）
-# aliases:       ユーザー入力からの名寄せ用エイリアス（KIK-514）
-# small_cap_market_cap: 小型株時価総額閾値（現地通貨, KIK-514）
-# market_class:  レガシーモード用マーケットクラス名（KIK-514）
-# exchanges:     yfinance EquityQuery の exchange フィールドで利用可能な取引所コード
-# currency:      主要通貨コード
-# thresholds:    スクリーニングのデフォルト閾値
-#   per_max:            PER 上限
-#   pbr_max:            PBR 上限
-#   dividend_yield_min: 配当利回り下限（比率）
-#   roe_min:            ROE 下限（比率）
-#   rf:                 無リスク金利（長期国債利回り目安）
+# region:        Region code for yfinance EquityQuery
+# region_name:   Display region name (English)
+# display_name:  Display name for screening result headers (KIK-514)
+# aliases:       Aliases for normalizing user input (KIK-514)
+# small_cap_market_cap: Small-cap market cap threshold (local currency, KIK-514)
+# market_class:  Legacy mode market class name (KIK-514)
+# exchanges:     Exchange codes available in yfinance EquityQuery exchange field
+# currency:      Primary currency code
+# thresholds:    Default screening thresholds
+#   per_max:            P/E upper limit
+#   pbr_max:            P/B upper limit
+#   dividend_yield_min: Dividend yield lower limit (ratio)
+#   roe_min:            ROE lower limit (ratio)
+#   rf:                 Risk-free rate (long-term government bond yield estimate)
 
 regions:
   jp:
-    region_name: "日本"
-    display_name: "日本株"
+    region_name: "Japan"
+    display_name: "Japanese Stocks"
     aliases: ["japan", "jp"]
-    small_cap_market_cap: 100000000000  # 1000億円
+    small_cap_market_cap: 100000000000  # JPY 100B
     market_class: "JapanMarket"
     exchanges:
       - code: "JPX"
-        name: "東京証券取引所（プライム・スタンダード・グロース）"
+        name: "Tokyo Stock Exchange (Prime / Standard / Growth)"
       - code: "FKA"
-        name: "福岡証券取引所"
+        name: "Fukuoka Stock Exchange"
       - code: "SAP"
-        name: "札幌証券取引所"
+        name: "Sapporo Securities Exchange"
     currency: "JPY"
     ticker_suffix: ".T"
     thresholds:
@@ -39,8 +39,8 @@ regions:
       rf: 0.005
 
   us:
-    region_name: "米国"
-    display_name: "米国株"
+    region_name: "United States"
+    display_name: "US Stocks"
     aliases: ["us"]
     small_cap_market_cap: 1000000000  # $1B
     market_class: "USMarket"
@@ -50,7 +50,7 @@ regions:
       - code: "NYQ"
         name: "New York Stock Exchange"
       - code: "ASE"
-        name: "NYSE American (旧AMEX)"
+        name: "NYSE American (formerly AMEX)"
       - code: "NGM"
         name: "NASDAQ Global Market"
       - code: "NCM"
@@ -69,8 +69,8 @@ regions:
       rf: 0.04
 
   sg:
-    region_name: "シンガポール"
-    display_name: "シンガポール株"
+    region_name: "Singapore"
+    display_name: "Singapore Stocks"
     aliases: ["sg", "singapore"]
     small_cap_market_cap: 2000000000  # SGD 2B
     exchanges:
@@ -86,8 +86,8 @@ regions:
       rf: 0.03
 
   th:
-    region_name: "タイ"
-    display_name: "タイ株"
+    region_name: "Thailand"
+    display_name: "Thailand Stocks"
     aliases: ["th", "thailand"]
     small_cap_market_cap: 30000000000  # THB 30B
     exchanges:
@@ -103,8 +103,8 @@ regions:
       rf: 0.025
 
   my:
-    region_name: "マレーシア"
-    display_name: "マレーシア株"
+    region_name: "Malaysia"
+    display_name: "Malaysia Stocks"
     aliases: ["my", "malaysia"]
     small_cap_market_cap: 5000000000  # MYR 5B
     exchanges:
@@ -120,8 +120,8 @@ regions:
       rf: 0.035
 
   id:
-    region_name: "インドネシア"
-    display_name: "インドネシア株"
+    region_name: "Indonesia"
+    display_name: "Indonesia Stocks"
     aliases: ["id", "indonesia"]
     small_cap_market_cap: 15000000000000  # IDR 15T
     exchanges:
@@ -137,15 +137,15 @@ regions:
       rf: 0.065
 
   ph:
-    region_name: "フィリピン"
-    display_name: "フィリピン株"
+    region_name: "Philippines"
+    display_name: "Philippines Stocks"
     aliases: ["ph", "philippines"]
     small_cap_market_cap: 50000000000  # PHP 50B
     exchanges:
       - code: "PHP"
-        name: "Philippine Stock Exchange (メインボード)"
+        name: "Philippine Stock Exchange (Main Board)"
       - code: "PHS"
-        name: "Philippine Stock Exchange (スモールボード)"
+        name: "Philippine Stock Exchange (Small Board)"
     currency: "PHP"
     ticker_suffix: ".PS"
     thresholds:
@@ -155,11 +155,11 @@ regions:
       roe_min: 0.08
       rf: 0.055
 
-  # --- 将来拡張用 ---
+  # --- Future expansion ---
 
   hk:
-    region_name: "香港"
-    display_name: "香港株"
+    region_name: "Hong Kong"
+    display_name: "Hong Kong Stocks"
     aliases: ["hk", "hongkong"]
     small_cap_market_cap: 10000000000  # HKD 10B
     exchanges:
@@ -175,8 +175,8 @@ regions:
       rf: 0.035
 
   kr:
-    region_name: "韓国"
-    display_name: "韓国株"
+    region_name: "Korea"
+    display_name: "Korea Stocks"
     aliases: ["kr", "korea"]
     small_cap_market_cap: 1000000000000  # KRW 1T
     exchanges:
@@ -194,8 +194,8 @@ regions:
       rf: 0.03
 
   tw:
-    region_name: "台湾"
-    display_name: "台湾株"
+    region_name: "Taiwan"
+    display_name: "Taiwan Stocks"
     aliases: ["tw", "taiwan"]
     small_cap_market_cap: 30000000000  # TWD 30B
     exchanges:
@@ -213,8 +213,8 @@ regions:
       rf: 0.01
 
   cn:
-    region_name: "中国"
-    display_name: "中国株"
+    region_name: "China"
+    display_name: "China Stocks"
     aliases: ["cn", "china"]
     small_cap_market_cap: 10000000000  # CNY 10B
     exchanges:

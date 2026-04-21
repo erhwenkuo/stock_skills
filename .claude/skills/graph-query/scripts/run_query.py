@@ -14,13 +14,13 @@ from scripts.cli_framework import BaseSkillCommand
 
 class GraphQueryCommand(BaseSkillCommand):
     name = "graph-query"
-    description = "ナレッジグラフ自然言語クエリ"
+    description = "Knowledge graph natural language query"
 
     def configure_parser(self, parser):
         parser.add_argument(
             "query_words",
             nargs="+",
-            help="自然言語クエリ (例: 7203.Tの前回レポートは？)",
+            help="Natural language query (e.g., What was the last report on 7203.T?)",
         )
 
     def context_input(self, args):
@@ -34,20 +34,20 @@ class GraphQueryCommand(BaseSkillCommand):
         result = query(user_input)
 
         if result is None:
-            print("クエリに一致するデータが見つかりませんでした。")
-            print("\n対応クエリ例:")
-            print("  - 「7203.T の前回レポートは？」")
-            print("  - 「繰り返し候補に上がってる銘柄は？」")
-            print("  - 「AAPL のリサーチ履歴」")
-            print("  - 「最近の市況は？」")
-            print("  - 「7203.T の取引履歴」")
+            print("No data found matching your query.")
+            print("\nExample queries:")
+            print("  - 'What was the last report on 7203.T?'")
+            print("  - 'Stocks that keep coming up as candidates?'")
+            print("  - 'AAPL research history'")
+            print("  - 'Recent market conditions?'")
+            print("  - '7203.T trade history'")
             return
 
         print(result["formatted"])
 
     def suggestion_kwargs(self, args):
         user_input = " ".join(args.query_words)
-        return {"context_summary": f"グラフクエリ: {user_input[:60]}"}
+        return {"context_summary": f"Graph query: {user_input[:60]}"}
 
 
 def main():

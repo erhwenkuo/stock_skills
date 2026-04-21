@@ -97,7 +97,7 @@ def hhi_bar(hhi: float, width: int = 10) -> str:
 def render_screening_table(
     results: list[dict],
     columns: list[tuple],
-    empty_msg: str = "該当銘柄なし",
+    empty_msg: str = "No matching stocks",
     legends: list[str] | None = None,
 ) -> str:
     """Render a screening result table in Markdown (KIK-575).
@@ -149,13 +149,13 @@ def _append_annotation_footer(lines: list[str], results: list[dict]) -> None:
     if not has_markers:
         return
     lines.append("")
-    lines.append("**マーカー凡例**: ⚠️=懸念メモあり / 📝=学びメモあり / 👀=様子見")
+    lines.append("**Marker legend**: ⚠️=Concern memo / 📝=Lesson memo / 👀=Watchlisted")
     noted = [
         (r.get("symbol", "?"), r.get("_note_summary", ""))
         for r in results if r.get("_note_summary")
     ]
     if noted:
         lines.append("")
-        lines.append("**メモ詳細**:")
+        lines.append("**Memo details**:")
         for sym, summary in noted:
             lines.append(f"- **{sym}**: {summary}")

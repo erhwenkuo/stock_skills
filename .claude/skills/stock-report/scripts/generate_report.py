@@ -53,7 +53,7 @@ else:
 
 
 def _print_etf_report(symbol: str, data: dict):
-    """ETF専用レポートを出力する (KIK-469)."""
+    """Print an ETF-specific report (KIK-469)."""
     def fmt(val, pct=False):
         if val is None:
             return "-"
@@ -67,55 +67,55 @@ def _print_etf_report(symbol: str, data: dict):
     print(f"# {data.get('name', symbol)} ({symbol}) [ETF]")
     print()
 
-    # ファンド概要
-    print("## ファンド概要")
-    print("| 項目 | 値 |")
+    # Fund overview
+    print("## Fund Overview")
+    print("| Item | Value |")
     print("|---:|:---|")
-    print(f"| カテゴリ | {data.get('fund_category') or '-'} |")
-    print(f"| ファンドファミリー | {data.get('fund_family') or '-'} |")
-    print(f"| 純資産総額 (AUM) | {fmt_int(data.get('total_assets_fund'))} |")
-    print(f"| 経費率 | {fmt(data.get('expense_ratio'), pct=True)} |")
+    print(f"| Category | {data.get('fund_category') or '-'} |")
+    print(f"| Fund Family | {data.get('fund_family') or '-'} |")
+    print(f"| Total Assets (AUM) | {fmt_int(data.get('total_assets_fund'))} |")
+    print(f"| Expense Ratio | {fmt(data.get('expense_ratio'), pct=True)} |")
     print()
 
-    # 経費率評価
+    # Expense ratio assessment
     er = data.get("expense_ratio")
     if er is not None:
         if er <= 0.001:
-            er_verdict = "超低コスト（優良）"
+            er_verdict = "Ultra-low cost (excellent)"
         elif er <= 0.005:
-            er_verdict = "低コスト（良好）"
+            er_verdict = "Low cost (good)"
         elif er <= 0.01:
-            er_verdict = "やや高め"
+            er_verdict = "Somewhat high"
         else:
-            er_verdict = "高コスト（要検討）"
-        print(f"- **経費率評価**: {er_verdict}")
+            er_verdict = "High cost (review recommended)"
+        print(f"- **Expense Ratio Rating**: {er_verdict}")
         print()
 
-    # パフォーマンス
-    print("## パフォーマンス")
-    print("| 指標 | 値 |")
+    # Performance
+    print("## Performance")
+    print("| Metric | Value |")
     print("|---:|:---|")
-    print(f"| 現在値 | {fmt_int(data.get('price'))} |")
-    print(f"| 配当利回り | {fmt(data.get('dividend_yield_trailing'), pct=True)} |")
-    print(f"| β値 | {fmt(data.get('beta'))} |")
-    print(f"| 52週高値 | {fmt_int(data.get('fifty_two_week_high'))} |")
-    print(f"| 52週安値 | {fmt_int(data.get('fifty_two_week_low'))} |")
+    print(f"| Current Price | {fmt_int(data.get('price'))} |")
+    print(f"| Dividend Yield | {fmt(data.get('dividend_yield_trailing'), pct=True)} |")
+    print(f"| Beta | {fmt(data.get('beta'))} |")
+    print(f"| 52-Week High | {fmt_int(data.get('fifty_two_week_high'))} |")
+    print(f"| 52-Week Low | {fmt_int(data.get('fifty_two_week_low'))} |")
     print()
 
-    # AUM評価
+    # AUM assessment
     aum = data.get("total_assets_fund")
     if aum is not None:
         if aum >= 10_000_000_000:
-            aum_verdict = "大規模（流動性十分）"
+            aum_verdict = "Large (sufficient liquidity)"
         elif aum >= 1_000_000_000:
-            aum_verdict = "中規模（流動性良好）"
+            aum_verdict = "Mid-size (good liquidity)"
         elif aum >= 100_000_000:
-            aum_verdict = "小規模（流動性に注意）"
+            aum_verdict = "Small (caution on liquidity)"
         else:
-            aum_verdict = "極小（償還リスクあり）"
-        print(f"- **ファンド規模**: {aum_verdict}")
+            aum_verdict = "Very small (redemption risk)"
+        print(f"- **Fund Size**: {aum_verdict}")
 
-    # 履歴保存
+    # Save history
     if HAS_HISTORY:
         try:
             history_save_report(symbol, data, 0, "ETF")
@@ -139,26 +139,26 @@ def main():
         data = get_stock_info(symbol)
 
     if data is None:
-        print(f"Error: {symbol} のデータを取得できませんでした。")
+        print(f"Error: Could not fetch data for {symbol}.")
         sys.exit(1)
 
     # KIK-469: ETF auto-detection
     if is_etf(data):
         _print_etf_report(symbol, data)
-        print_suggestions(symbol=symbol, context_summary=f"ETFレポート生成: {symbol}")
+        print_suggestions(symbol=symbol, context_summary=f"ETF report generated: {symbol}")
         return
 
     thresholds = {"per_max": 15, "pbr_max": 1.0, "dividend_yield_min": 0.03, "roe_min": 0.08}
     score = calculate_value_score(data, thresholds)
 
     if score >= 70:
-        verdict = "割安（買い検討）"
+        verdict = "Undervalued (consider buying)"
     elif score >= 50:
-        verdict = "やや割安"
+        verdict = "Slightly undervalued"
     elif score >= 30:
-        verdict = "適正水準"
+        verdict = "Fair value"
     else:
-        verdict = "割高傾向"
+        verdict = "Overvalued tendency"
 
     def fmt(val, pct=False):
         if val is None:
@@ -172,34 +172,34 @@ def main():
 
     print(f"# {data.get('name', symbol)} ({symbol})")
     print()
-    print(f"- **セクター**: {data.get('sector') or '-'}")
-    print(f"- **業種**: {data.get('industry') or '-'}")
+    print(f"- **Sector**: {data.get('sector') or '-'}")
+    print(f"- **Industry**: {data.get('industry') or '-'}")
     print()
-    print("## 株価情報")
-    print(f"- **現在値**: {fmt_int(data.get('price'))}")
-    print(f"- **時価総額**: {fmt_int(data.get('market_cap'))}")
+    print("## Price Information")
+    print(f"- **Current Price**: {fmt_int(data.get('price'))}")
+    print(f"- **Market Cap**: {fmt_int(data.get('market_cap'))}")
     print()
-    print("## バリュエーション")
-    print(f"| 指標 | 値 |")
+    print("## Valuation")
+    print(f"| Metric | Value |")
     print(f"|---:|:---|")
-    print(f"| PER | {fmt(data.get('per'))} |")
-    print(f"| PBR | {fmt(data.get('pbr'))} |")
-    print(f"| 配当利回り(実績) | {fmt(data.get('dividend_yield_trailing'), pct=True)} |")
-    print(f"| 配当利回り(予想) | {fmt(data.get('dividend_yield'), pct=True)} |")
+    print(f"| P/E | {fmt(data.get('per'))} |")
+    print(f"| P/B | {fmt(data.get('pbr'))} |")
+    print(f"| Dividend Yield (Trailing) | {fmt(data.get('dividend_yield_trailing'), pct=True)} |")
+    print(f"| Dividend Yield (Forward) | {fmt(data.get('dividend_yield'), pct=True)} |")
     print(f"| ROE | {fmt(data.get('roe'), pct=True)} |")
     print(f"| ROA | {fmt(data.get('roa'), pct=True)} |")
-    print(f"| 利益成長率 | {fmt(data.get('revenue_growth'), pct=True)} |")
+    print(f"| Revenue Growth | {fmt(data.get('revenue_growth'), pct=True)} |")
     print()
-    print("## 割安度判定")
-    print(f"- **スコア**: {score:.1f} / 100")
-    print(f"- **判定**: {verdict}")
+    print("## Undervaluation Assessment")
+    print(f"- **Score**: {score:.1f} / 100")
+    print(f"- **Verdict**: {verdict}")
 
     # KIK-381: Value trap warning
     if HAS_VALUE_TRAP:
         vt = _detect_value_trap(data)
         if vt["is_trap"]:
             print()
-            print("## ⚠️ バリュートラップ注意")
+            print("## ⚠️ Value Trap Warning")
             for reason in vt["reasons"]:
                 print(f"- {reason}")
 
@@ -213,24 +213,24 @@ def main():
         ct_result = compute_contrarian_score(_hist, data)
         if ct_result["contrarian_score"] > 0:
             print()
-            print("## 逆張りシグナル")
+            print("## Contrarian Signal")
             _ct_grade = ct_result["grade"]
-            print(f"- **逆張りスコア**: {ct_result['contrarian_score']:.0f} / 100 (グレード{_ct_grade})")
+            print(f"- **Contrarian Score**: {ct_result['contrarian_score']:.0f} / 100 (Grade {_ct_grade})")
             _tech = ct_result["technical"]
             _val = ct_result["valuation"]
             _fund = ct_result["fundamental"]
             _rsi_str = f"RSI={fmt(_tech.get('rsi'))}" if _tech.get("rsi") is not None else "RSI=-"
             _sma_dev = _tech.get("sma200_deviation")
-            _sma_str = f"SMA200乖離={fmt(_sma_dev, pct=True)}" if _sma_dev is not None else "SMA200乖離=-"
-            print(f"- テクニカル: {_tech['score']:.0f}/40 ({_rsi_str}, {_sma_str})")
-            print(f"- バリュエーション: {_val['score']:.0f}/30")
-            print(f"- ファンダ乖離: {_fund['score']:.0f}/30")
+            _sma_str = f"SMA200 deviation={fmt(_sma_dev, pct=True)}" if _sma_dev is not None else "SMA200 deviation=-"
+            print(f"- Technical: {_tech['score']:.0f}/40 ({_rsi_str}, {_sma_str})")
+            print(f"- Valuation: {_val['score']:.0f}/30")
+            print(f"- Fundamental Deviation: {_fund['score']:.0f}/30")
             if _ct_grade == "A":
-                print("- **判定**: 強い逆張りシグナル（エントリー検討）")
+                print("- **Verdict**: Strong contrarian signal (consider entry)")
             elif _ct_grade == "B":
-                print("- **判定**: 逆張りシグナルあり（要検証）")
+                print("- **Verdict**: Contrarian signal detected (verify)")
             elif _ct_grade == "C":
-                print("- **判定**: 弱い逆張りシグナル（様子見）")
+                print("- **Verdict**: Weak contrarian signal (wait and see)")
 
     # KIK-375: Shareholder return section
     if HAS_SHAREHOLDER_RETURN:
@@ -238,43 +238,43 @@ def main():
         total_rate = sr.get("total_return_rate")
         if total_rate is not None or sr.get("dividend_yield") is not None:
             print()
-            print("## 株主還元")
-            print("| 指標 | 値 |")
+            print("## Shareholder Returns")
+            print("| Metric | Value |")
             print("|---:|:---|")
-            print(f"| 配当利回り | {fmt(sr.get('dividend_yield'), pct=True)} |")
-            print(f"| 自社株買い利回り | {fmt(sr.get('buyback_yield'), pct=True)} |")
-            print(f"| **総株主還元率** | **{fmt(total_rate, pct=True)}** |")
+            print(f"| Dividend Yield | {fmt(sr.get('dividend_yield'), pct=True)} |")
+            print(f"| Buyback Yield | {fmt(sr.get('buyback_yield'), pct=True)} |")
+            print(f"| **Total Return Rate** | **{fmt(total_rate, pct=True)}** |")
             dp = sr.get("dividend_paid")
             br = sr.get("stock_repurchase")
             ta = sr.get("total_return_amount")
             if dp is not None or br is not None:
                 print()
-                print(f"- 配当総額: {fmt_int(dp)}")
-                print(f"- 自社株買い額: {fmt_int(br)}")
-                print(f"- 株主還元合計: {fmt_int(ta)}")
+                print(f"- Total Dividends: {fmt_int(dp)}")
+                print(f"- Buyback Amount: {fmt_int(br)}")
+                print(f"- Total Shareholder Returns: {fmt_int(ta)}")
 
     # KIK-380: Shareholder return 3-year history
     if HAS_SHAREHOLDER_HISTORY:
         sr_hist = calculate_shareholder_return_history(data)
         if len(sr_hist) >= 2:
             print()
-            print("## 株主還元推移")
+            print("## Shareholder Return History")
             header_cols = []
             for entry in sr_hist:
                 fy = entry.get("fiscal_year")
                 header_cols.append(str(fy) if fy else "-")
-            print("| 指標 | " + " | ".join(header_cols) + " |")
+            print("| Metric | " + " | ".join(header_cols) + " |")
             print("|---:" + " | :---" * len(sr_hist) + " |")
-            print("| 配当総額 | " + " | ".join(
+            print("| Total Dividends | " + " | ".join(
                 fmt_int(e.get("dividend_paid")) for e in sr_hist
             ) + " |")
-            print("| 自社株買い額 | " + " | ".join(
+            print("| Buyback Amount | " + " | ".join(
                 fmt_int(e.get("stock_repurchase")) for e in sr_hist
             ) + " |")
-            print("| 還元合計 | " + " | ".join(
+            print("| Total Returns | " + " | ".join(
                 fmt_int(e.get("total_return_amount")) for e in sr_hist
             ) + " |")
-            print("| 総還元率 | " + " | ".join(
+            print("| Total Return Rate | " + " | ".join(
                 fmt(e.get("total_return_rate"), pct=True) for e in sr_hist
             ) + " |")
             # Trend judgment
@@ -282,13 +282,13 @@ def main():
                      if e.get("total_return_rate") is not None]
             if len(rates) >= 2:
                 if all(rates[i] >= rates[i + 1] for i in range(len(rates) - 1)):
-                    trend = "📈 増加傾向（株主還元に積極的）"
+                    trend = "📈 Increasing trend (active shareholder returns)"
                 elif all(rates[i] <= rates[i + 1] for i in range(len(rates) - 1)):
-                    trend = "📉 減少傾向（注意）"
+                    trend = "📉 Decreasing trend (caution)"
                 else:
-                    trend = "➡️ 横ばい"
+                    trend = "➡️ Flat"
                 print()
-                print(f"- **トレンド**: {trend}")
+                print(f"- **Trend**: {trend}")
 
                 # KIK-383: Return stability assessment
                 if HAS_RETURN_STABILITY:
@@ -296,22 +296,22 @@ def main():
                     stab_label = stability.get("label", "")
                     avg_rate = stability.get("avg_rate")
                     if avg_rate is not None:
-                        print(f"- **安定度**: {stab_label}（3年平均: {avg_rate*100:.2f}%）")
+                        print(f"- **Stability**: {stab_label} (3-year avg: {avg_rate*100:.2f}%)")
                     else:
-                        print(f"- **安定度**: {stab_label}")
+                        print(f"- **Stability**: {stab_label}")
         elif len(sr_hist) == 1 and HAS_RETURN_STABILITY:
             stability = assess_return_stability(sr_hist)
             stab_label = stability.get("label", "")
             if stab_label and stab_label != "-":
                 print()
-                print("## 株主還元安定度")
+                print("## Shareholder Return Stability")
                 entry = sr_hist[0]
                 rate = entry.get("total_return_rate")
                 if rate is not None:
                     fy = entry.get("fiscal_year")
-                    fy_str = f"{fy}年: " if fy else ""
-                    print(f"- {fy_str}総還元率 {rate*100:.2f}%")
-                print(f"- **安定度**: {stab_label}")
+                    fy_str = f"{fy}: " if fy else ""
+                    print(f"- {fy_str}Total return rate {rate*100:.2f}%")
+                print(f"- **Stability**: {stab_label}")
 
     # KIK-433: Industry context from Neo4j (same-sector research)
     _sector = data.get("sector") or ""
@@ -322,7 +322,7 @@ def main():
             industry_ctx = []
         if industry_ctx:
             print()
-            print("## 業界コンテキスト（同セクター直近リサーチ）")
+            print("## Industry Context (Same-Sector Recent Research)")
             for ctx in industry_ctx[:3]:
                 target = ctx.get("target", "")
                 date_str = ctx.get("date", "")
@@ -334,9 +334,9 @@ def main():
                 if summary:
                     print(summary[:200])
                 if growth:
-                    print("**追い風:** " + "、".join(growth[:3]))
+                    print("**Tailwinds:** " + ", ".join(growth[:3]))
                 if risks:
-                    print("**リスク:** " + "、".join(risks[:3]))
+                    print("**Risks:** " + ", ".join(risks[:3]))
 
     # KIK-406: Prior report comparison
     if HAS_GRAPH_QUERY:
@@ -345,10 +345,10 @@ def main():
             if prior and prior.get("score") is not None:
                 diff = score - prior["score"]
                 print()
-                print("## 前回レポートとの比較")
-                print(f"- 前回: {prior['date']} / スコア {prior['score']:.1f} / {prior.get('verdict', '-')}")
-                print(f"- 今回: スコア {score:.1f} / {verdict}")
-                print(f"- 変化: {diff:+.1f}pt")
+                print("## Comparison with Previous Report")
+                print(f"- Previous: {prior['date']} / Score {prior['score']:.1f} / {prior.get('verdict', '-')}")
+                print(f"- Current: Score {score:.1f} / {verdict}")
+                print(f"- Change: {diff:+.1f}pt")
         except Exception:
             pass
 
@@ -356,7 +356,7 @@ def main():
         try:
             history_save_report(symbol, data, score, verdict)
         except Exception as e:
-            print(f"Warning: 履歴保存失敗: {e}", file=sys.stderr)
+            print(f"Warning: Failed to save history: {e}", file=sys.stderr)
 
     # KIK-487: Auto-tag themes based on industry
     if HAS_GRAPH_STORE:
@@ -368,7 +368,7 @@ def main():
                 pass
 
     # Proactive suggestions (KIK-465)
-    print_suggestions(symbol=symbol, context_summary=f"レポート生成: {symbol}")
+    print_suggestions(symbol=symbol, context_summary=f"Report generated: {symbol}")
 
 
 if __name__ == "__main__":

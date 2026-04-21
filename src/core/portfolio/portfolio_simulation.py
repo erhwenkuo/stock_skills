@@ -44,7 +44,7 @@ def parse_add_arg(add_str: str) -> list[dict]:
         If format is invalid.
     """
     if not add_str or not add_str.strip():
-        raise ValueError("--add の値が空です。形式: SYMBOL:SHARES:PRICE")
+        raise ValueError("--add value is empty. Format: SYMBOL:SHARES:PRICE")
 
     results: list[dict] = []
     entries = [e.strip() for e in add_str.split(",") if e.strip()]
@@ -53,22 +53,22 @@ def parse_add_arg(add_str: str) -> list[dict]:
         parts = entry.split(":")
         if len(parts) != 3:
             raise ValueError(
-                f"不正な形式: '{entry}' — SYMBOL:SHARES:PRICE の形式で指定してください"
+                f"Invalid format: '{entry}' — use SYMBOL:SHARES:PRICE"
             )
 
         symbol = parts[0].strip()
         if not symbol:
-            raise ValueError(f"銘柄シンボルが空です: '{entry}'")
+            raise ValueError(f"Symbol is empty: '{entry}'")
 
         try:
             shares = int(parts[1].strip())
         except ValueError:
             raise ValueError(
-                f"株数が不正です: '{parts[1].strip()}' in '{entry}'"
+                f"Invalid share count: '{parts[1].strip()}' in '{entry}'"
             )
         if shares <= 0:
             raise ValueError(
-                f"株数は正の整数を指定してください: {shares} in '{entry}'"
+                f"Share count must be a positive integer: {shares} in '{entry}'"
             )
 
         validate_lot_size(shares, symbol)
@@ -77,11 +77,11 @@ def parse_add_arg(add_str: str) -> list[dict]:
             price = float(parts[2].strip())
         except ValueError:
             raise ValueError(
-                f"価格が不正です: '{parts[2].strip()}' in '{entry}'"
+                f"Invalid price: '{parts[2].strip()}' in '{entry}'"
             )
         if price <= 0:
             raise ValueError(
-                f"価格は正の数を指定してください: {price} in '{entry}'"
+                f"Price must be a positive number: {price} in '{entry}'"
             )
 
         cost_currency = infer_currency(symbol)
@@ -118,7 +118,7 @@ def parse_remove_arg(remove_str: str) -> list[dict]:
         If format is invalid, symbol is empty, or shares is not a positive integer.
     """
     if not remove_str or not remove_str.strip():
-        raise ValueError("--remove の値が空です。形式: SYMBOL:SHARES")
+        raise ValueError("--remove value is empty. Format: SYMBOL:SHARES")
 
     results: list[dict] = []
     entries = [e.strip() for e in remove_str.split(",") if e.strip()]
@@ -127,22 +127,22 @@ def parse_remove_arg(remove_str: str) -> list[dict]:
         parts = entry.split(":")
         if len(parts) != 2:
             raise ValueError(
-                f"不正な形式: '{entry}' — SYMBOL:SHARES の形式で指定してください（価格不要）"
+                f"Invalid format: '{entry}' — use SYMBOL:SHARES (no price needed)"
             )
 
         symbol = parts[0].strip()
         if not symbol:
-            raise ValueError(f"銘柄シンボルが空です: '{entry}'")
+            raise ValueError(f"Symbol is empty: '{entry}'")
 
         try:
             shares = int(parts[1].strip())
         except ValueError:
             raise ValueError(
-                f"株数が不正です: '{parts[1].strip()}' in '{entry}'"
+                f"Invalid share count: '{parts[1].strip()}' in '{entry}'"
             )
         if shares <= 0:
             raise ValueError(
-                f"株数は正の整数を指定してください: {shares} in '{entry}'"
+                f"Share count must be a positive integer: {shares} in '{entry}'"
             )
 
         validate_lot_size(shares, symbol)
@@ -185,14 +185,14 @@ def remove_positions(current: list[dict], removals: list[dict]) -> list[dict]:
         key = removal["symbol"].upper()
         if key not in symbol_map:
             raise ValueError(
-                f"{removal['symbol']} はポートフォリオに存在しません"
+                f"{removal['symbol']} not found in portfolio"
             )
         idx = symbol_map[key]
         held = merged[idx]["shares"]
         if removal["shares"] > held:
             raise ValueError(
-                f"保有数を超えています: {removal['symbol']} 保有 {held} 株に対して "
-                f"{removal['shares']} 株の売却を指定"
+                f"Exceeds holdings: {removal['symbol']} holds {held} shares but "
+                f"{removal['shares']} shares specified for removal"
             )
         merged[idx] = dict(merged[idx])
         merged[idx]["shares"] = held - removal["shares"]
@@ -253,7 +253,7 @@ def _extract_metrics(snapshot: dict, structure: dict, forecast: dict) -> dict:
         "concentration_multiplier": structure.get(
             "concentration_multiplier", 1.0
         ),
-        "risk_level": structure.get("risk_level", "分散"),
+        "risk_level": structure.get("risk_level", "Diversified"),
         "forecast_optimistic": portfolio_return.get("optimistic"),
         "forecast_base": portfolio_return.get("base"),
         "forecast_pessimistic": portfolio_return.get("pessimistic"),
@@ -308,11 +308,11 @@ def _compute_judgment(
 
     if hhi_improved:
         reasons.append(
-            f"分散度改善: HHI {before_hhi:.2f} → {after_hhi:.2f}"
+            f"Diversification improved: HHI {before_hhi:.2f} → {after_hhi:.2f}"
         )
     elif hhi_worsened:
         reasons.append(
-            f"集中度悪化: HHI {before_hhi:.2f} → {after_hhi:.2f}"
+            f"Concentration worsened: HHI {before_hhi:.2f} → {after_hhi:.2f}"
         )
 
     # 2. Return check
@@ -325,10 +325,10 @@ def _compute_judgment(
         diff_pp = (after_ret - before_ret) * 100  # percentage points
         if diff_pp > 0.1:
             ret_improved = True
-            reasons.append(f"期待リターン改善: {diff_pp:+.1f}pp")
+            reasons.append(f"Expected return improved: {diff_pp:+.1f}pp")
         elif diff_pp < -0.5:
             ret_worsened = True
-            reasons.append(f"期待リターン悪化: {diff_pp:+.1f}pp")
+            reasons.append(f"Expected return worsened: {diff_pp:+.1f}pp")
 
     # 3. Health check for proposed stocks
     has_exit = False
@@ -340,11 +340,11 @@ def _compute_judgment(
         symbol = ph.get("symbol", "")
         if level == "exit":
             has_exit = True
-            reasons.append(f"撤退シグナル: {symbol}")
+            reasons.append(f"Exit signal: {symbol}")
         elif level in ("caution", "early_warning"):
             has_warning = True
             alert_label = alert.get("label", level)
-            reasons.append(f"注意シグナル: {symbol} ({alert_label})")
+            reasons.append(f"Caution signal: {symbol} ({alert_label})")
 
     # 4. Removed stocks health (KIK-451): exit/caution in sold stocks is a positive signal.
     #    Design intent: adds to "reasons" text only. Does NOT override the recommendation
@@ -358,7 +358,7 @@ def _compute_judgment(
         symbol = ph.get("symbol", "")
         if level in ("exit", "caution", "early_warning"):
             alert_label = alert.get("label", level)
-            reasons.append(f"撤退/注意対象を売却: {symbol} ({alert_label})")
+            reasons.append(f"Selling exit/caution target: {symbol} ({alert_label})")
 
     # 5. ETF quality signals (KIK-469 Phase 2)
     for ph in proposed_health:
@@ -367,12 +367,12 @@ def _compute_judgment(
             score = etf_h.get("score", 50)
             symbol = ph.get("symbol", "")
             if score >= 75:
-                reasons.append(f"ETF\u54c1\u8cea\u826f\u597d: {symbol} (\u30b9\u30b3\u30a2 {score}/100)")
+                reasons.append(f"ETF quality good: {symbol} (score {score}/100)")
             elif score < 40:
                 has_warning = True
-                reasons.append(f"ETF\u54c1\u8cea\u4f4e: {symbol} (\u30b9\u30b3\u30a2 {score}/100)")
+                reasons.append(f"ETF quality low: {symbol} (score {score}/100)")
             for etf_alert in etf_h.get("alerts", []):
-                reasons.append(f"ETF\u6ce8\u610f: {symbol} - {etf_alert}")
+                reasons.append(f"ETF caution: {symbol} - {etf_alert}")
 
     # Judgment logic
     if has_exit or (hhi_worsened and ret_worsened):
@@ -387,7 +387,7 @@ def _compute_judgment(
         recommendation = "caution"
 
     if not reasons:
-        reasons.append("大きな変化なし")
+        reasons.append("No significant change")
 
     return {
         "recommendation": recommendation,

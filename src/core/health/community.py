@@ -54,7 +54,7 @@ def _compute_community_concentration(
                 "weight": round(weight, 3),
                 "count": len(members),
                 "members": members,
-                "message": "実質的に分散できていない可能性",
+                "message": "Potentially not effectively diversified",
             })
         elif weight > 0.3:
             warnings.append({
@@ -62,7 +62,7 @@ def _compute_community_concentration(
                 "weight": round(weight, 3),
                 "count": len(members),
                 "members": members,
-                "message": "コミュニティ集中やや高め",
+                "message": "Community concentration slightly high",
             })
 
     return {

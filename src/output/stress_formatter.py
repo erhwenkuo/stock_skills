@@ -20,24 +20,13 @@ def _fmt_currency(value: Optional[float]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 集中度分析レポート
+# Concentration Analysis Report
 # ---------------------------------------------------------------------------
 
 def format_concentration_report(concentration: dict) -> str:
-    """集中度分析のMarkdownレポート。
-
-    Parameters
-    ----------
-    concentration : dict
-        concentration.analyze_concentration() の結果。
-
-    Returns
-    -------
-    str
-        Markdown形式のレポート文字列。
-    """
+    """Format concentration analysis as a Markdown report."""
     lines: list[str] = []
-    lines.append("## Step 2: 集中度分析")
+    lines.append("## Step 2: Concentration Analysis")
     lines.append("")
 
     risk_level = concentration.get("risk_level", "-")
@@ -45,40 +34,40 @@ def format_concentration_report(concentration: dict) -> str:
     max_axis = concentration.get("max_hhi_axis", "-")
     multiplier = concentration.get("concentration_multiplier", 1.0)
 
-    lines.append(f"**総合判定: {risk_level}** (最大HHI: {_fmt_float(max_hhi, 4)} / 軸: {max_axis})")
-    lines.append(f"集中度倍率: x{_fmt_float(multiplier, 2)}")
+    lines.append(f"**Overall Judgment: {risk_level}** (Max HHI: {_fmt_float(max_hhi, 4)} / Axis: {max_axis})")
+    lines.append(f"Concentration multiplier: x{_fmt_float(multiplier, 2)}")
     lines.append("")
 
-    # セクター内訳
-    lines.append("### セクター配分")
+    # Sector breakdown
+    lines.append("### Sector Allocation")
     sector_hhi = concentration.get("sector_hhi", 0.0)
     lines.append(f"HHI: {_fmt_float(sector_hhi, 4)} {_hhi_bar(sector_hhi)}")
     lines.append("")
-    lines.append("| セクター | 比率 |")
+    lines.append("| Sector | Weight |")
     lines.append("|:---------|-----:|")
     sector_breakdown = concentration.get("sector_breakdown", {})
     for sector, weight in sorted(sector_breakdown.items(), key=lambda x: -x[1]):
         lines.append(f"| {sector} | {_fmt_pct(weight)} |")
     lines.append("")
 
-    # 地域内訳
-    lines.append("### 地域配分")
+    # Region breakdown
+    lines.append("### Region Allocation")
     region_hhi = concentration.get("region_hhi", 0.0)
     lines.append(f"HHI: {_fmt_float(region_hhi, 4)} {_hhi_bar(region_hhi)}")
     lines.append("")
-    lines.append("| 地域 | 比率 |")
+    lines.append("| Region | Weight |")
     lines.append("|:-----|-----:|")
     region_breakdown = concentration.get("region_breakdown", {})
     for region, weight in sorted(region_breakdown.items(), key=lambda x: -x[1]):
         lines.append(f"| {region} | {_fmt_pct(weight)} |")
     lines.append("")
 
-    # 通貨内訳
-    lines.append("### 通貨配分")
+    # Currency breakdown
+    lines.append("### Currency Allocation")
     currency_hhi = concentration.get("currency_hhi", 0.0)
     lines.append(f"HHI: {_fmt_float(currency_hhi, 4)} {_hhi_bar(currency_hhi)}")
     lines.append("")
-    lines.append("| 通貨 | 比率 |")
+    lines.append("| Currency | Weight |")
     lines.append("|:-----|-----:|")
     currency_breakdown = concentration.get("currency_breakdown", {})
     for currency, weight in sorted(currency_breakdown.items(), key=lambda x: -x[1]):
@@ -89,35 +78,30 @@ def format_concentration_report(concentration: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# ショック感応度レポート
+# Shock Sensitivity Report
 # ---------------------------------------------------------------------------
 
 def format_sensitivity_report(sensitivities: list[dict]) -> str:
-    """ショック感応度のMarkdown表。
+    """Format shock sensitivity as a Markdown table.
 
     Parameters
     ----------
     sensitivities : list[dict]
-        各銘柄の感応度分析結果。想定キー:
+        Per-stock sensitivity analysis results. Expected keys:
         - "symbol", "name"
         - "fundamental_score", "technical_score"
-        - "quadrant" (象限ラベル)
+        - "quadrant"
         - "composite_shock"
-
-    Returns
-    -------
-    str
-        Markdown形式の表。
     """
     lines: list[str] = []
-    lines.append("## Step 3: ショック感応度")
+    lines.append("## Step 3: Shock Sensitivity")
     lines.append("")
 
     if not sensitivities:
-        lines.append("感応度データがありません。")
+        lines.append("No sensitivity data available.")
         return "\n".join(lines)
 
-    lines.append("| 銘柄 | ファンダ | テクニカル | 象限 | 統合ショック |")
+    lines.append("| Symbol | Fundamental | Technical | Quadrant | Composite Shock |")
     lines.append("|:-----|-------:|----------:|:-----|----------:|")
 
     for s in sensitivities:
@@ -132,24 +116,24 @@ def format_sensitivity_report(sensitivities: list[dict]) -> str:
 
     lines.append("")
 
-    # 4象限マトリクス（テキストベース）
-    lines.append("### 4象限マトリクス")
+    # 4-quadrant matrix (text-based)
+    lines.append("### 4-Quadrant Matrix")
     lines.append("```")
-    lines.append("          ファンダ弱              ファンダ強")
-    lines.append("        +-----------+-----------+")
-    lines.append("テクニカル |  要注意    |  堅実     |")
-    lines.append("  強    |  (高リスク) |  (低リスク) |")
-    lines.append("        +-----------+-----------+")
-    lines.append("テクニカル |  危険     |  回復期待  |")
-    lines.append("  弱    |  (最高リスク)|  (中リスク) |")
-    lines.append("        +-----------+-----------+")
+    lines.append("         Weak Fundamental      Strong Fundamental")
+    lines.append("        +------------------+------------------+")
+    lines.append("Strong  |    Caution       |    Solid         |")
+    lines.append("Tech    |    (High Risk)   |    (Low Risk)    |")
+    lines.append("        +------------------+------------------+")
+    lines.append("Weak    |    Danger        |    Recovery      |")
+    lines.append("Tech    |  (Highest Risk)  |    (Med Risk)    |")
+    lines.append("        +------------------+------------------+")
     lines.append("```")
     lines.append("")
 
-    # 象限別の銘柄リスト
+    # Stocks by quadrant
     quadrant_map: dict[str, list[str]] = {}
     for s in sensitivities:
-        q = s.get("quadrant", "不明")
+        q = s.get("quadrant", "Unknown")
         sym = s.get("symbol", "?")
         quadrant_map.setdefault(q, []).append(sym)
 
@@ -162,37 +146,26 @@ def format_sensitivity_report(sensitivities: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# シナリオ因果連鎖レポート
+# Scenario Causal Chain Report
 # ---------------------------------------------------------------------------
 
 def format_scenario_report(scenario_result: dict) -> str:
-    """シナリオ分析のMarkdownレポート。
-
-    Parameters
-    ----------
-    scenario_result : dict
-        scenario_analysis.analyze_portfolio_scenario() の結果。
-
-    Returns
-    -------
-    str
-        Markdown形式のレポート文字列。
-    """
+    """Format scenario analysis as a Markdown report."""
     lines: list[str] = []
 
-    scenario_name = scenario_result.get("scenario_name", "不明")
-    trigger = scenario_result.get("trigger", "不明")
+    scenario_name = scenario_result.get("scenario_name", "Unknown")
+    trigger = scenario_result.get("trigger", "Unknown")
     pf_impact = scenario_result.get("portfolio_impact", 0.0)
     pf_value_change = scenario_result.get("portfolio_value_change", 0.0)
     judgment = scenario_result.get("judgment", "-")
 
-    lines.append(f"## Step 4-5: シナリオ因果連鎖分析 - {scenario_name}")
+    lines.append(f"## Step 4-5: Scenario Causal Chain Analysis - {scenario_name}")
     lines.append("")
-    lines.append(f"**トリガー:** {trigger}")
+    lines.append(f"**Trigger:** {trigger}")
     lines.append("")
 
-    # 因果連鎖図
-    lines.append("### 因果連鎖")
+    # Causal chain diagram
+    lines.append("### Causal Chain")
     lines.append("```")
     chain_summary = scenario_result.get("causal_chain_summary", "")
     if chain_summary:
@@ -200,12 +173,12 @@ def format_scenario_report(scenario_result: dict) -> str:
     lines.append("```")
     lines.append("")
 
-    # 銘柄別影響テーブル
+    # Per-stock impact table
     stock_impacts = scenario_result.get("stock_impacts", [])
     if stock_impacts:
-        lines.append("### 銘柄別影響")
+        lines.append("### Per-Stock Impact")
         lines.append("")
-        lines.append("| 銘柄 | 比率 | 直接影響 | 通貨効果 | 合計 | PF寄与 |")
+        lines.append("| Symbol | Weight | Direct Impact | Currency Effect | Total | PF Contribution |")
         lines.append("|:-----|-----:|-------:|-------:|-----:|------:|")
 
         for si in stock_impacts:
@@ -221,40 +194,40 @@ def format_scenario_report(scenario_result: dict) -> str:
 
         lines.append("")
 
-    # 相殺要因
+    # Offset factors
     offset_factors = scenario_result.get("offset_factors", [])
     if offset_factors:
-        lines.append("### 相殺要因")
+        lines.append("### Offset Factors")
         for factor in offset_factors:
             lines.append(f"- {factor}")
         lines.append("")
 
-    # 時間軸
+    # Time horizon
     time_axis = scenario_result.get("time_axis", "")
     if time_axis:
-        lines.append(f"**時間軸:** {time_axis}")
+        lines.append(f"**Time Horizon:** {time_axis}")
         lines.append("")
 
-    # 判定
-    if judgment == "要対応":
-        judgment_display = "要対応"
-    elif judgment == "認識":
-        judgment_display = "認識"
-    else:
-        judgment_display = "継続"
+    # Judgment mapping
+    _JUDGMENT_MAP = {
+        "要対応": "Action Required",
+        "認識": "Monitor",
+        "継続": "Continue",
+    }
+    judgment_display = _JUDGMENT_MAP.get(judgment, judgment)
 
-    lines.append(f"## Step 6: 定量結果")
+    lines.append(f"## Step 6: Quantitative Results")
     lines.append("")
-    lines.append(f"- **PF影響率:** {_fmt_pct_sign(pf_impact)}")
-    lines.append(f"- **評価額変動:** {_fmt_currency(pf_value_change)}")
-    lines.append(f"- **判定:** {judgment_display}")
+    lines.append(f"- **PF Impact:** {_fmt_pct_sign(pf_impact)}")
+    lines.append(f"- **Value Change:** {_fmt_currency(pf_value_change)}")
+    lines.append(f"- **Judgment:** {judgment_display}")
     lines.append("")
 
     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
-# 相関分析レポート (KIK-352)
+# Correlation Analysis Report (KIK-352)
 # ---------------------------------------------------------------------------
 
 def format_correlation_report(
@@ -262,24 +235,9 @@ def format_correlation_report(
     high_pairs: list[dict],
     factor_results: Optional[list[dict]] = None,
 ) -> str:
-    """相関分析のMarkdownレポート。
-
-    Parameters
-    ----------
-    corr_result : dict
-        compute_correlation_matrix() の結果。
-    high_pairs : list[dict]
-        find_high_correlation_pairs() の結果。
-    factor_results : list[dict] or None
-        decompose_factors() の結果。
-
-    Returns
-    -------
-    str
-        Markdown形式のレポート文字列。
-    """
+    """Format correlation analysis as a Markdown report."""
     lines: list[str] = []
-    lines.append("## 相関分析")
+    lines.append("## Correlation Analysis")
     lines.append("")
 
     symbols = corr_result.get("symbols", [])
@@ -287,12 +245,12 @@ def format_correlation_report(
     n = len(symbols)
 
     if n < 2:
-        lines.append("銘柄が2つ未満のため相関分析をスキップしました。")
+        lines.append("Fewer than 2 stocks — correlation analysis skipped.")
         lines.append("")
         return "\n".join(lines)
 
-    # 相関行列テーブル
-    lines.append("### 相関行列")
+    # Correlation matrix table
+    lines.append("### Correlation Matrix")
     lines.append("")
     header = "| |" + "|".join(f" {s} " for s in symbols) + "|"
     lines.append(header)
@@ -311,11 +269,11 @@ def format_correlation_report(
         lines.append(f"| {symbols[i]} |" + "|".join(row_vals) + "|")
     lines.append("")
 
-    # 高相関ペア
+    # High correlation pairs
     if high_pairs:
-        lines.append("### 高相関ペア")
+        lines.append("### High Correlation Pairs")
         lines.append("")
-        lines.append("| ペア | 相関係数 | 判定 |")
+        lines.append("| Pair | Correlation | Label |")
         lines.append("|:-----|-------:|:-----|")
         for p in high_pairs:
             pair = p.get("pair", ["?", "?"])
@@ -324,12 +282,12 @@ def format_correlation_report(
             lines.append(f"| {pair[0]} x {pair[1]} | {corr:+.4f} | {label} |")
         lines.append("")
     else:
-        lines.append("高相関ペア（|r| >= 0.7）は検出されませんでした。")
+        lines.append("No high correlation pairs detected (|r| >= 0.7).")
         lines.append("")
 
-    # ファクター分解
+    # Factor decomposition
     if factor_results:
-        lines.append("### ファクター分解")
+        lines.append("### Factor Decomposition")
         lines.append("")
         for fr in factor_results:
             sym = fr.get("symbol", "?")
@@ -339,7 +297,7 @@ def format_correlation_report(
                 continue
             lines.append(f"**{sym}** (R²={_fmt_float(r2, 4)})")
             lines.append("")
-            lines.append("| ファクター | Beta | 寄与度 |")
+            lines.append("| Factor | Beta | Contribution |")
             lines.append("|:---------|-----:|------:|")
             for f in factors[:5]:  # top 5
                 lines.append(
@@ -352,29 +310,18 @@ def format_correlation_report(
 
 
 # ---------------------------------------------------------------------------
-# VaRレポート (KIK-352)
+# VaR Report (KIK-352)
 # ---------------------------------------------------------------------------
 
 def format_var_report(var_result: dict) -> str:
-    """VaR分析のMarkdownレポート。
-
-    Parameters
-    ----------
-    var_result : dict
-        compute_var() の結果。
-
-    Returns
-    -------
-    str
-        Markdown形式のレポート文字列。
-    """
+    """Format VaR analysis as a Markdown report."""
     lines: list[str] = []
-    lines.append("## リスク指標（過去実績ベース）")
+    lines.append("## Risk Metrics (Historical)")
     lines.append("")
 
     obs = var_result.get("observation_days", 0)
     if obs < 30:
-        lines.append("データ不足のためVaR算出をスキップしました。")
+        lines.append("Insufficient data — VaR calculation skipped.")
         lines.append("")
         return "\n".join(lines)
 
@@ -384,11 +331,11 @@ def format_var_report(var_result: dict) -> str:
     monthly_var_amount = var_result.get("monthly_var_amount", {})
     portfolio_vol = var_result.get("portfolio_volatility", 0)
 
-    lines.append(f"観測期間: {obs}営業日")
-    lines.append(f"PFボラティリティ（年率）: {_fmt_pct(portfolio_vol)}")
+    lines.append(f"Observation period: {obs} trading days")
+    lines.append(f"PF Volatility (annualized): {_fmt_pct(portfolio_vol)}")
     lines.append("")
 
-    lines.append("| 指標 | 損失率 | 損失額 |")
+    lines.append("| Metric | Loss Rate | Loss Amount |")
     lines.append("|:-----|------:|------:|")
 
     for cl in [0.95, 0.99]:
@@ -398,18 +345,18 @@ def format_var_report(var_result: dict) -> str:
         d_amt = daily_var_amount.get(cl)
         d_var_str = _fmt_pct_sign(d_var) if d_var is not None else "-"
         d_amt_str = _fmt_currency(d_amt) if d_amt is not None else "-"
-        lines.append(f"| 日次VaR ({cl_label}) | {d_var_str} | {d_amt_str} |")
+        lines.append(f"| Daily VaR ({cl_label}) | {d_var_str} | {d_amt_str} |")
 
         m_var = monthly_var.get(cl)
         m_amt = monthly_var_amount.get(cl)
         m_var_str = _fmt_pct_sign(m_var) if m_var is not None else "-"
         m_amt_str = _fmt_currency(m_amt) if m_amt is not None else "-"
-        lines.append(f"| 月次VaR ({cl_label}) | {m_var_str} | {m_amt_str} |")
+        lines.append(f"| Monthly VaR ({cl_label}) | {m_var_str} | {m_amt_str} |")
 
     lines.append("")
     lines.append(
-        "*VaRは通常変動の上限であり、テールリスク（トリプル安等）は"
-        "シナリオ分析でカバー*"
+        "*VaR represents the upper bound of normal fluctuation. "
+        "Tail risks (triple meltdown, etc.) are covered by scenario analysis.*"
     )
     lines.append("")
 
@@ -417,38 +364,27 @@ def format_var_report(var_result: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 推奨アクションレポート (KIK-352)
+# Recommendations Report (KIK-352)
 # ---------------------------------------------------------------------------
 
 def format_recommendations_report(recommendations: list[dict]) -> str:
-    """推奨アクションのMarkdownレポート。
-
-    Parameters
-    ----------
-    recommendations : list[dict]
-        generate_recommendations() の結果。
-
-    Returns
-    -------
-    str
-        Markdown形式のレポート文字列。
-    """
+    """Format recommended actions as a Markdown report."""
     lines: list[str] = []
-    lines.append("## 推奨アクション（自動生成）")
+    lines.append("## Recommended Actions (Auto-Generated)")
     lines.append("")
 
     if not recommendations:
-        lines.append("特筆すべき推奨アクションはありません。")
+        lines.append("No notable recommended actions.")
         lines.append("")
         return "\n".join(lines)
 
     _PRIORITY_EMOJI = {"high": "!!!", "medium": "!!", "low": "!"}
     _CATEGORY_LABELS = {
-        "concentration": "集中度",
-        "correlation": "相関",
+        "concentration": "Concentration",
+        "correlation": "Correlation",
         "var": "VaR",
-        "stress": "ストレス",
-        "sensitivity": "感応度",
+        "stress": "Stress",
+        "sensitivity": "Sensitivity",
     }
 
     for i, rec in enumerate(recommendations, 1):
@@ -470,7 +406,7 @@ def format_recommendations_report(recommendations: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 全体統合レポート
+# Full Stress Test Report
 # ---------------------------------------------------------------------------
 
 def format_full_stress_report(
@@ -485,69 +421,40 @@ def format_full_stress_report(
     var_result: Optional[dict] = None,
     recommendations: Optional[list[dict]] = None,
 ) -> str:
-    """ストレステスト全体のMarkdownレポート。
+    """Format the full stress test Markdown report.
 
-    Step 1: PF概要
-    Step 2: 集中度分析
-    Step 3: ショック感応度
-    Step 4-5: シナリオ因果連鎖
-    Step 6: 定量結果
-    Step 6b: 相関分析 (KIK-352)
+    Step 1: PF Overview
+    Step 2: Concentration Analysis
+    Step 3: Shock Sensitivity
+    Step 4-5: Scenario Causal Chain
+    Step 6: Quantitative Results
+    Step 6b: Correlation Analysis (KIK-352)
     Step 6c: VaR (KIK-352)
-    Step 7: 過去事例（Claudeが後から追加）
-    Step 8: 総合判定
-    Step 8b: 推奨アクション (KIK-352)
-
-    Parameters
-    ----------
-    portfolio_summary : dict
-        PFの概要情報。想定キー:
-        - "total_value": float (PF総額)
-        - "stock_count": int (銘柄数)
-        - "stocks": list[dict] (各銘柄のsymbol, name, weight, price等)
-    concentration : dict
-        concentration.analyze_concentration() の結果
-    sensitivities : list[dict]
-        各銘柄の感応度分析結果
-    scenario_result : dict
-        scenario_analysis.analyze_portfolio_scenario() の結果
-    correlation : dict or None
-        compute_correlation_matrix() の結果 (KIK-352)
-    high_correlation_pairs : list[dict] or None
-        find_high_correlation_pairs() の結果 (KIK-352)
-    factor_decomposition : list[dict] or None
-        decompose_factors() の結果 (KIK-352)
-    var_result : dict or None
-        compute_var() の結果 (KIK-352)
-    recommendations : list[dict] or None
-        generate_recommendations() の結果 (KIK-352)
-
-    Returns
-    -------
-    str
-        Markdown形式の全体レポート。
+    Step 7: Historical Cases (added by Claude)
+    Step 8: Overall Judgment
+    Step 8b: Recommended Actions (KIK-352)
     """
     lines: list[str] = []
 
     # ===== Header =====
-    scenario_name = scenario_result.get("scenario_name", "不明")
-    lines.append(f"# ストレステストレポート: {scenario_name}")
+    scenario_name = scenario_result.get("scenario_name", "Unknown")
+    lines.append(f"# Stress Test Report: {scenario_name}")
     lines.append("")
 
-    # ===== Step 1: PF概要 =====
-    lines.append("## Step 1: ポートフォリオ概要")
+    # ===== Step 1: PF Overview =====
+    lines.append("## Step 1: Portfolio Overview")
     lines.append("")
 
     total_value = portfolio_summary.get("total_value")
     stock_count = portfolio_summary.get("stock_count", 0)
     if total_value is not None:
-        lines.append(f"- **PF総額:** {total_value:,.0f}")
-    lines.append(f"- **銘柄数:** {stock_count}")
+        lines.append(f"- **PF Total Value:** {total_value:,.0f}")
+    lines.append(f"- **Number of Stocks:** {stock_count}")
     lines.append("")
 
     stocks = portfolio_summary.get("stocks", [])
     if stocks:
-        lines.append("| 銘柄 | 比率 | 株価 | セクター |")
+        lines.append("| Symbol | Weight | Price | Sector |")
         lines.append("|:-----|-----:|-----:|:---------|")
         for s in stocks:
             symbol = s.get("symbol", "-")
@@ -559,16 +466,16 @@ def format_full_stress_report(
             lines.append(f"| {label} | {weight} | {price} | {sector} |")
         lines.append("")
 
-    # ===== Step 2: 集中度分析 =====
+    # ===== Step 2: Concentration Analysis =====
     lines.append(format_concentration_report(concentration))
 
-    # ===== Step 3: ショック感応度 =====
+    # ===== Step 3: Shock Sensitivity =====
     lines.append(format_sensitivity_report(sensitivities))
 
-    # ===== Step 4-5-6: シナリオ分析 =====
+    # ===== Step 4-5-6: Scenario Analysis =====
     lines.append(format_scenario_report(scenario_result))
 
-    # ===== Step 6b: 相関分析 (KIK-352) =====
+    # ===== Step 6b: Correlation Analysis (KIK-352) =====
     if correlation is not None:
         lines.append(format_correlation_report(
             correlation,
@@ -580,53 +487,58 @@ def format_full_stress_report(
     if var_result is not None:
         lines.append(format_var_report(var_result))
 
-    # ===== Step 7: 過去事例 =====
-    lines.append("## Step 7: 過去事例")
+    # ===== Step 7: Historical Cases =====
+    lines.append("## Step 7: Historical Cases")
     lines.append("")
-    lines.append("(類似シナリオの過去事例は別途Claudeが補足)")
-    lines.append("")
-
-    # ===== Step 8: 総合判定 =====
-    lines.append("## Step 8: 総合判定")
+    lines.append("(Historical cases for similar scenarios will be supplemented by Claude)")
     lines.append("")
 
-    # 総合判定の集約
+    # ===== Step 8: Overall Judgment =====
+    lines.append("## Step 8: Overall Judgment")
+    lines.append("")
+
     risk_level = concentration.get("risk_level", "-")
     pf_impact = scenario_result.get("portfolio_impact", 0.0)
     judgment = scenario_result.get("judgment", "-")
 
-    lines.append("| 項目 | 結果 |")
+    _JUDGMENT_MAP = {
+        "要対応": "Action Required",
+        "認識": "Monitor",
+        "継続": "Continue",
+    }
+
+    lines.append("| Item | Result |")
     lines.append("|:-----|:-----|")
-    lines.append(f"| 集中度リスク | {risk_level} |")
-    lines.append(f"| シナリオ影響 | {_fmt_pct_sign(pf_impact)} |")
-    lines.append(f"| 判定 | {judgment} |")
+    lines.append(f"| Concentration Risk | {risk_level} |")
+    lines.append(f"| Scenario Impact | {_fmt_pct_sign(pf_impact)} |")
+    lines.append(f"| Judgment | {_JUDGMENT_MAP.get(judgment, judgment)} |")
 
     # VaR summary in judgment table
     if var_result and var_result.get("daily_var"):
         daily_95 = var_result.get("daily_var", {}).get(0.95)
         if daily_95 is not None:
-            lines.append(f"| 日次VaR(95%) | {_fmt_pct_sign(daily_95)} |")
+            lines.append(f"| Daily VaR (95%) | {_fmt_pct_sign(daily_95)} |")
 
     lines.append("")
 
-    # ===== Step 8b: 推奨アクション (KIK-352) =====
+    # ===== Step 8b: Recommended Actions (KIK-352) =====
     if recommendations:
         lines.append(format_recommendations_report(recommendations))
     else:
-        # Fallback to old-style recommendations
-        lines.append("### 推奨アクション")
-        if judgment == "要対応":
-            lines.append("- PF影響が-30%超。リスク対応が必要です。")
-            lines.append("- ヘッジポジションの構築を検討してください。")
-            lines.append("- 集中しているセクター/地域の比率を見直してください。")
-        elif judgment == "認識":
-            lines.append("- PF影響が-15%超。リスクを認識の上、モニタリングを継続してください。")
-            lines.append("- トリガーイベントの兆候に注意してください。")
-            if risk_level == "危険な集中" or risk_level == "やや集中":
-                lines.append(f"- 集中度が「{risk_level}」です。分散を検討してください。")
+        # Fallback recommendations
+        lines.append("### Recommended Actions")
+        if judgment in ("要対応", "Action Required"):
+            lines.append("- PF impact exceeds -30%. Risk mitigation is required.")
+            lines.append("- Consider building a hedge position.")
+            lines.append("- Review the ratio of overconcentrated sectors/regions.")
+        elif judgment in ("認識", "Monitor"):
+            lines.append("- PF impact exceeds -15%. Acknowledge the risk and continue monitoring.")
+            lines.append("- Watch for signs of trigger events.")
+            if risk_level not in ("-", "Low risk", "Continue"):
+                lines.append(f"- Concentration level is \"{risk_level}\". Consider diversifying.")
         else:
-            lines.append("- 現時点では大きなリスクは検出されていません。")
-            lines.append("- 定期的なモニタリングを継続してください。")
+            lines.append("- No major risks detected at this time.")
+            lines.append("- Continue regular monitoring.")
         lines.append("")
 
     return "\n".join(lines)

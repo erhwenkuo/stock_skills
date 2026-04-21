@@ -5,7 +5,7 @@ Extracted from health_etf.py as part of KIK-576 health subpackage split.
 
 
 def check_etf_health(stock_detail: dict) -> dict:
-    """ETF固有のヘルスチェック (KIK-469).
+    """ETF-specific health check (KIK-469).
 
     Returns dict with:
         expense_ratio, expense_label, aum, aum_label, score (0-100), alerts,
@@ -16,35 +16,35 @@ def check_etf_health(stock_detail: dict) -> dict:
     aum = info.get("total_assets_fund")
     alerts: list[str] = []
 
-    # 経費率評価
+    # Expense ratio evaluation
     if er is not None:
         if er <= 0.001:
-            expense_label = "超低コスト"
+            expense_label = "Ultra low-cost"
         elif er <= 0.005:
-            expense_label = "低コスト"
+            expense_label = "Low-cost"
         elif er <= 0.01:
-            expense_label = "やや高め"
-            alerts.append(f"経費率 {er*100:.2f}% はやや高め")
+            expense_label = "Slightly high"
+            alerts.append(f"Expense ratio {er*100:.2f}% is slightly high")
         else:
-            expense_label = "高コスト"
-            alerts.append(f"経費率 {er*100:.2f}% は高コスト（長期保有に不利）")
+            expense_label = "High-cost"
+            alerts.append(f"High expense ratio ({er*100:.2f}% — unfavorable for long-term holding)")
     else:
         expense_label = "-"
 
-    # AUM評価
+    # AUM evaluation
     if aum is not None:
         if aum >= 1_000_000_000:
-            aum_label = "十分"
+            aum_label = "Sufficient"
         elif aum >= 100_000_000:
-            aum_label = "小規模"
-            alerts.append("AUM小規模（流動性・償還リスクに注意）")
+            aum_label = "Small AUM"
+            alerts.append("Small AUM (note liquidity/redemption risk)")
         else:
-            aum_label = "極小"
-            alerts.append("AUM極小（償還リスクあり）")
+            aum_label = "Tiny AUM"
+            alerts.append("Tiny AUM (redemption risk present)")
     else:
         aum_label = "-"
 
-    # ETFスコア（0-100、経費率とAUMベース）
+    # ETF score (0-100, based on expense ratio and AUM)
     score = 50  # baseline
     if er is not None:
         if er <= 0.001:

@@ -46,7 +46,7 @@ def check_long_term_suitability(
 
     if _is_cash(symbol):
         return {
-            "label": "対象外",
+            "label": "N/A",
             "roe_status": "n/a",
             "eps_growth_status": "n/a",
             "dividend_status": "n/a",
@@ -58,7 +58,7 @@ def check_long_term_suitability(
     if _is_etf(stock_detail):
         etf_health = check_etf_health(stock_detail)
         return {
-            "label": "対象外",
+            "label": "N/A",
             "roe_status": "n/a",
             "eps_growth_status": "n/a",
             "dividend_status": "n/a",
@@ -144,32 +144,32 @@ def check_long_term_suitability(
     if (roe_status == "high" and eps_growth_status == "growing"
             and dividend_status == "high"
             and per_risk not in ("overvalued", "unknown")):
-        label = "長期向き"
+        label = "Long-term"
     elif per_risk == "overvalued" or roe_status == "low":
-        label = "短期向き"
+        label = "Short-term"
     else:
-        label = "要検討"
+        label = "Review needed"
 
     # --- Summary string ---
     parts = []
     if roe_status == "high":
-        parts.append("高ROE")
+        parts.append("High ROE")
     elif roe_status == "low":
-        parts.append("低ROE")
+        parts.append("Low ROE")
     if eps_growth_status == "growing":
-        parts.append("EPS成長")
+        parts.append("EPS growth")
     elif eps_growth_status == "declining":
-        parts.append("EPS減少")
+        parts.append("EPS declining")
     if dividend_status == "high":
-        parts.append("高還元" if _used_total_return else "高配当")
+        parts.append("High return" if _used_total_return else "High dividend")
     if per_risk == "overvalued":
-        parts.append("割高PER")
+        parts.append("Overvalued PER")
     # Count unknown fields for summary
     unknown_count = sum(1 for s in [roe_status, eps_growth_status, dividend_status, per_risk] if s == "unknown")
     if unknown_count > 0:
-        parts.append(f"データ不足({unknown_count}項目)")
+        parts.append(f"Insufficient data ({unknown_count} items)")
 
-    summary = "・".join(parts) if parts else "データ不足"
+    summary = " / ".join(parts) if parts else "Insufficient data"
 
     return {
         "label": label,

@@ -57,7 +57,7 @@ def compute_fear_greed(client=None) -> dict:
                 # -5%=0(fear), 0=50, +5%=100(greed)
                 sma50_score = max(0, min(100, (dist50 + 5) / 10 * 100))
                 indicators.append({
-                    "name": "SMA50乖離率",
+                    "name": "SMA50 deviation",
                     "value": f"{dist50:+.1f}%",
                     "score": round(sma50_score, 1),
                     "signal": "Fear" if dist50 < -2 else "Greed" if dist50 > 2 else "Neutral",
@@ -69,7 +69,7 @@ def compute_fear_greed(client=None) -> dict:
                 dist200 = (closes.iloc[-1] - sma200) / sma200 * 100
                 sma200_score = max(0, min(100, (dist200 + 10) / 20 * 100))
                 indicators.append({
-                    "name": "SMA200乖離率",
+                    "name": "SMA200 deviation",
                     "value": f"{dist200:+.1f}%",
                     "score": round(sma200_score, 1),
                     "signal": "Fear" if dist200 < -5 else "Greed" if dist200 > 5 else "Neutral",
@@ -82,7 +82,7 @@ def compute_fear_greed(client=None) -> dict:
                 # 0%=100(greed), -20%=0(fear)
                 high_score = max(0, min(100, (dist_high + 20) / 20 * 100))
                 indicators.append({
-                    "name": "52週高値距離",
+                    "name": "52w high distance",
                     "value": f"{dist_high:+.1f}%",
                     "score": round(high_score, 1),
                     "signal": "Fear" if dist_high < -10 else "Greed" if dist_high > -3 else "Neutral",
@@ -99,7 +99,7 @@ def compute_fear_greed(client=None) -> dict:
                         # Simple: ratio > 1.5 during decline = fear
                         vol_score = max(0, min(100, 50 + (1 - vol_ratio) * 50))
                         indicators.append({
-                            "name": "出来高比率",
+                            "name": "Volume ratio",
                             "value": f"{vol_ratio:.2f}x",
                             "score": round(vol_score, 1),
                             "signal": "Fear" if vol_ratio > 1.3 else "Neutral",
@@ -180,7 +180,7 @@ def get_vix_history(client=None, period: str = "1mo") -> dict:
     try:
         hist = client.get_price_history("^VIX", period=period)
         if hist is None or hist.empty:
-            return {"current": None, "phase": "Unknown", "history": [], "trend": "不明"}
+            return {"current": None, "phase": "Unknown", "history": [], "trend": "Unknown"}
 
         closes = hist["Close"].dropna()
         current = float(closes.iloc[-1])
@@ -191,13 +191,13 @@ def get_vix_history(client=None, period: str = "1mo") -> dict:
             recent_avg = closes.iloc[-5:].mean()
             older_avg = closes.iloc[:5].mean() if len(closes) >= 10 else closes.iloc[0]
             if recent_avg > older_avg * 1.1:
-                trend = "上昇"
+                trend = "Rising"
             elif recent_avg < older_avg * 0.9:
-                trend = "低下"
+                trend = "Declining"
             else:
-                trend = "横ばい"
+                trend = "Flat"
         else:
-            trend = "不明"
+            trend = "Unknown"
 
         # Weekly samples for table
         history = []
@@ -223,19 +223,19 @@ def get_vix_history(client=None, period: str = "1mo") -> dict:
             "trend": trend,
         }
     except Exception:
-        return {"current": None, "phase": "Unknown", "history": [], "trend": "不明"}
+        return {"current": None, "phase": "Unknown", "history": [], "trend": "Unknown"}
 
 
 def _vix_phase(vix: float) -> str:
     if vix < 15:
-        return "Low (楽観)"
+        return "Low (optimism)"
     if vix < 20:
-        return "Normal (通常)"
+        return "Normal"
     if vix < 25:
-        return "Elevated (警戒)"
+        return "Elevated (caution)"
     if vix < 30:
-        return "High (恐怖)"
-    return "Crisis (パニック)"
+        return "High (fear)"
+    return "Crisis (panic)"
 
 
 # ---------------------------------------------------------------------------
@@ -278,13 +278,13 @@ def get_yield_curve(client=None) -> dict:
     # Curve status
     if spread_10y_3m is not None:
         if spread_10y_3m < 0:
-            curve_status = "逆イールド（景気後退シグナル）"
+            curve_status = "Inverted yield curve (recession signal)"
         elif spread_10y_3m < 0.5:
-            curve_status = "フラット（警戒）"
+            curve_status = "Flat (caution)"
         else:
-            curve_status = "順イールド（通常）"
+            curve_status = "Normal yield curve"
     else:
-        curve_status = "不明"
+        curve_status = "Unknown"
 
     # 10Y history (1 month)
     history_10y = []

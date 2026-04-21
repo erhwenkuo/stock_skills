@@ -1,362 +1,362 @@
 ---
 name: stock-portfolio
-description: "ポートフォリオ管理。保有銘柄の一覧表示・売買記録・構造分析。ストレステストの入力データ基盤。"
-argument-hint: "[command] [args]  例: snapshot, buy 7203.T 100 2850, sell AAPL 5, analyze, list"
+description: "Portfolio management. Display holdings, record trades, and analyze portfolio structure. Input data foundation for stress tests."
+argument-hint: "[command] [args]  e.g.: snapshot, buy 7203.T 100 2850, sell AAPL 5, analyze, list"
 allowed-tools: Bash(python3 *)
 ---
 
-# ポートフォリオ管理スキル
+# Portfolio Management Skill
 
-$ARGUMENTS を解析してコマンドを判定し、以下のコマンドを実行してください。
+Parse $ARGUMENTS to determine the command and execute it as shown below.
 
-## 実行コマンド
+## Execution Command
 
 ```bash
 python3 /Users/kikuchihiroyuki/stock-skills/.claude/skills/stock-portfolio/scripts/run_portfolio.py <command> [args]
 ```
 
-## コマンド一覧
+## Command Reference
 
-### snapshot -- PFスナップショット
+### snapshot — Portfolio Snapshot
 
-現在価格・損益・通貨換算を含むポートフォリオのスナップショットを生成する。
+Generates a portfolio snapshot including current prices, P/L, and currency conversions.
 
 ```bash
 python3 .../run_portfolio.py snapshot
 ```
 
-### buy -- 購入記録追加
+### buy — Record a Purchase
 
 ```bash
-python3 .../run_portfolio.py buy --symbol <sym> --shares <n> --price <p> [--currency JPY] [--date YYYY-MM-DD] [--memo テキスト] [--yes]
+python3 .../run_portfolio.py buy --symbol <sym> --shares <n> --price <p> [--currency JPY] [--date YYYY-MM-DD] [--memo text] [--yes]
 ```
 
-`--yes` (`-y`) を省略すると購入内容の確認プレビューを表示して終了する。`--yes` を指定すると確認をスキップして直接記録する（KIK-444）。
+Omitting `--yes` (`-y`) displays a confirmation preview of the purchase and exits. Specifying `--yes` skips confirmation and records directly (KIK-444).
 
-### sell -- 売却記録
+### sell — Record a Sale
 
 ```bash
-python3 .../run_portfolio.py sell --symbol <sym> --shares <n> [--price <売却単価>] [--date YYYY-MM-DD] [--yes]
+python3 .../run_portfolio.py sell --symbol <sym> --shares <n> [--price <sale price>] [--date YYYY-MM-DD] [--yes]
 ```
 
-`--yes` (`-y`) を省略すると売却内容の確認プレビュー（取得単価・推定実現損益）を表示して終了する。`--yes` を指定すると確認をスキップして直接記録する（KIK-444）。
+Omitting `--yes` (`-y`) displays a confirmation preview (cost basis, estimated realized P/L) and exits. Specifying `--yes` skips confirmation and records directly (KIK-444).
 
-`--price` を指定すると実現損益・損益率・税引後概算を計算して表示し、`data/history/trade/*.json` に保存する（KIK-441）。
+Specifying `--price` calculates and displays realized P/L, P/L ratio, and estimated after-tax amount, and saves to `data/history/trade/*.json` (KIK-441).
 
-### review -- 売買パフォーマンスレビュー (KIK-441)
+### review — Trade Performance Review (KIK-441)
 
-過去の売却記録（`--price` 付きで記録したもの）から損益統計を集計して表示する。
+Aggregates and displays P/L statistics from past sale records (those recorded with `--price`).
 
 ```bash
 python3 .../run_portfolio.py review [--year 2026] [--symbol NVDA]
 ```
 
-**出力内容:**
-- 取引履歴テーブル（銘柄・売却日・株数・取得単価・売却単価・保有日数・実現損益・損益率）
-- 統計（取引件数・勝率・平均リターン・平均保有期間・合計実現損益）
+**Output:**
+- Trade history table (symbol, sale date, shares, cost basis, sale price, holding period, realized P/L, P/L ratio)
+- Statistics (trade count, win rate, average return, average holding period, total realized P/L)
 
-### analyze -- 構造分析
+### analyze — Structural Analysis
 
-地域/セクター/通貨/規模のHHI（ハーフィンダール指数）を算出し、ポートフォリオの偏りを分析する。規模別構成（大型/中型/小型/ETF/不明）テーブルを含む4軸分析（KIK-438, KIK-469 P2: ETF分類）。ETFはセクター「ETF」、規模「ETF」として独立分類される。
+Calculates sector/region/currency/size HHI (Herfindahl index) and analyzes portfolio bias. Includes a 4-axis analysis with size composition table (large/mid/small/ETF/unknown) (KIK-438, KIK-469 P2: ETF classification). ETFs are independently classified as sector "ETF" and size "ETF."
 
 ```bash
 python3 .../run_portfolio.py analyze
 ```
 
-### health -- ヘルスチェック
+### health — Health Check
 
-保有銘柄の投資仮説がまだ有効かをチェックする。テクニカル（SMA50/200, RSI, **ゴールデンクロス/デッドクロス検出**）とファンダメンタル（変化スコア、**株主還元安定度**）の多軸で3段階アラートを出力。**小型株は自動的に感度を引き上げ**（KIK-438）。
+Checks whether the investment thesis for each holding is still valid. Outputs 3-level alerts across multiple axes: technical (SMA50/200, RSI, **Golden Cross/Dead Cross detection**) and fundamental (change quality score, **shareholder return stability**). **Small-cap stocks are automatically escalated in sensitivity** (KIK-438).
 
 ```bash
 python3 .../run_portfolio.py health
 ```
 
-**テクニカル分析（KIK-356/374/438）:**
-- SMA50/200 のトレンド判定（上昇/横ばい/下降）
-- **ゴールデンクロス/デッドクロス検出**: 60日 lookback でクロスイベントを検出し、発生日と経過日数を表示
-- **小型株クロスルックバック短縮（KIK-438）**: 小型株は lookback=30日で直近の変動を早期検出
+**Technical Analysis (KIK-356/374/438):**
+- Trend determination from SMA50/200 (uptrend/sideways/downtrend)
+- **Golden Cross/Dead Cross detection**: Detects cross events within a 60-day lookback, displaying occurrence date and days elapsed
+- **Small-cap cross lookback reduction (KIK-438)**: Small-cap stocks use a 30-day lookback for early detection of recent fluctuations
 
-**株主還元安定度（KIK-403）:**
-- 配当+自社株買いの総還元率から安定度を評価（✅安定高還元/📈増加傾向/⚠️一時的高還元/📉減少傾向）
-- 一時的高還元（temporary）→ 早期警告に昇格
-- 減少傾向（decreasing）→ アラート詳細に理由追加
-- 長期適性判定に総還元率（配当+自社株買い）を使用
+**Shareholder Return Stability (KIK-403):**
+- Evaluates stability from total return rate (dividends + buybacks) (✅Stable high return/📈Increasing trend/⚠️Temporary high return/📉Declining trend)
+- Temporary high return → escalate to early warning
+- Declining trend → add reason to alert details
+- Uses total return rate (dividends + buybacks) for long-term suitability assessment
 
-**小型株アロケーション（KIK-438）:**
-- 銘柄ごとに時価総額から規模分類（大型/中型/小型/不明）し `[小型]` バッジを表示
-- 小型株は EARLY_WARNING → CAUTION に自動エスカレーション
-- PF全体の小型株比率を算出し、>25% で警告、>35% で危険を表示
+**Small-Cap Allocation (KIK-438):**
+- Classifies each stock by market cap size (large/mid/small/unknown) and displays `[small]` badge
+- Small-cap stocks are automatically escalated: EARLY_WARNING → CAUTION
+- Calculates portfolio-wide small-cap ratio; displays warning at >25%, critical at >35%
 
-**ETFヘルスチェック（KIK-469 Phase 2）:**
-- 個別株とETFのテーブルを分離表示
-- ETFテーブル: 銘柄/損益/トレンド/経費率/AUM/ETFスコア/アラート
-- 個別株テーブル: 従来通り（変化の質/長期適性/還元安定度）
+**ETF Health Check (KIK-469 Phase 2):**
+- Displays individual stocks and ETFs in separate tables
+- ETF table: symbol / P/L / trend / expense ratio / AUM / ETF score / alert
+- Individual stock table: as before (change quality / long-term suitability / return stability)
 
-**アラートレベル:**
-- **早期警告**: SMA50割れ / RSI急低下 / 変化スコア1指標悪化 / **一時的高還元**
-- **注意**: SMA50がSMA200に接近 + 指標悪化 / 変化スコア複数悪化 / **小型株のEARLY_WARNING昇格**
-- **撤退**: **デッドクロス検出** / トレンド崩壊 + 変化スコア悪化
+**Alert Levels:**
+- **Early Warning**: Below SMA50 / RSI sharp decline / 1 fundamental indicator deteriorating / **temporary high return**
+- **Caution**: SMA50 approaching SMA200 + indicator deterioration / multiple change score deteriorations / **small-cap EARLY_WARNING escalation**
+- **Exit**: **Dead cross detected** / trend breakdown + change score deterioration
 
-### adjust -- ポートフォリオ調整アドバイザー (KIK-496)
+### adjust — Portfolio Adjustment Advisor (KIK-496)
 
-ヘルスチェック結果 + マーケットレジーム判定から、17ルール（P1-P10: ポジション別、F1-F7: PF全体）で具体的な調整アクション（SELL/SWAP/ADD/TRIM_CLASS/FLAG）を生成する。
+Generates specific adjustment actions (SELL/SWAP/ADD/TRIM_CLASS/FLAG) using 17 rules (P1-P10: per-position, F1-F7: PF-wide) based on health check results + market regime determination.
 
 ```bash
 python3 .../run_portfolio.py adjust [--full]
 ```
 
-CLIオプション:
-- `--full` : フル分析モード（集中度・相関分析も含む。API負荷が高い）
+CLI options:
+- `--full`: Full analysis mode (includes concentration and correlation analysis. Higher API load)
 
-**出力:**
-- マーケットレジーム（bull/bear/crash/neutral）— SMA50/200、RSI、ドローダウンから判定
-- HIGH/MEDIUM/LOW 優先度別のアクションテーブル（アクション種別/対象/理由/ルールID）
-- サマリー（アクション件数）
+**Output:**
+- Market regime (bull/bear/crash/neutral) — determined from SMA50/200, RSI, drawdown
+- Action table by HIGH/MEDIUM/LOW priority (action type / target / reason / rule ID)
+- Summary (action count)
 
-**レジーム補正:** crash 時は urgency を1段階引き上げ。bear 時は小型株・下降トレンド系ルールを引き上げ。
+**Regime adjustment:** During crash, urgency is raised one level. During bear, small-cap and downtrend rules are elevated.
 
-### rebalance -- リバランス提案
+### rebalance — Rebalancing Proposal
 
-現在のポートフォリオ構造を分析し、集中リスクの低減と目標配分への調整案を提示する。
+Analyzes current portfolio structure and presents proposals for reducing concentration risk and adjusting toward target allocation.
 
 ```bash
 python3 .../run_portfolio.py rebalance [options]
 ```
 
-CLIオプション:
-- `--strategy defensive|balanced|aggressive` (デフォルト: balanced)
-- `--reduce-sector SECTOR` (例: Technology)
-- `--reduce-currency CURRENCY` (例: USD)
-- `--max-single-ratio RATIO` (例: 0.15)
-- `--max-sector-hhi HHI` (例: 0.25)
-- `--max-region-hhi HHI` (例: 0.30)
-- `--additional-cash AMOUNT` (円, 例: 1000000)
-- `--min-dividend-yield YIELD` (例: 0.03)
+CLI options:
+- `--strategy defensive|balanced|aggressive` (default: balanced)
+- `--reduce-sector SECTOR` (e.g., Technology)
+- `--reduce-currency CURRENCY` (e.g., USD)
+- `--max-single-ratio RATIO` (e.g., 0.15)
+- `--max-sector-hhi HHI` (e.g., 0.25)
+- `--max-region-hhi HHI` (e.g., 0.30)
+- `--additional-cash AMOUNT` (JPY, e.g., 1000000)
+- `--min-dividend-yield YIELD` (e.g., 0.03)
 
-### forecast -- 推定利回り
+### forecast — Estimated Yield
 
-保有銘柄ごとにアナリスト目標価格 or 過去リターン分布から12ヶ月の期待リターンを3シナリオ（楽観/ベース/悲観）で推定する。バリュートラップ警告・TOP/BOTTOM ランキング付き。
+Estimates 12-month expected return for each holding in 3 scenarios (optimistic/base/pessimistic) from analyst target prices or historical return distributions. Includes value trap warnings and TOP/BOTTOM rankings.
 
 ```bash
 python3 .../run_portfolio.py forecast
 ```
 
-**推定手法:**
-- **アナリスト法**: アナリスト目標株価 + 配当利回り + 自社株買い利回り（株主還元込み）
-- **過去リターン法**: ETF等アナリストカバレッジなし銘柄は過去CAGR + 標準偏差で推定（KIK-469 P2: ETFは年率ボラティリティ表示 + `[ETF]` バッジ付き）
-- **業界カタリスト調整**（KIK-433, Neo4j 接続時）: 同セクターの直近 `growth_driver` カタリスト数 × 1.7% を楽観シナリオに加算、`risk` カタリスト数 × 1.7% を悲観シナリオから減算（上限各 10%）
+**Estimation methods:**
+- **Analyst method**: Analyst target price + dividend yield + buyback yield (including shareholder return)
+- **Historical return method**: For stocks without analyst coverage (ETFs, etc.), estimates from historical CAGR + standard deviation (KIK-469 P2: ETFs show annualized volatility + `[ETF]` badge)
+- **Industry catalyst adjustment** (KIK-433, when Neo4j connected): Adds recent same-sector `growth_driver` catalyst count × 1.7% to optimistic scenario, subtracts `risk` catalyst count × 1.7% from pessimistic scenario (max ±10%)
 
-**出力構成（KIK-390）:**
-1. ポートフォリオ全体の3シナリオ利回り・損益額テーブル
-2. 注意銘柄セクション（バリュートラップ警告のある銘柄を集約）
-3. 期待リターン TOP 3 / BOTTOM 3 ランキング
-4. 銘柄別詳細（アナリスト目標/Forward PER/ニュース件数/Xセンチメント/3シナリオ）
+**Output structure (KIK-390):**
+1. Portfolio-wide 3-scenario yield and P/L table
+2. Caution stocks section (aggregate stocks with value trap warnings)
+3. Expected return TOP 3 / BOTTOM 3 rankings
+4. Per-stock details (analyst target / Forward P/E / news count / X sentiment / 3 scenarios)
 
-### what-if -- What-Ifシミュレーション (KIK-376 / KIK-451)
+### what-if — What-If Simulation (KIK-376 / KIK-451)
 
-銘柄の追加・売却・スワップをシミュレーションし、ポートフォリオへの影響をBefore/After比較で表示する。
+Simulates adding, selling, or swapping stocks and displays the impact on the portfolio as a Before/After comparison.
 
 ```bash
-# 追加のみ（従来）
+# Add only (traditional)
 python3 .../run_portfolio.py what-if --add "SYMBOL:SHARES:PRICE[,...]"
 
-# スワップ（売却して購入）(KIK-451)
+# Swap (sell then buy) (KIK-451)
 python3 .../run_portfolio.py what-if --remove "SYMBOL:SHARES[,...]" --add "SYMBOL:SHARES:PRICE[,...]"
 
-# 売却のみシミュレーション (KIK-451)
+# Sell-only simulation (KIK-451)
 python3 .../run_portfolio.py what-if --remove "SYMBOL:SHARES[,...]"
 ```
 
-CLIオプション:
-- `--add` : 追加銘柄リスト（任意）。形式: `SYMBOL:SHARES:PRICE` をカンマ区切り
-- `--remove` : 売却銘柄リスト（任意）。形式: `SYMBOL:SHARES` をカンマ区切り（価格不要・時価で試算）
-- `--add` と `--remove` のどちらか一方は必須
+CLI options:
+- `--add`: List of stocks to add (optional). Format: `SYMBOL:SHARES:PRICE` comma-separated
+- `--remove`: List of stocks to sell (optional). Format: `SYMBOL:SHARES` comma-separated (no price needed — calculated at market value)
+- At least one of `--add` or `--remove` is required
 
-**出力:**
-- **[売却時] 売却候補のコンテキスト（KIK-470）**: `--remove` 指定時、シミュレーション前にスクリーニング出現回数・投資メモ・リサーチ履歴を自動表示（Neo4j接続時）
-- Before/After のセクターHHI・地域HHI・通貨HHI比較
-- 追加銘柄の基本情報（PER/PBR/配当利回り/ROE）
-- **[スワップ時] 売却銘柄テーブル**（銘柄・株数・売却代金試算）
-- **[スワップ時] 資金収支**（購入必要資金 / 売却代金試算 / 差額）
-- **[スワップ時] 売却銘柄ヘルスチェック**（売却対象のアラート状況）
-- 判定ラベル: 推奨 / 注意して検討 / 非推奨（スワップ時は「このスワップは推奨」等）
-- **ETF品質評価（KIK-469 P2）**: ETF追加時にETFスコアを判定に反映（品質良好≥75、品質低<40で警告）
+**Output:**
+- **[On sell] Sell candidate context (KIK-470)**: When `--remove` is specified, automatically displays screening appearance count, investment memos, and research history before the simulation (when Neo4j connected)
+- Before/After sector HHI / region HHI / currency HHI comparison
+- Basic info on added stocks (P/E / P/B / dividend yield / ROE)
+- **[On swap] Sell stock table** (symbol, shares, estimated sale proceeds)
+- **[On swap] Fund balance** (required purchase funds / estimated sale proceeds / difference)
+- **[On swap] Health check on sold stocks** (alert status of sell targets)
+- Judgment label: Recommended / Proceed with caution / Not recommended (for swaps: "This swap is recommended," etc.)
+- **ETF quality assessment (KIK-469 P2)**: When adding an ETF, ETF score is reflected in the judgment (quality good ≥75, warning if quality low <40)
 
-### backtest -- バックテスト
+### backtest — Backtest
 
-蓄積されたスクリーニング結果からリターンを検証し、ベンチマーク（日経225/S&P500）と比較する。
+Verifies returns from accumulated screening results and compares against benchmarks (Nikkei 225 / S&P 500).
 
 ```bash
 python3 .../run_portfolio.py backtest [options]
 ```
 
-CLIオプション:
-- `--preset PRESET` : 検証対象のスクリーニングプリセット（例: alpha, value）
-- `--region REGION` : 検証対象の地域（例: jp, us）
-- `--days N` : 取得後N日間のリターンを検証（デフォルト: 90）
+CLI options:
+- `--preset PRESET`: Screening preset to verify (e.g., alpha, value)
+- `--region REGION`: Region to verify (e.g., jp, us)
+- `--days N`: Verifies return N days after retrieval (default: 90)
 
-**出力:**
-- スクリーニング日別の平均リターン
-- ベンチマーク比較（超過リターン）
-- 勝率・平均リターン・最大リターン/最大損失
+**Output:**
+- Average return by screening date
+- Benchmark comparison (excess return)
+- Win rate, average return, max return / max loss
 
-### simulate -- 複利シミュレーション
+### simulate — Compound Interest Simulation
 
-現在のポートフォリオを基に、複利計算で将来の資産推移をシミュレーションする。forecast の期待リターン + 配当再投資 + 毎月積立を複利で計算し、楽観/ベース/悲観の3シナリオで表示。
+Simulates future asset growth with compound interest based on the current portfolio. Calculates compound interest using forecast expected returns + dividend reinvestment + monthly accumulation, displayed in 3 scenarios (optimistic/base/pessimistic).
 
 ```bash
 python3 .../run_portfolio.py simulate [options]
 ```
 
-CLIオプション:
-- `--years N` (シミュレーション年数, デフォルト: 10)
-- `--monthly-add AMOUNT` (月額積立額, 円, デフォルト: 0)
-- `--target AMOUNT` (目標額, 円, 例: 15000000)
-- `--reinvest-dividends` (配当再投資する, デフォルト: ON)
-- `--no-reinvest-dividends` (配当再投資しない)
+CLI options:
+- `--years N` (simulation years, default: 10)
+- `--monthly-add AMOUNT` (monthly accumulation, JPY, default: 0)
+- `--target AMOUNT` (target amount, JPY, e.g., 15000000)
+- `--reinvest-dividends` (reinvest dividends, default: ON)
+- `--no-reinvest-dividends` (do not reinvest dividends)
 
-### list -- 保有銘柄一覧
+### list — Holdings List
 
-portfolio.csv の内容をそのまま表示する。
+Displays the contents of portfolio.csv as-is.
 
 ```bash
 python3 .../run_portfolio.py list
 ```
 
-## 自然言語ルーティング
+## Natural Language Routing
 
-自然言語→スキル判定は [.claude/rules/intent-routing.md](../../rules/intent-routing.md) を参照。
+For natural language → skill selection, see [.claude/rules/intent-routing.md](../../rules/intent-routing.md).
 
-## 制約事項
+## Constraints
 
-- 日本株: 100株単位（単元株）
-- ASEAN株: 100株単位（最低手数料 3,300円）
-- 楽天証券対応（手数料体系）
-- portfolio.csv のパス: `.claude/skills/stock-portfolio/data/portfolio.csv`
+- Japan stocks: 100-share lots (standard trading unit)
+- ASEAN stocks: 100-share lots (minimum fee: JPY 3,300)
+- Rakuten Securities compatible (fee structure)
+- portfolio.csv path: `.claude/skills/stock-portfolio/data/portfolio.csv`
 
-## 出力
+## Output
 
-結果はMarkdown形式で表示してください。
+Display results in Markdown format.
 
-### snapshot の出力項目
-- 銘柄 / 名称 / 保有数 / 取得単価 / 現在価格 / 評価額 / 損益 / 損益率 / 通貨
+### snapshot output items
+- Symbol / Name / Shares held / Cost basis / Current price / Market value / P/L / P/L ratio / Currency
 
-### analyze の出力項目
-- セクターHHI / 地域HHI / 通貨HHI / **規模HHI（KIK-438）**
-- 各軸の構成比率（**規模別構成テーブル: 大型/中型/小型/ETF/不明**）
-- ETF注釈（ルックスルー未対応の注記）
-- リスクレベル判定
+### analyze output items
+- Sector HHI / Region HHI / Currency HHI / **Size HHI (KIK-438)**
+- Composition ratio for each axis (**size composition table: large/mid/small/ETF/unknown**)
+- ETF annotation (note that look-through is not supported)
+- Risk level determination
 
-### health の出力項目
-- **個別株テーブル**: 銘柄（**小型株は `[小型]` バッジ付き**） / 損益率 / トレンド / **クロスイベント** / 変化の質 / アラート / **長期適性** / **還元安定度**
-- **ETFテーブル（KIK-469 P2）**: 銘柄 / 損益 / トレンド / 経費率 / AUM / ETFスコア / アラート
-- アラートがある銘柄の詳細（理由、SMA/RSI値、クロス発生日・経過日数、変化スコア、株主還元安定度、推奨アクション）
-- **小型株アロケーション**: PF全体の小型株比率サマリー（✅正常/⚠️警告/🔴危険）
+### health output items
+- **Individual stock table**: Symbol (**small-cap stocks show `[small]` badge**) / P/L ratio / Trend / **Cross event** / Change quality / Alert / **Long-term suitability** / **Return stability**
+- **ETF table (KIK-469 P2)**: Symbol / P/L / Trend / Expense ratio / AUM / ETF score / Alert
+- Details for stocks with alerts (reason, SMA/RSI values, cross occurrence date & days elapsed, change score, shareholder return stability, recommended action)
+- **Small-cap allocation**: Portfolio-wide small-cap ratio summary (✅Normal/⚠️Warning/🔴Critical)
 
-### forecast の出力項目
-- ポートフォリオ全体: 3シナリオ利回り（楽観/ベース/悲観）+ 損益額 + 総評価額
-- 注意銘柄セクション: バリュートラップ警告のある銘柄一覧
-- TOP 3 / BOTTOM 3: 期待リターンランキング（アナリスト数付き）
-- 銘柄別: アナリスト目標価格 / Forward PER / ニュース件数 / Xセンチメント / 3シナリオ / **ETFは年率ボラティリティ + `[ETF]` バッジ**
+### forecast output items
+- Portfolio-wide: 3-scenario yield (optimistic/base/pessimistic) + P/L + total market value
+- Caution stocks section: List of stocks with value trap warnings
+- TOP 3 / BOTTOM 3: Expected return rankings (with analyst count)
+- Per-stock: Analyst target price / Forward P/E / news count / X sentiment / 3 scenarios / **ETFs show annualized volatility + `[ETF]` badge**
 
-### what-if の出力項目
-- **[売却時] 売却候補のコンテキスト（KIK-470）**: スクリーニング出現回数・投資メモ・リサーチ履歴
-- Before/After のHHI比較（セクター/地域/通貨）
-- 追加銘柄のファンダメンタルズ
-- 集中度変化の判定
-- **[スワップ時]** 売却銘柄テーブル（売却代金試算）
-- **[スワップ時]** 資金収支（購入必要資金 / 売却代金 / 差額）
-- **[スワップ時]** 売却銘柄ヘルスチェック
-- **[スワップ時]** 「このスワップは推奨 / 注意して検討 / 非推奨」
+### what-if output items
+- **[On sell] Sell candidate context (KIK-470)**: Screening appearance count, investment memos, research history
+- Before/After HHI comparison (sector/region/currency)
+- Fundamentals of added stocks
+- Concentration change judgment
+- **[On swap]** Sell stock table (estimated sale proceeds)
+- **[On swap]** Fund balance (required purchase funds / sale proceeds / difference)
+- **[On swap]** Health check on sold stocks
+- **[On swap]** "This swap is recommended / Proceed with caution / Not recommended"
 
-### backtest の出力項目
-- スクリーニング日別リターン
-- ベンチマーク比較（超過リターン）
-- 勝率・統計値
+### backtest output items
+- Return by screening date
+- Benchmark comparison (excess return)
+- Win rate, statistics
 
-### adjust の出力項目
-- マーケットレジーム（レジーム名/SMA50 vs SMA200/RSI/ドローダウン）
-- HIGH Priority テーブル: SELL/SWAP/TRIM_CLASS アクション
-- MEDIUM Priority テーブル: FLAG/SELL アクション
-- LOW Priority テーブル: FLAG アクション
-- サマリー（HIGH/MEDIUM/LOW 件数、レジーム）
+### adjust output items
+- Market regime (regime name / SMA50 vs SMA200 / RSI / drawdown)
+- HIGH Priority table: SELL/SWAP/TRIM_CLASS actions
+- MEDIUM Priority table: FLAG/SELL actions
+- LOW Priority table: FLAG actions
+- Summary (HIGH/MEDIUM/LOW counts, regime)
 
-### rebalance の出力項目
-- 現状のHHI（セクター/地域/通貨）と目標HHI
-- 売却候補（銘柄・株数・理由）
-- 購入候補（銘柄・株数・理由・配当利回り）
-- リバランス後のHHI予測値
+### rebalance output items
+- Current HHI (sector/region/currency) and target HHI
+- Sell candidates (symbol, shares, reason)
+- Buy candidates (symbol, shares, reason, dividend yield)
+- Projected HHI after rebalancing
 
-### simulate の出力項目
-- 年次推移テーブル（年/評価額/累計投入/運用益/配当累計）
-- 3シナリオ比較（楽観/ベース/悲観の最終年）
-- 目標達成分析（到達年/必要積立額）
-- 配当再投資の複利効果
+### simulate output items
+- Annual progression table (year / market value / total invested / investment gain / cumulative dividends)
+- 3-scenario comparison (optimistic/base/pessimistic final year)
+- Goal achievement analysis (year of reaching goal / required monthly contribution)
+- Compound interest effect of dividend reinvestment
 
-## 実行例
+## Execution Examples
 
 ```bash
-# スナップショット
+# Snapshot
 python3 .../run_portfolio.py snapshot
 
-# 購入記録
-python3 .../run_portfolio.py buy --symbol 7203.T --shares 100 --price 2850 --currency JPY --date 2025-06-15 --memo トヨタ
+# Record purchase
+python3 .../run_portfolio.py buy --symbol 7203.T --shares 100 --price 2850 --currency JPY --date 2025-06-15 --memo Toyota
 
-# 売却記録
+# Record sale
 python3 .../run_portfolio.py sell --symbol AAPL --shares 5
 
-# 構造分析
+# Structural analysis
 python3 .../run_portfolio.py analyze
 
-# 一覧表示
+# List holdings
 python3 .../run_portfolio.py list
 
-# ヘルスチェック
+# Health check
 python3 .../run_portfolio.py health
 
-# 推定利回り
+# Estimated yield
 python3 .../run_portfolio.py forecast
 
-# リバランス提案
+# Rebalancing proposal
 python3 .../run_portfolio.py rebalance
 python3 .../run_portfolio.py rebalance --strategy defensive
 python3 .../run_portfolio.py rebalance --reduce-sector Technology --additional-cash 1000000
 
-# What-Ifシミュレーション（追加のみ）
+# What-If simulation (add only)
 python3 .../run_portfolio.py what-if --add "7203.T:100:2850,AAPL:10:250"
 
-# What-Ifシミュレーション（スワップ: 7203.T売却 → 9984.T購入）(KIK-451)
+# What-If simulation (swap: sell 7203.T → buy 9984.T) (KIK-451)
 python3 .../run_portfolio.py what-if --remove "7203.T:100" --add "9984.T:50:7500"
 
-# What-Ifシミュレーション（純売却）(KIK-451)
+# What-If simulation (sell only) (KIK-451)
 python3 .../run_portfolio.py what-if --remove "7203.T:50"
 
-# 調整アドバイザー (KIK-496)
+# Adjustment advisor (KIK-496)
 python3 .../run_portfolio.py adjust
 python3 .../run_portfolio.py adjust --full
 
-# バックテスト
+# Backtest
 python3 .../run_portfolio.py backtest --preset alpha --region jp --days 90
 ```
 
-## 前提知識統合ルール (KIK-466)
+## Prior Knowledge Integration Rules (KIK-466)
 
-### health コマンド
+### health command
 
-get_context.py の出力に以下がある場合、ヘルスチェック結果と統合して回答する:
+When `get_context.py` output contains the following, integrate with health check results:
 
-- **売買履歴（BOUGHT/SOLD）**: 購入価格・日付を参照し、含み損益の文脈を付加。売却済み銘柄が警告に出た場合は「売却済みのため問題なし」と明記
-- **投資メモ（Note）**: テーゼ・懸念メモがあれば、ヘルスチェック結果と照合。「バリュートラップ懸念メモあり → 今回もBTスコア高 → 本当に要注意」等
-- **前回ヘルスチェック（HealthCheck）**: 前回との差分を示す。「前回HOLD → 今回EXIT: 状況悪化」「前回EXIT → 今回HOLD: 改善」
-- **スクリーニング履歴（SURFACED）**: 警告銘柄が過去にスクリーニング上位だった場合、「注目度は高い（3回上位）が現在は要注意」等
-- **テーゼ経過**: テーゼメモが90日以上前なら「テーゼ見直し時期」と促す
+- **Trade history (BOUGHT/SOLD)**: Reference purchase price and date to add unrealized P/L context. If a sold stock appears in warnings, explicitly state "already sold — no issue"
+- **Investment memos (Note)**: If thesis or concern memos exist, cross-check with health check results. e.g., "Value trap concern memo → BT score also high this time → truly needs attention"
+- **Previous health check (HealthCheck)**: Show diff from previous result. "Previous: HOLD → This time: EXIT: situation deteriorated" / "Previous: EXIT → This time: HOLD: improved"
+- **Screening history (SURFACED)**: If a flagged stock has historically been in the top of screenings, "High attention (top 3 times) but currently needs caution"
+- **Thesis age**: If a thesis memo is 90+ days old, prompt "time to review the thesis"
 
 ### snapshot / forecast
 
-- 前回スナップショット・フォーキャストがあれば差分コメントを付加
-- 「前回比: 評価額+5.2%、利回り改善」等
+- If a previous snapshot or forecast exists, add diff comments
+- e.g., "vs. previous: market value +5.2%, yield improved"
 
-### 分析結論の記録促し
+### Prompting to Record Analysis Conclusions
 
-EXIT/警告に対して具体的な判断（「売却推奨」「継続保有」等）を含む回答をした場合:
-> 💡 この判断を投資メモとして記録しますか？
+When the response includes specific judgments about EXIT/warnings (e.g., "sell recommended," "continue holding"):
+> 💡 Would you like to record this judgment as an investment memo?
