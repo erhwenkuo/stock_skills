@@ -182,6 +182,180 @@ Search past reports, screenings, trades, and research history in natural languag
 /graph-query "NVDA sentiment trend"
 ```
 
+## Configuration
+
+All configuration files live in the `config/` directory. You can customize screening behavior, add regions, adjust thresholds, and set up your broker profile without touching any Python code.
+
+### `config/screening_presets.yaml` — Screening Strategies
+
+Defines the 16 built-in screening presets. Each preset sets the criteria passed to EquityQuery.
+
+```yaml
+presets:
+  value:
+    description: "Traditional value investing (low P/E, low P/B)"
+    criteria:
+      max_per: 15           # Maximum P/E ratio
+      max_pbr: 1.5          # Maximum P/B ratio
+      min_dividend_yield: 0.02  # Minimum dividend yield (2%)
+      min_roe: 0.05         # Minimum ROE (5%)
+```
+
+**Available presets and their focus:**
+
+| Preset | Focus |
+|:---|:---|
+| `value` | Low P/E + low P/B + dividend |
+| `high-dividend` | Dividend yield ≥ 3% |
+| `growth` | High ROE + revenue/earnings growth |
+| `growth-value` | Growth potential + undervaluation |
+| `deep-value` | Very low P/E (≤8) + very low P/B (≤0.5) |
+| `quality` | High ROE (≥15%) + undervaluation |
+| `pullback` | Temporary dip within an uptrend |
+| `alpha` | Undervaluation + quality of change + pullback |
+| `trending` | X/SNS-trending stocks with fundamental check |
+| `shareholder-return` | Total shareholder return (dividends + buybacks) ≥ 5% |
+| `high-growth` | Revenue growth ≥ 20% YoY, PSR ≤ 20 |
+| `small-cap-growth` | Market cap ≤ 100B + revenue growth ≥ 20% |
+| `contrarian` | Technically oversold + fundamentally solid |
+| `momentum` | 52-week change ≥ 20% + breakout detection |
+| `long-term` | High ROE + EPS growth + large-cap stability |
+| `market-darling` | High P/E tolerated + rapid EPS/revenue growth |
+
+To add a custom preset, append a new entry to `screening_presets.yaml` and reference it with `/screen-stocks <region> <your-preset-name>`.
+
+---
+
+### `config/exchanges.yaml` — Regions & Exchanges
+
+Defines the 11 supported regions, their stock exchanges, currencies, ticker suffixes, and default screening thresholds.
+
+```yaml
+regions:
+  tw:
+    region_name: "Taiwan"
+    aliases: ["tw", "taiwan"]
+    exchanges:
+      - code: "TAI"   # Taiwan Stock Exchange (TWSE)
+      - code: "TWO"   # Taipei Exchange (TPEx)
+    currency: "TWD"
+    ticker_suffix: ".TW"
+    thresholds:
+      per_max: 15.0
+      pbr_max: 2.0
+      dividend_yield_min: 0.03
+      roe_min: 0.08
+      rf: 0.01          # Risk-free rate (used in return estimation)
+```
+
+**Supported regions:**
+
+| Code | Region | Currency | Exchanges |
+|:---|:---|:---|:---|
+| `jp` | Japan | JPY | TSE, Fukuoka, Sapporo |
+| `us` | United States | USD | NASDAQ, NYSE, AMEX, OTC |
+| `sg` | Singapore | SGD | SGX |
+| `th` | Thailand | THB | SET |
+| `my` | Malaysia | MYR | Bursa Malaysia |
+| `id` | Indonesia | IDR | IDX |
+| `ph` | Philippines | PHP | PSE |
+| `hk` | Hong Kong | HKD | HKEX |
+| `kr` | Korea | KRW | KOSPI, KOSDAQ |
+| `tw` | Taiwan | TWD | TWSE, TPEx |
+| `cn` | China | CNY | SSE, SZSE |
+| `asean` | *(group)* | — | sg + th + my + id + ph |
+
+To adjust region-specific screening thresholds (e.g., tighten P/E limits for a particular market), edit the `thresholds` block under the relevant region.
+
+---
+
+### `config/themes.yaml` — Theme Filters
+
+Defines industry mappings for each theme used with `--theme` in `/screen-stocks`.
+
+```yaml
+themes:
+  ai:
+    description: "AI & Semiconductors"
+    industries:
+      - Semiconductors
+      - Semiconductor Equipment & Materials
+      - Software—Infrastructure
+      - Electronic Components
+```
+
+**Available themes:**
+
+| Theme key | Description |
+|:---|:---|
+| `ai` | AI & Semiconductors |
+| `ev` | EV & Next-Gen Automotive |
+| `cloud-saas` | Cloud & SaaS |
+| `cybersecurity` | Cybersecurity |
+| `biotech` | Biotech & Drug Discovery |
+| `renewable-energy` | Renewable Energy |
+| `fintech` | Fintech |
+| `defense` | Defense & Aerospace |
+| `healthcare` | Healthcare |
+
+To add a custom theme, append a new key with its `description` and `industries` list. Industry names must match yfinance's sector/industry taxonomy.
+
+---
+
+### `config/thresholds.yaml` — Health Check & Screener Thresholds
+
+Centralizes numeric thresholds used across health checks, technicals, and portfolio analysis. Changes here take effect immediately without code changes.
+
+```yaml
+health:
+  rsi_drop_threshold: 40    # RSI below this → Early Warning
+  cross_lookback: 60         # Days to scan for Golden/Dead Cross
+  small_cap_warn_pct: 0.25   # Portfolio small-cap ratio > 25% → warning
+  small_cap_crit_pct: 0.35   # Portfolio small-cap ratio > 35% → critical
+
+contrarian:
+  prefilter_fifty_day_max: 0.05   # Skip stocks with 50-day avg change > +5%
+  prefilter_52wk_high_min: -0.05  # Skip stocks within 5% of 52-week high
+
+technicals:
+  pullback_min: -0.20    # Pullback lower bound (from recent high)
+  pullback_max: -0.05    # Pullback upper bound
+  rsi_reversal_lo: 25.0  # RSI reversal zone lower bound
+
+theme_balance:
+  max_theme_weight: 0.20    # Max portfolio weight per theme (20%)
+  fng_caution_threshold: 80 # Warn on add-buys when Fear & Greed score > 80
+```
+
+---
+
+### `config/user_profile.yaml` — Broker & Tax Profile
+
+Copy `config/user_profile.yaml.example` to `config/user_profile.yaml` and fill in your broker details. Used for fee calculations in trade simulations.
+
+```bash
+cp config/user_profile.yaml.example config/user_profile.yaml
+```
+
+```yaml
+broker:
+  name: Rakuten Securities
+  account_type: general   # general / specific-withholding / NISA
+
+fees:
+  us_stock:
+    rate: 0.00495     # 0.495% commission rate
+    max_usd: 22       # Commission cap
+  jp_stock:
+    rate: 0           # Zero-commission plan
+
+tax:
+  capital_gains_rate: 0.20315  # 20.315% (income tax + resident tax)
+  realized_losses_ytd: 0       # Update for loss offset calculation
+```
+
+---
+
 ## Architecture
 
 ```
